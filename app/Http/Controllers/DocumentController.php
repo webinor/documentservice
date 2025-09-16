@@ -234,6 +234,7 @@ function generateUniqueReference(int $length = 8): string
 
                     $attachment = new Attachment();
                     $attachment->document_id = $document->id;
+                    $attachment->is_main = true;
                     $attachment->source="UPLOAD";
                     $attachment->created_by = $user_connected['id']; // si tu veux stocker l’utilisateur connecté
                     $attachment->attachment_type_id = AttachmentType::whereSlug("facture-originale")->first()->id;
@@ -276,7 +277,10 @@ function generateUniqueReference(int $length = 8): string
                     'steps' => $workflow['steps'], // tableau des étapes
                 ];
 
+                  DB::commit();
 
+            //  return 
+              //["ok"];
                 $instanceResponse = Http::withToken($request->bearerToken())
                         ->acceptJson()
                         ->post($workflowServiceUrl."/workflow-instances", $payload);
@@ -292,7 +296,7 @@ function generateUniqueReference(int $length = 8): string
                         
                     }
 
-                    DB::commit();
+                    //DB::commit();
 
 
                     $workflowInstance = $instanceResponse->json();

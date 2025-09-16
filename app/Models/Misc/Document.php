@@ -61,6 +61,11 @@ class Document extends Model
         return $this->hasMany(Attachment::class,);
     }
 
+     public function main_attachment(): HasOne
+    {
+        return $this->hasOne(Attachment::class,)->where('is_main', true);
+    }
+
     public function contrat()
 {
     //return $this->hasOne(Contrat::class);

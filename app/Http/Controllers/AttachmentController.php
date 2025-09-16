@@ -11,6 +11,7 @@ use App\Http\Requests\StoreAttachmentRequest;
 use App\Http\Requests\UpdateAttachmentRequest;
 use App\Jobs\GeneratePdfThumbnail;
 use App\Models\Misc\File;
+use Illuminate\Http\Request;
 
 class AttachmentController extends Controller
 {
@@ -110,7 +111,55 @@ class AttachmentController extends Controller
      * @param  \App\Models\Misc\Attachment  $attachment
      * @return \Illuminate\Http\Response
      */
-    public function show(Attachment $attachment)
+    public function show(Request $request , Document $document)
+    {
+      //  return $document;
+        
+        //$attachment->load('attachment.file');
+        $attachment = $document->load(['attachments' => fn($query) => $query->where('is_main', true)->with('file')]);
+        
+        //return $attachment;
+
+
+        $path = 'documents_attachments/' . $attachment->file->path;
+
+        if (!Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        $disk = Storage::disk('public');
+        $file = $disk->get($path);
+        $mimeType = $disk->mimeType($path);
+       // $mimeType = Storage::disk('public')->getMimeType($path);
+
+        return response($file, 200)->header('Content-Type', $mimeType);
+    }
+
+     public function getMainAttachment(Request $request , Document $document)
+    {
+      //  return $document;
+        
+        //$attachment->load('attachment.file');
+        $document = $document->load(['main_attachment.file']);
+        
+        //return $attachment;
+
+
+        $path = 'documents_attachments/' . $document->main_attachment->file->path;
+
+        if (!Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        $disk = Storage::disk('public');
+        $file = $disk->get($path);
+        $mimeType = $disk->mimeType($path);
+       // $mimeType = Storage::disk('public')->getMimeType($path);
+
+        return response($file, 200)->header('Content-Type', $mimeType);
+    }
+
+        public function old_show(Attachment $attachment)
     {
          $attachment->load('file');
         

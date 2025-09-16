@@ -63,7 +63,10 @@ Route::middleware('jwt.check')->prefix("documents")->group(function () {
 Route::get('documents/{document}/generate-thumbnail', [TestThumbnailController::class, 'handle']);//->excludedMiddleware('jwt.checks');
 
 
-Route::get('/documents/attachments/{attachment}', [AttachmentController::class, 'show']);
+Route::get('/documents/attachments/{document}', [AttachmentController::class, 'show']);
+
+Route::get('/documents/main_attachment/{document}', [AttachmentController::class, 'getMainAttachment']);
+
 
 Route::get('/documents/{document}/thumbnail', function(Document $document){
     $file = $document->attachment->thumbnail->file;
