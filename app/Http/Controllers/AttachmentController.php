@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Str;
+use App\Models\Misc\Document;
+use App\Models\Misc\Attachment;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreAttachmentRequest;
 use App\Http\Requests\UpdateAttachmentRequest;
-use App\Models\Misc\Attachment;
-use Illuminate\Support\Facades\Storage;
+use App\Jobs\GeneratePdfThumbnail;
+use App\Models\Misc\File;
 
 class AttachmentController extends Controller
 {
@@ -37,7 +42,66 @@ class AttachmentController extends Controller
      */
     public function store(StoreAttachmentRequest $request)
     {
-        //
+        // Validation
+        $validated = $request->validated();
+
+          $user = $request->get('user');
+       
+        try {
+            
+            DB::beginTransaction();
+
+            // Vérifier que le document existe
+        $document = Document::findOrFail($validated["documentId"]);
+
+        // Sauvegarder le fichier
+        //$file = $request->file('attachment');
+        //$path = $file->store('attachments'); // storage/app/attachments
+
+        // Créer l'enregistrement en base
+        $attachment = Attachment::create([
+            'document_id' => $document->id,
+            'attachment_type_id' => $validated["attachmentType"],
+           // 'file_path' => $path,
+           // 'file_name' => $file->getClientOriginalName(),
+            'created_by' => $user["id"],
+        ]);
+
+
+
+        $fileName = Str::random(20) . '_' . time() . '.'. $request->attachment->extension();  
+        $type = $request->attachment->getClientMimeType();
+        $size = $request->attachment->getSize();
+
+        $request->attachment->move(storage_path('app/public/documents_attachments'), $fileName);
+        //$path = $request->file('attachment')->store('documents'); // dans storage/app/documents
+
+
+        $file = new File();
+
+        $file->path = $fileName  ; 
+        $file->type =  $type ; 
+        $file->size = $size  ; 
+
+        $attachment->file()->save($file);
+
+
+        // Lancer le Job en arrière-plan
+        GeneratePdfThumbnail::dispatch($attachment);
+
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
+
+        
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fichier enregistré avec succès',
+            'data' => $attachment
+        ], 201);
     }
 
     /**

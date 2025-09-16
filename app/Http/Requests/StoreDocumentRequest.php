@@ -24,7 +24,10 @@ class StoreDocumentRequest extends FormRequest
     public function rules()
     {
         return [
-            'reference'=>'required',
+            'titre'=>'required',
+            'prestataire'=>'required',
+            'reference_fournisseur'=>'required',
+            'reference_engagement'=>'nullable',
             'dateDepot'=>'nullable',
             'montant'=>'required',
             'document_type_id' => 'required|exists:document_types,id',

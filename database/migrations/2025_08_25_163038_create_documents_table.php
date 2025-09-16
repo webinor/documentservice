@@ -16,10 +16,13 @@ class CreateDocumentsTable extends Migration
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('document_type_id');
+            $table->string('reference');
             $table->unsignedMediumInteger('created_by');
             $table->timestamps();
         });
     }
+
+   
 
     /**
      * Reverse the migrations.

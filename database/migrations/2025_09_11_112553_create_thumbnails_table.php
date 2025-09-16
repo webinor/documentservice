@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateInvoiceProvidersTable extends Migration
+class CreateThumbnailsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,9 @@ class CreateInvoiceProvidersTable extends Migration
      */
     public function up()
     {
-        Schema::create('invoice_providers', function (Blueprint $table) {
+        Schema::create('thumbnails', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('document_id');
-            //$table->string('internal_reference');
-            $table->string('provider_reference');
-            $table->unsignedBigInteger('amount');
-            $table->dateTime('deposit_date');
+            $table->unsignedBigInteger('attachment_id');
             $table->timestamps();
         });
     }
@@ -31,6 +27,6 @@ class CreateInvoiceProvidersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('invoice_providers');
+        Schema::dropIfExists('thumbnails');
     }
 }

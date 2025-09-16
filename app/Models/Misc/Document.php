@@ -6,6 +6,7 @@ use App\Models\Finance\InvoiceProvider;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Document extends Model
@@ -18,6 +19,7 @@ class Document extends Model
         'department_id',
         'workflow_id',
         'created_by',
+        'reference'
     ];
 
 
@@ -52,10 +54,36 @@ class Document extends Model
     /**
      * Get the attachment associated with the Document
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function attachment(): HasOne
+    public function attachments(): HasMany
     {
-        return $this->hasOne(Attachment::class,);
+        return $this->hasMany(Attachment::class,);
     }
+
+    public function contrat()
+{
+    //return $this->hasOne(Contrat::class);
+}
+
+public function demandeConge()
+{
+   // return $this->hasOne(DemandeConge::class);
+}
+
+public function getActeurPrincipalAttribute()
+{
+    switch ($this->document_type->slug) {
+        case 'facture-fournisseur':
+            return $this->invoice_provider ? $this->invoice_provider->provider : null;
+        case 'CONTRAT':
+            return $this->contrat?$this->contrat->employe: null;
+        case 'CONGE':
+          //  return $this->demandeConge?->demandeur;
+        default:
+            return null;
+        }
+
+}
+
 }

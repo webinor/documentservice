@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreAttachmentRequest extends FormRequest
+class UpdateThumbnailRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -13,7 +13,7 @@ class StoreAttachmentRequest extends FormRequest
      */
     public function authorize()
     {
-        return true;
+        return false;
     }
 
     /**
@@ -23,9 +23,8 @@ class StoreAttachmentRequest extends FormRequest
      */
     public function rules()
     {
-        return ['attachmentType' => 'required|exists:attachment_types,id',
-        'documentId' => 'required|exists:documents,id',
-            'attachment' => 'required|file|max:10240', // max 10MB
-    ];
+        return [
+            //
+        ];
     }
 }

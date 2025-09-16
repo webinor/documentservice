@@ -2,6 +2,8 @@
 
 namespace App\Console;
 
+use App\Jobs\ArchiveDocumentJob;
+use App\Models\Misc\Document;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -16,6 +18,16 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+           // Exécuter tous les jours à minuit
+    $schedule->call(function () {
+        $documents = Document::whereIn('status', ['COMPLETE', 'REJECTED'])
+                             ->where('archived', false)
+                             ->get();
+
+        foreach ($documents as $doc) {
+            ArchiveDocumentJob::dispatch($doc->id);
+        }
+    })->daily();
     }
 
     /**

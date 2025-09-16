@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\Misc\DocumentType;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use App\Models\DepartmentDocumentType;
+use function PHPUnit\Framework\isEmpty;
+use App\Services\CheckPermissionsService;
+
 use App\Http\Requests\StoreDocumentTypeRequest;
 use App\Http\Requests\UpdateDocumentTypeRequest;
-use App\Models\DepartmentDocumentType;
-use App\Models\Misc\DocumentType;
-use App\Services\CheckPermissionsService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-
-use function PHPUnit\Framework\isEmpty;
 
 class DocumentTypeController extends Controller
 {
@@ -32,7 +34,7 @@ class DocumentTypeController extends Controller
      */
     public function index(Request $request)
     {
-        $documentTypes = DocumentType::get();
+        $documentTypes = DocumentType::with('department_document_types')-> get();
         return response()->json(['success' => true , 'data'=> $documentTypes] );
     }
 
@@ -165,6 +167,59 @@ class DocumentTypeController extends Controller
         return response()->json($documentsWithPermissions , 200);
     }
 
+
+
+    public function getDocumentTypesWithPermissionsForRoles(Request $request)
+    {
+
+        $departmentId = $request->query('departmentId'); // ?departmentId=67
+        $roleId = $request->query('roleId');           // &roleId=1015
+
+        $department_document_types = DepartmentDocumentType::with('document_type')-> whereDepartmentId($departmentId)->get();
+
+        // Transformer en tableau simplifié
+ $documents = $department_document_types->map(function($item) {
+    return [
+        'id' => $item->document_type->id,   // id du document_type
+        'type' => $item->document_type->name // nom/type du document
+    ];
+})->toArray();
+
+
+    // ⚠️ Si pas de documents, on retourne un tableau vide directement
+    if (empty($documents)) {
+        return response()->json([], 200);
+    }
+
+
+   $permissionsMap = $this->permissionsService->checkPermissionsForRoleAndDocumentTypes($roleId, $documents);
+
+//dd($permissionsMap);
+
+    $documentsWithPermissions = $department_document_types->map(function($item) use ($permissionsMap) {
+        $documentId = $item->document_type->id;
+    
+       
+
+        return [
+            'id' => $documentId,
+            'name' => $item->document_type->name,
+            'permissions' => $permissionsMap[$documentId] ?? []  // permissions correspondantes
+        ];
+    });
+
+   
+      
+    
+        // Retourner un DTO ou juste un JSON
+       /* return response()->json([
+            'documents' => $documents,
+            'permissions' => $permissionsMap
+        ]);*/
+
+        return response()->json($documentsWithPermissions , 200);
+    }
+
     
 
     /**
@@ -196,7 +251,17 @@ class DocumentTypeController extends Controller
      */
     public function show(DocumentType $documentType)
     {
-        //
+        if (!$documentType) {
+            return response()->json([
+                "success" => false,
+                "message" => "Type de document introuvable"
+            ], 404);
+        }
+
+        return response()->json([
+            "success" => true,
+            "data" => $documentType
+        ], 200);
     }
 
     /**
@@ -219,7 +284,51 @@ class DocumentTypeController extends Controller
      */
     public function update(UpdateDocumentTypeRequest $request, DocumentType $documentType)
     {
-        //
+        $validated = $request->validated();
+
+
+        if (!$documentType) {
+            return response()->json([
+                "success" => false,
+                "message" => "Type de document introuvable"
+            ], 404);
+        }
+
+        // Mise à jour des champs simples
+        $documentType->update([
+            "name" => $validated["name"],
+            "reception_mode" => $validated["recipientMode"],
+        ]);
+
+        // Gestion des departmentIds (table pivot locale)
+        if (isset($validated["departmentIds"])) {
+            DB::table("department_document_types")
+                ->where("document_type_id", $documentType->id)
+                ->delete();
+
+            foreach ($validated["departmentIds"] as $deptId) {
+                DB::table("department_document_types")->insert([
+                    'code'=>Str::random(20),
+                    "document_type_id" => $documentType->id,
+                    "department_id" => $deptId,
+                    "created_at" => now(),
+                    "updated_at" => now(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            "success" => true,
+            "message" => "Type de document mis à jour avec succès",
+            "data" => [
+                "id" => $documentType->id,
+                "name" => $documentType->name,
+                "recipientMode" => $documentType->recipientMode,
+                "departmentIds" => $documentType->getDepartmentIds()
+            ],
+            "updated"=>$documentType->load('department_document_types')
+        ]);
+    
     }
 
     /**

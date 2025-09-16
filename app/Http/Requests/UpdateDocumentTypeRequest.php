@@ -13,7 +13,7 @@ class UpdateDocumentTypeRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,9 @@ class UpdateDocumentTypeRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            "name" => "required|string|max:255",
+            "recipientMode" => "required|string",
+            "departmentIds" => "array"
         ];
     }
 }

@@ -33,18 +33,18 @@ class DatabaseSeeder extends Seeder
             DocumentType::factory()
             ->count(3)
             ->state(new Sequence(
-                ['id'=>1 , 'name'=>'Facture Fournisseur','slug'=>Str::slug("Facture Fournisseur")],
-                ['id'=>2 , 'name'=>'Courrier entrant','slug'=>Str::slug("Courrier entrant")],
-                ['id'=>3 , 'name'=>'Demande de congé','slug'=>Str::slug("Demande de congé")],
+                ['id'=>1 ,'code'=>Str::random(10) , 'name'=>'Facture Fournisseur','reception_mode'=> "WORKFLOW_DRIVEN" ,  'slug'=>Str::slug("Facture Fournisseur")],
+                ['id'=>2 ,'code'=>Str::random(10) , 'name'=>'Courrier entrant','reception_mode'=> "AUTO_BY_USER" ,  'slug'=>Str::slug("Courrier entrant")],
+                ['id'=>3 ,'code'=>Str::random(10) , 'name'=>'Demande de congé','reception_mode'=> "AUTO_BY_ROLE" ,  'slug'=>Str::slug("Demande de congé")],
             ))
             ->create();
 
-            DepartmentDocumentType::factory()
+            /*DepartmentDocumentType::factory()
             ->count(1)
             ->state(new Sequence(
                 [ 'department_id'=>67,'document_type_id'=>1],
             ))
-            ->create();
+            ->create();*/
 
 
             AttachmentType::factory()

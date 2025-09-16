@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAttachmentTypeRequest;
 use App\Http\Requests\UpdateAttachmentTypeRequest;
+use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
+use App\Models\Misc\Document;
+use Illuminate\Support\Facades\DB;
 
 class AttachmentTypeController extends Controller
 {
@@ -13,9 +16,17 @@ class AttachmentTypeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+     /**
+     * Récupère tous les types de pièces jointes
+     */
     public function index()
     {
-        //
+        $attachmentTypes = AttachmentType::orderBy('name')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $attachmentTypes
+        ]);
     }
 
     /**
@@ -36,7 +47,7 @@ class AttachmentTypeController extends Controller
      */
     public function store(StoreAttachmentTypeRequest $request)
     {
-        //
+        
     }
 
     /**
