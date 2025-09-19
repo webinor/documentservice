@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\DepartmentDocumentType;
+use App\Models\LedgerCodeType;
 use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
 use Illuminate\Database\Eloquent\Factories\Sequence;
@@ -62,6 +63,11 @@ class DatabaseSeeder extends Seeder
                 ['name'=>'Autre','slug'=>Str::slug("Autre")]
             ))
             ->create();
+
+
+            $this->call([
+        LedgerCodeTypeSeeder::class,
+    ]);
 
             DB::commit();
     

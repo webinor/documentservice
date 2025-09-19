@@ -368,7 +368,7 @@ function generateUniqueReference(int $length = 8): string
 
          $document->load('document_type');
 
-         $documents_relation = ["facture-fournisseur" => "invoice_provider"];
+         $documents_relation = ["facture-fournisseur" => "invoice_provider.ledger_code"];
          
         return $document->load($documents_relation[$document->document_type->slug],'attachments.file');
     }

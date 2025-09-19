@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\LedgerCodeTypeController;
 use App\Http\Controllers\TestThumbnailController;
 use App\Models\DepartmentDocumentType;
 use App\Models\Misc\Document;
@@ -37,6 +38,9 @@ Route::middleware('jwt.check')->prefix("documents")->group(function () {
     Route::get('/{id}/available-actions', [DocumentController::class, 'getAvailableActions']);
 
     Route::get('/attachment-types', [AttachmentTypeController::class, 'index']);
+
+    Route::get('/ledger-code-types', [LedgerCodeTypeController::class, 'index']);
+
 
     Route::post('/attachments', [AttachmentController::class, 'store']);
 

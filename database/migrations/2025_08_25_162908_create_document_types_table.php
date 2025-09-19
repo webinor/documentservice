@@ -18,6 +18,7 @@ class CreateDocumentTypesTable extends Migration
             $table->string('code');
             $table->string('name');
             $table->string('slug');
+            $table->enum('return_policy', ['ROLE', 'USER']);
             $table->enum('reception_mode' , ['AUTO_BY_DEPARTMENT' ,'AUTO_BY_USER','AUTO_BY_ROLE','RULE_BASED','WORKFLOW_DRIVEN']);
             $table->timestamps();
         });
