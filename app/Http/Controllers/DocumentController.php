@@ -47,6 +47,7 @@ class DocumentController extends Controller
         $attachments = $document->attachments->map(function($attachment) {
             return [
                 'id' => $attachment->id,
+                'attachment_number' => $attachment->attachment_number,
                 'name' => $attachment->attachmentType ? $attachment->attachmentType->name : "--",
                 'created_by_id' => $attachment->created_by,
                 'created_at' => $attachment->created_at->format('d/m/Y à H:i'),
@@ -75,9 +76,11 @@ class DocumentController extends Controller
         // Enrichir les attachments avec le nom
         $attachments = $attachments->map(function($att) use ($users) {
             $userName = $users[$att['created_by_id']]['name'] ?? "Utilisateur ID: {$att['created_by_id']}";
+            $attachment_number = $att['attachment_number'] ? " #".$att['attachment_number']." " : " ";
+            $by = "par";
             return [
                 'id' => $att['id'],
-                'name' => "{$att['name']} par {$userName} le {$att['created_at']}",
+                'name' => "{$att['name']}$attachment_number{$by} {$userName} le {$att['created_at']}",
                 'url' => $att['url'],
             ];
         });

@@ -13,7 +13,8 @@ class Attachment extends Model
     protected $fillable = [
         'document_id',
         'attachment_type_id',
-        'created_by'
+        'created_by',
+        'attachment_number'
     ];
 
     public function file()

@@ -40,13 +40,13 @@ class StoreAttachmentRequest extends FormRequest
 
 
                 if ($this->selectedCategory=="Paiement") {
-            $rules = [
+            $rules += [
                 'attachment_number' => 'required|string', // max 10MB
             ];
         }
         else if($this->selectedCategory=="Engagement"){
 
-             $rules = [
+             $rules += [
                 'attachment_number' => 'nullable|string', // max 10MB
             ];
 
