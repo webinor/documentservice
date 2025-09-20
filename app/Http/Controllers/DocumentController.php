@@ -47,7 +47,7 @@ class DocumentController extends Controller
         $attachments = $document->attachments->map(function($attachment) {
             return [
                 'id' => $attachment->id,
-                'name' => $attachment->attachmentType->name,
+                'name' => $attachment->attachmentType ? $attachment->attachmentType->name : "--",
                 'created_by_id' => $attachment->created_by,
                 'created_at' => $attachment->created_at->format('d/m/Y à H:i'),
                 'url' => $attachment->file->path ?? '#',
@@ -370,7 +370,7 @@ function generateUniqueReference(int $length = 8): string
 
          $documents_relation = ["facture-fournisseur" => "invoice_provider.ledger_code"];
          
-        return $document->load($documents_relation[$document->document_type->slug],'attachments.file');
+        return $document->load($documents_relation[$document->document_type->slug],'attachments.file','secondary_attachments');
     }
 
     /**

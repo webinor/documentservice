@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\AttachmentTypeCategory;
 use App\Models\DepartmentDocumentType;
 use App\Models\LedgerCodeType;
 use App\Models\Misc\AttachmentType;
@@ -48,7 +49,7 @@ class DatabaseSeeder extends Seeder
             ->create();*/
 
 
-            AttachmentType::factory()
+           /* AttachmentType::factory()
             ->count(10)
             ->state(new Sequence(
                 ['name'=>'Facture originale','slug'=>Str::slug("Facture originale")],
@@ -62,11 +63,12 @@ class DatabaseSeeder extends Seeder
                 ['name'=>'Note avoir','slug'=>Str::slug("Note avoir")],
                 ['name'=>'Autre','slug'=>Str::slug("Autre")]
             ))
-            ->create();
+            ->create();*/
 
 
             $this->call([
-        LedgerCodeTypeSeeder::class,
+        AttachmentTypeSeeder::class,
+       // LedgerCodeTypeSeeder::class,
     ]);
 
             DB::commit();

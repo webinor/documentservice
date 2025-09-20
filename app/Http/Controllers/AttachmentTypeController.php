@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateAttachmentTypeRequest;
 use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
 use App\Models\Misc\Document;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AttachmentTypeController extends Controller
@@ -19,15 +20,28 @@ class AttachmentTypeController extends Controller
      /**
      * Récupère tous les types de pièces jointes
      */
-    public function index()
+    public function index(Request $request , $category)
     {
-        $attachmentTypes = AttachmentType::orderBy('name')->get();
+        $attachmentTypes = AttachmentType::whereHas("attachmentTypeCategory",function($query) use ($category){
+
+
+            if (is_numeric($category)) {
+                $query->whereId($category);
+            } else {
+                $query->whereSlug($category);
+            }
+            
+           
+
+        })->orderBy('name')->get();
 
         return response()->json([
             'success' => true,
             'data' => $attachmentTypes
         ]);
     }
+
+
 
     /**
      * Show the form for creating a new resource.

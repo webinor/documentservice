@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentController;
@@ -37,7 +38,11 @@ Route::middleware('jwt.check')->prefix("documents")->group(function () {
 
     Route::get('/{id}/available-actions', [DocumentController::class, 'getAvailableActions']);
 
-    Route::get('/attachment-types', [AttachmentTypeController::class, 'index']);
+ //   Route::get('/attachment-type-categories', [AttachmentTypeCategoryController::class, 'index']);
+
+    
+
+    Route::get('/attachment-types/{category}', [AttachmentTypeController::class, 'index']);
 
     Route::get('/ledger-code-types', [LedgerCodeTypeController::class, 'index']);
 
@@ -46,6 +51,8 @@ Route::middleware('jwt.check')->prefix("documents")->group(function () {
 
     Route::get('/{documentId}/attachments', [DocumentController::class, 'getAttachments']);
 
+
+   Route::apiResource('/attachment-type-categories', AttachmentTypeCategoryController::class);
 
 
    Route::apiResource('/documentTypes', DocumentTypeController::class);
@@ -67,7 +74,7 @@ Route::middleware('jwt.check')->prefix("documents")->group(function () {
 Route::get('documents/{document}/generate-thumbnail', [TestThumbnailController::class, 'handle']);//->excludedMiddleware('jwt.checks');
 
 
-Route::get('/documents/attachments/{document}', [AttachmentController::class, 'show']);
+Route::get('/documents/attachments/{attachment}', [AttachmentController::class, 'show']);
 
 Route::get('/documents/main_attachment/{document}', [AttachmentController::class, 'getMainAttachment']);
 

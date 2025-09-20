@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
+use App\Models\Misc\AttachmentType;
+use App\Models\AttachmentTypeCategory;
 
 class AttachmentTypeSeeder extends Seeder
 {
@@ -13,6 +16,51 @@ class AttachmentTypeSeeder extends Seeder
      */
     public function run()
     {
-        //
+        // Création des catégories
+        $engagementCat = AttachmentTypeCategory::create([
+            'name' => 'Engagement',
+            'slug' => Str::slug('Engagement'),
+        ]);
+
+        $paymentCat = AttachmentTypeCategory::create([
+            'name' => 'Paiement',
+            'slug' => Str::slug('Paiement'),
+        ]);
+
+        // Types pour la catégorie Engagement
+        $engagementTypes = [
+            'Facture originale',
+            'Contrat',
+            'Bon de regularisation',
+            'Bon de commande',
+            'Bon de livraison',
+            'Devis',
+            'Attestation',
+            'Preuve de paiement',
+            'Note avoir',
+            'Autre',
+        ];
+
+        foreach ($engagementTypes as $type) {
+            AttachmentType::create([
+                'attachment_type_category_id' => $engagementCat->id,
+                'name' => $type,
+                'slug' => Str::slug($type),
+            ]);
+        }
+
+        // Types pour la catégorie Payment
+        $paymentTypes = [
+            'Transfert Order',
+            'Payment Certificate',
+        ];
+
+        foreach ($paymentTypes as $type) {
+            AttachmentType::create([
+                'attachment_type_category_id' => $paymentCat->id,
+                'name' => $type,
+                'slug' => Str::slug($type),
+            ]);
+        }
     }
 }

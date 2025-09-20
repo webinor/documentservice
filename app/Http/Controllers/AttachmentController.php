@@ -44,7 +44,7 @@ class AttachmentController extends Controller
     public function store(StoreAttachmentRequest $request)
     {
         // Validation
-        $validated = $request->validated();
+     return   $validated = $request->validated();
 
           $user = $request->get('user');
        
@@ -111,12 +111,13 @@ class AttachmentController extends Controller
      * @param  \App\Models\Misc\Attachment  $attachment
      * @return \Illuminate\Http\Response
      */
-    public function show(Request $request , Document $document)
+    public function show(Request $request , Attachment $attachment)
     {
-      //  return $document;
+        //return $document;
         
         //$attachment->load('attachment.file');
-        $attachment = $document->load(['attachments' => fn($query) => $query->where('is_main', true)->with('file')]);
+        //$attachment = $document->load(['attachments' => fn($query) => $query->where('is_main', true)->with('file')]);
+        $attachment = $attachment->load(['file']);
         
         //return $attachment;
 

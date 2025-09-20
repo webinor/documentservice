@@ -23,9 +23,44 @@ class StoreAttachmentRequest extends FormRequest
      */
     public function rules()
     {
-        return ['attachmentType' => 'required|exists:attachment_types,id',
+        $rules = [];
+
+        if ($this->source=="new") {
+            $rules += [
+                'attachment' => 'required|file|max:10240', // max 10MB
+            ];
+        }
+        else if($this->source=="exist"){
+
+             $rules += [
+                'reference' => 'required|string', // max 10MB
+            ];
+
+        }
+
+
+                if ($this->selectedCategory=="Paiement") {
+            $rules = [
+                'attachment_number' => 'required|string', // max 10MB
+            ];
+        }
+        else if($this->selectedCategory=="Engagement"){
+
+             $rules = [
+                'attachment_number' => 'nullable|string', // max 10MB
+            ];
+
+        }
+
+
+
+        return $rules + [
+        'attachmentType' => 'required|exists:attachment_types,id',
         'documentId' => 'required|exists:documents,id',
-            'attachment' => 'required|file|max:10240', // max 10MB
+        'source' => 'required|string',
+        'selectedCategory' => 'required|string',
+        
+            
     ];
     }
 }

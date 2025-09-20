@@ -58,7 +58,17 @@ class Document extends Model
      */
     public function attachments(): HasMany
     {
-        return $this->hasMany(Attachment::class,);
+        return $this->hasMany(Attachment::class);
+    }
+
+    /**
+     * Get the secondary_attachments associated with the Document
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function secondary_attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class)->whereIsMain(false);
     }
 
      public function main_attachment(): HasOne
