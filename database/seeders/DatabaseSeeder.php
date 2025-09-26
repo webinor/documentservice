@@ -4,7 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\AttachmentTypeCategory;
 use App\Models\DepartmentDocumentType;
+use App\Models\ItProvider;
+use App\Models\ItSupplier;
 use App\Models\LedgerCodeType;
+use App\Models\MedicalProvider;
+use App\Models\MedicalSupplier;
 use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
 use Illuminate\Database\Eloquent\Factories\Sequence;
@@ -30,16 +34,59 @@ class DatabaseSeeder extends Seeder
 
             DB::beginTransaction();
 
+
+// Configuration centralisée
+$documentTypesConfig = [
+    [
+        'name'          => 'Facture Fournisseur Medical',
+        'class_name'    => MedicalSupplier::class,
+        'relation_name' => 'medical_supplier',
+        'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+    [
+        'name'          => 'Facture Fournisseur Informatique',
+        'class_name'    => ItSupplier::class,
+        'relation_name' => 'it_supplier',
+        'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+    [
+        'name'          => 'Facture Prestataire Medical',
+        'class_name'    => MedicalProvider::class,
+        'relation_name' => 'medical_provider',
+        'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+    [
+        'name'          => 'Facture Prestataire Informatique',
+        'class_name'    => ItProvider::class,
+        'relation_name' => 'it_provider',
+        'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+    [
+        
+        'name'          => 'Courrier entrant',
+        'reception_mode'=> 'AUTO_BY_USER',
+    ],
+    [
+        'name'          => 'Demande de congé',
+        'reception_mode'=> 'AUTO_BY_ROLE',
+    ],
+];
+
+// Génération de la sequence dynamiquement
+$sequence = array_map(fn ($config) => fn () => [
+    'code'           => Str::random(10),
+    'name'           => $config['name'],
+    'class_name'     => $config['class_name']     ?? null,
+    'relation_name'  => $config['relation_name']  ?? null,
+    'reception_mode' => $config['reception_mode'],
+    'slug'           => Str::slug($config['name']),
+], $documentTypesConfig);
           
             
-            DocumentType::factory()
-            ->count(3)
-            ->state(new Sequence(
-                ['id'=>1 ,'code'=>Str::random(10) , 'name'=>'Facture Fournisseur','reception_mode'=> "WORKFLOW_DRIVEN" ,  'slug'=>Str::slug("Facture Fournisseur")],
-                ['id'=>2 ,'code'=>Str::random(10) , 'name'=>'Courrier entrant','reception_mode'=> "AUTO_BY_USER" ,  'slug'=>Str::slug("Courrier entrant")],
-                ['id'=>3 ,'code'=>Str::random(10) , 'name'=>'Demande de congé','reception_mode'=> "AUTO_BY_ROLE" ,  'slug'=>Str::slug("Demande de congé")],
-            ))
-            ->create();
+          DocumentType::factory()
+    ->count(count($documentTypesConfig))
+    ->state(new Sequence(...$sequence))
+    ->create();
 
             /*DepartmentDocumentType::factory()
             ->count(1)

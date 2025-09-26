@@ -30,6 +30,7 @@ class StoreDocumentRequest extends FormRequest
             'reference_engagement'=>'nullable',
             'dateDepot'=>'nullable',
             'montant'=>'required',
+            'linkedDocument'=>'nullable|exists:documents,reference',
             'document_type_id' => 'required|exists:document_types,id',
             'departement' => 'nullable',
             'facture' => 'required|file|max:10240', // fichiers

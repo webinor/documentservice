@@ -1,5 +1,9 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+// Controllers
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
@@ -8,81 +12,86 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\LedgerCodeTypeController;
 use App\Http\Controllers\TestThumbnailController;
-use App\Models\DepartmentDocumentType;
+
+// Models
 use App\Models\Misc\Document;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
 */
 
+Route::middleware("jwt.check")
+    ->prefix("documents")
+    ->group(function () {
+        /**
+         * 📌 DocumentTypeController
+         */
+        Route::controller(DocumentTypeController::class)->group(function () {
+            Route::get("/document_types/allowed", "getDocumentTypesWithPermissions");
+            Route::get("/document_types/allowed-by-role", "getDocumentTypesWithPermissionsForRoles");
+            Route::get("/getRolesByDocumentType/{documentTypeCode}", "getRolesByDocumentType");
+        });
+
+        /**
+         * 📌 DocumentController
+         */
+        Route::controller(DocumentController::class)->group(function () {
+            Route::get("/by-ids", "getDocumentsByIds");
+            Route::get("/{id}/available-actions", "getAvailableActions");
+            Route::get("/{documentId}/attachments", "getAttachments");
+            Route::get("/search", "searchDocumentByReference");
+        });
+
+        /**
+         * 📌 AttachmentTypeController
+         */
+        Route::get("/attachment-types/{category}", [AttachmentTypeController::class, "index"]);
+        Route::get('/attachment-types/by-id/{attachmentType}', [AttachmentTypeController::class, 'show']);
+        Route::post('/{documentId}/missing-attachment-types', [AttachmentTypeController::class, 'missingForDocument']);
 
 
-Route::middleware('jwt.check')->prefix("documents")->group(function () {
+        /**
+         * 📌 LedgerCodeTypeController
+         */
+        Route::get("/ledger-code-types", [LedgerCodeTypeController::class, "index"]);
 
-    Route::get('/document_types/allowed', [DocumentTypeController::class , 'getDocumentTypesWithPermissions']);
+        /**
+         * 📌 AttachmentController
+         */
+        Route::post("/attachments", [AttachmentController::class, "store"]);
 
-    Route::get('/document_types/allowed-by-role', [DocumentTypeController::class , 'getDocumentTypesWithPermissionsForRoles']);
+        /**
+         * 📌 API Resources
+         */
+        Route::apiResource("/attachment-type-categories", AttachmentTypeCategoryController::class);
+        Route::apiResource("/documentTypes", DocumentTypeController::class);
 
-    Route::get('/getRolesByDocumentType/{documentTypeCode}', [DocumentTypeController::class , 'getRolesByDocumentType']);
+        // Documents CRUD
+        Route::apiResource("/", DocumentController::class)->parameters([
+            "" => "document",
+        ]);
+    });
 
-    Route::get('/by-ids', [DocumentController::class , 'getDocumentsByIds']);
+/**
+ * 📌 Public / hors middleware
+ */
 
-    Route::get('/{id}/available-actions', [DocumentController::class, 'getAvailableActions']);
+// Génération de thumbnail
+Route::get("documents/{document}/generate-thumbnail", [TestThumbnailController::class, "handle"]);
 
- //   Route::get('/attachment-type-categories', [AttachmentTypeCategoryController::class, 'index']);
+// Affichage des pièces jointes
+Route::get("documents/attachments/{attachment}", [AttachmentController::class, "show"]);
+Route::get("documents/main_attachment/{document}", [AttachmentController::class, "getMainAttachment"]);
 
-    
-
-    Route::get('/attachment-types/{category}', [AttachmentTypeController::class, 'index']);
-
-    Route::get('/ledger-code-types', [LedgerCodeTypeController::class, 'index']);
-
-
-    Route::post('/attachments', [AttachmentController::class, 'store']);
-
-    Route::get('/{documentId}/attachments', [DocumentController::class, 'getAttachments']);
-
-
-   Route::apiResource('/attachment-type-categories', AttachmentTypeCategoryController::class);
-
-
-   Route::apiResource('/documentTypes', DocumentTypeController::class);
-
-   
-
-
-   Route::apiResource('/', DocumentController::class)->parameters([
-    '' => 'document'
-]);
-
-
-
-
-    
-});
-
-
-Route::get('documents/{document}/generate-thumbnail', [TestThumbnailController::class, 'handle']);//->excludedMiddleware('jwt.checks');
-
-
-Route::get('/documents/attachments/{attachment}', [AttachmentController::class, 'show']);
-
-Route::get('/documents/main_attachment/{document}', [AttachmentController::class, 'getMainAttachment']);
-
-
-Route::get('/documents/{document}/thumbnail', function(Document $document){
+// Thumbnail direct
+Route::get("documents/{document}/thumbnail", function (Document $document) {
     $file = $document->attachment->thumbnail->file;
-    if(!$file) return response()->json(['message'=>'Thumbnail not found'], 404);
 
-    //dd($file);
-    return response()->file(storage_path('app/public/thumbnails/'.$file->path));
+    if (!$file) {
+        return response()->json(["message" => "Thumbnail not found"], 404);
+    }
+
+    return response()->file(storage_path("app/public/thumbnails/" . $file->path));
 });

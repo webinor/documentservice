@@ -42,6 +42,44 @@ class AttachmentTypeController extends Controller
     }
 
 
+     /**
+     * Retourne les attachment_types requis non encore associés au document
+     */
+    public function missingForDocument(Request $request, $documentId)
+    {
+        // IDs envoyés depuis le WorkflowService
+        $requiredIds = $request->input('attachment_type_required', []);
+
+        if (empty($requiredIds)) {
+            return response()->json([]);
+        }
+
+        // IDs des attachment_types déjà associés au document
+        $existingIds = Attachment::where('document_id', $documentId)
+            ->pluck('attachment_type_id')
+            ->toArray();
+
+        // IDs requis qui ne sont pas encore associés
+        $missingIds = array_diff($requiredIds, $existingIds);
+
+        // Récupérer les informations détaillées pour ces attachment_types
+       $missingAttachmentTypes = AttachmentType::whereIn('id', $missingIds)
+    ->get()
+    ->map(function ($type) {
+        return [
+            'id' => $type->id,
+            'name' => $type->name,
+            'slug' => $type->slug,
+        ];
+    });
+        return response()->json($missingAttachmentTypes);
+        /*  return response()->json([
+            "success" => true,
+            "data" => ["missingAttachmentTypes" => $missingAttachmentTypes],
+        ]);*/
+    }
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -72,7 +110,16 @@ class AttachmentTypeController extends Controller
      */
     public function show(AttachmentType $attachmentType)
     {
-        //
+       // return $attachmentType;
+       // $attachmentType = AttachmentType::find($id);
+
+        if (!$attachmentType) {
+            return response()->json([
+                'message' => 'Attachment type not found'
+            ], 404);
+        }
+
+        return response()->json($attachmentType);
     }
 
     /**

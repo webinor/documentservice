@@ -3,6 +3,7 @@
 namespace App\Models\Finance;
 
 use App\Models\LedgerCode;
+use App\Models\MedicalSupplier;
 use App\Models\Misc\Document;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -40,6 +41,16 @@ public function ledger_code(): HasOne
 public function document(): BelongsTo
 {
     return $this->belongsTo(Document::class);
+}
+
+/**
+ * Get the medical_supplier associated with the InvoiceProvider
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasOne
+ */
+public function medical_supplier(): HasOne
+{
+    return $this->hasOne(MedicalSupplier::class);
 }
 
 }
