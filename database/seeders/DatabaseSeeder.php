@@ -61,7 +61,7 @@ $documentTypesConfig = [
         'relation_name' => 'it_provider',
         'reception_mode'=> 'WORKFLOW_DRIVEN',
     ],
-    [
+    /*[
         
         'name'          => 'Courrier entrant',
         'reception_mode'=> 'AUTO_BY_USER',
@@ -69,7 +69,7 @@ $documentTypesConfig = [
     [
         'name'          => 'Demande de congé',
         'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
+    ],*/
 ];
 
 // Génération de la sequence dynamiquement

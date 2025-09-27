@@ -51,8 +51,9 @@ class AttachmentTypeSeeder extends Seeder
 
         // Types pour la catégorie Payment
         $paymentTypes = [
-            'Transfert Order',
-            'Payment Certificate',
+            'Ordre de virement',
+            'Attestation de reglement',
+            'Numero de piece Facture'
         ];
 
         foreach ($paymentTypes as $type) {

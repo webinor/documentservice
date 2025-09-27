@@ -287,12 +287,14 @@ foreach ($specializedIds as $slug => $ids) {
     }
 }
 
+throw new Exception(json_encode($attachmentTypes), 1);
+
 
 if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
     return $documentAttachmentMap[$relationSlug]['attachment_type_id'];
 }
 
-throw new Exception(json_encode($relationSlug), 1);
+//throw new Exception(json_encode($relationSlug), 1);
 
         
     }
