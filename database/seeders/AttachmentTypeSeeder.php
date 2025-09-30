@@ -29,39 +29,41 @@ class AttachmentTypeSeeder extends Seeder
 
         // Types pour la catégorie Engagement
         $engagementTypes = [
-            'Facture originale',
-            'Contrat',
-            'Bon de regularisation',
-            'Bon de commande',
-            'Bon de livraison',
-            'Devis',
-            'Attestation',
-            'Preuve de paiement',
-            'Note avoir',
-            'Autre',
+            'Facture originale' => false,
+            'Contrat' => false,
+            'Bon de regularisation' => false,
+            'Bon de commande' => false,
+            'Bon de livraison' => false,
+            'Devis' => false,
+            'Attestation' => false,
+            'Preuve de paiement' => false,
+            'Note avoir' => false,
+            'Autre' => false,
         ];
 
-        foreach ($engagementTypes as $type) {
+        foreach ($engagementTypes as $type => $isRequired) {
             AttachmentType::create([
                 'attachment_type_category_id' => $engagementCat->id,
                 'name' => $type,
                 'slug' => Str::slug($type),
+                'attachment_number_required'=>$isRequired
             ]);
         }
 
         // Types pour la catégorie Payment
         $paymentTypes = [
            // 'Ordre de virement',
-            'Preuve de paiement',
-            'Attestation de reglement',
-            'Numero de piece Facture'
+            'Preuve de paiement'=>true,
+            'Attestation de reglement'=>false,
+            'Numero de piece Facture'=>true,
         ];
 
-        foreach ($paymentTypes as $type) {
+        foreach ($paymentTypes as $type  => $isRequired ) {
             AttachmentType::create([
                 'attachment_type_category_id' => $paymentCat->id,
                 'name' => $type,
                 'slug' => Str::slug($type),
+                'attachment_number_required'=>$isRequired
             ]);
         }
     }

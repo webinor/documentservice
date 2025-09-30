@@ -64,12 +64,17 @@ class AttachmentTypeController extends Controller
 
         // Récupérer les informations détaillées pour ces attachment_types
        $missingAttachmentTypes = AttachmentType::whereIn('id', $missingIds)
+       ->with("attachmentTypeCategory")
     ->get()
     ->map(function ($type) {
         return [
             'id' => $type->id,
             'name' => $type->name,
             'slug' => $type->slug,
+            'slug' => $type->slug,
+            'attachment_number_required'=> $type->attachment_number_required,
+            'category_id'=> $type->attachmentTypeCategory->id,
+            'category_name'=> $type->attachmentTypeCategory->name,
         ];
     });
         return response()->json($missingAttachmentTypes);

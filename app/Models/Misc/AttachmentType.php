@@ -11,6 +11,10 @@ class AttachmentType extends Model
 {
     use HasFactory;
 
+      protected $casts = [
+        'attachment_number_required' => 'boolean',
+    ];
+
     /**
      * Get the attachmentTypeCategory that owns the AttachmentType
      *
