@@ -11,6 +11,7 @@ use App\Models\MedicalProvider;
 use App\Models\MedicalSupplier;
 use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
+use App\Models\RequestOrder;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;  
@@ -59,6 +60,13 @@ $documentTypesConfig = [
         'name'          => 'Facture Prestataire Informatique',
         'class_name'    => ItProvider::class,
         'relation_name' => 'it_provider',
+        'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+
+        [
+        'name'          => 'Demande Achat',
+        'class_name'    => RequestOrder::class,
+        'relation_name' => 'request_order',
         'reception_mode'=> 'WORKFLOW_DRIVEN',
     ],
     /*[

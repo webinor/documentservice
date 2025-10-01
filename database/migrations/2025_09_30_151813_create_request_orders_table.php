@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateMedicalProvidersTable extends Migration
+class CreateRequestOrdersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,9 @@ class CreateMedicalProvidersTable extends Migration
      */
     public function up()
     {
-        Schema::create('medical_providers', function (Blueprint $table) {
+        Schema::create('request_orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_provider_id')->constrained('invoice_providers')->onDelete('cascade');
+            $table->foreignId('document_id')->constrained('documents')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ class CreateMedicalProvidersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('medical_providers');
+        Schema::dropIfExists('request_orders');
     }
 }

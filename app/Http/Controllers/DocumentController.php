@@ -704,6 +704,7 @@ if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
 
         $documents_relation = [
             "facture-fournisseur-medical" => "invoice_provider.ledger_code",
+            "facture-fournisseur-informatique"=>"invoice_provider"
         ];
 
         return $document->load(

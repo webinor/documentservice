@@ -15,7 +15,7 @@ class CreateMedicalSuppliersTable extends Migration
     {
         Schema::create('medical_suppliers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_provider_id')->constrained('invoice_providers')->onDelete('cascade');  
+            $table->foreignId('invoice_provider_id')->constrained('invoice_providers')->onDelete('cascade');
             $table->timestamps();
         });
     }
