@@ -354,8 +354,10 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
             $facture->amount = $validated["montant"];
             $facture->provider = $validated["prestataire"];
             $facture->provider_reference =$validated["reference_fournisseur"];
-            $facture->deposit_date = now(); // Carbon::parse($validated['dateDepot'])->format('Y-m-d H:i:s');
+            $facture->deposit_date =  Carbon::parse($validated['dateDepot'])->format('Y-m-d H:i:s');
             $facture->save();
+
+           // return $facture;
 
 
             $documentType = DocumentType::find($validated["document_type_id"]);

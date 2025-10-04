@@ -28,7 +28,7 @@ class StoreDocumentRequest extends FormRequest
             'prestataire'=>'required',
             'reference_fournisseur'=>'required',
             'reference_engagement'=>'nullable',
-            'dateDepot'=>'nullable',
+            'dateDepot'=>'required|before:now',
             'montant'=>'required',
             'linkedDocument'=>'nullable|exists:documents,reference',
             'document_type_id' => 'required|exists:document_types,id',
