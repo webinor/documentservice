@@ -602,6 +602,14 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
         $query->whereIn('status', $statuses);
     }
 
+         // Filtre par type de prestataire
+    if (!empty($filters['supplier_type'])) {
+        //$statuses = is_array($filters['status']) ? $filters['status'] : explode(',', $filters['status']);
+        $query->whereHas("invoice_provider.".$filters['supplier_type']);
+    }
+
+ //   supplier_type
+
   // Filtre par montant dans InvoiceProvider
 if (!empty($filters['amount'])) {
     $query->whereHas('invoice_provider', function ($q) use ($filters) {
@@ -636,10 +644,18 @@ if (!empty($filters['amount'])) {
         });
     }
 
-   // Filtre par date
-if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
-    $query->whereBetween('created_at', [$filters['date_start'], $filters['date_end']]);
-} elseif (!empty($filters['date_start'])) {
+    if (!empty($filters['date_start'])) {
+    $filters['date_start'] = Carbon::parse($filters['date_start'])->format('Y-m-d');
+}
+if (!empty($filters['date_end'])) {
+    $filters['date_end'] = Carbon::parse($filters['date_end'])->format('Y-m-d');
+}
+
+    // Filtre par date
+    if (!empty($filters['date_start']) && !empty($filters['date_end'])) {
+        $query->whereBetween('created_at', [$filters['date_start'], $filters['date_end']]);
+    } elseif (!empty($filters['date_start'])) {
+    //  return ["ok"];
     $query->whereDate('created_at', '>=', $filters['date_start']);
 } elseif (!empty($filters['date_end'])) {
     $query->whereDate('created_at', '<=', $filters['date_end']);
