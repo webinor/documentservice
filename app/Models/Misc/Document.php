@@ -3,6 +3,7 @@
 namespace App\Models\Misc;
 
 use App\Models\Finance\InvoiceProvider;
+use App\Models\Folder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,8 +20,19 @@ class Document extends Model
         'department_id',
         'workflow_id',
         'created_by',
-        'reference'
+        'reference',
+        'folder_id', // 🆕 on ajoute folder_id
     ];
+
+    
+
+    /**
+     * 🔁 Dossier parent du document
+     */
+    public function folder()
+    {
+        return $this->belongsTo(Folder::class);
+    }
 
 
     /**

@@ -299,6 +299,50 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
         
     }
 
+    public function notify_users(Request $request ,  $document){
+
+
+
+        $userServiceUrl = config('services.user_service.base_url') . '/by-permissions';
+
+        $response = Http::withToken($request->bearerToken())
+            ->acceptJson()
+            ->get($userServiceUrl, [
+                'actions' => ["view"],
+                'document_type_id' => $document->document_type->id,
+                'folder_id' =>1// $document->folder_id,
+            ]);
+
+        if ($response->failed()) {
+
+            throw new \Exception("Erreur lors de la récupération des utilisateurs autorisés : " . $response->body());
+        }
+
+        $users_to_notify = $response->json('data');
+
+         $message = sprintf(
+                "Bonjour,
+Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$document->title} \n 
+👉 Veuillez le consulter et, le cas échéant, effectuer les actions nécessaires."
+            );
+
+
+        // Récupérer juste les IDs
+                $userIds = collect($users_to_notify)->pluck("id")->toArray();
+
+                // Notifier en une seule requête
+                return Http::withToken($request->bearerToken())->post(
+                    config("services.user_service.base_url") . "/mail-notifications",
+                    [
+                        "user_ids" => $userIds,
+                        "message" => $message,
+                        "document_id" => $document->id,
+                        "document_type_id" => $document->document_type->id,
+                    ]
+                );
+
+    }
+
     /**
      * Store a newly created resource in storage.
      *
@@ -313,10 +357,60 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
             // Récupérer les données validées par le FormRequest
             $validated = $request->validated();
             $user_connected = $request->get("user"); // récupéré du user-service
+            $documentType = DocumentType::find($validated["document_type_id"]);
 
             // return ($user_connected);
 
             //on recupere le workflow
+
+            if ($documentType->reception_mode == "AUTO_BY_ROLE") {
+               
+                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
+            // Créer le document
+            $document = Document::create([
+                "title" => $validated["titre"],
+                "document_type_id" => $validated["document_type_id"],
+                "department_id" => $validated["departement"] ?? null, // ✅ optionnel,
+                "workflow_id" => null,
+                "created_by" => $user_connected["id"], // si tu veux stocker l’utilisateur connecté
+                "created_at" => now(),
+                "updated_at" => now(),
+                "reference" => $reference,
+                "folder_id" => $validated["destination"] ?? null,
+                // autres champs génériques...
+            ]);
+
+            // Gestion du fichier uploadé
+        if ($request->hasFile("courrier")) {
+            $this->handleUploadedFile($request, $document, $user_connected , "courrier" , "autre");
+        }
+
+
+        $this->notify_users($request ,  $document);
+
+
+
+
+
+
+                DB::commit();
+
+                return response()->json(
+                    [
+                        "success" => true,
+                        "message" =>"Document créé avec succès et sans workflow",
+                        "document" => $document,
+                    ],
+                    201
+                );
+
+
+                
+
+            }
+            else{
+                
+            
 
             // 🔹 Appel au microservice workflow
             $workflowServiceUrl = config("services.workflow_service.base_url"); // ex: http://workflow-service/api
@@ -360,12 +454,12 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
            // return $facture;
 
 
-            $documentType = DocumentType::find($validated["document_type_id"]);
+            
 
             $className = $documentType->class_name; // ex: "\App\Models\ItSupplier"
             $relationName = $documentType->relation_name; // ex: "medical_supplier"
 
-            if (class_exists($className)) {
+            if (class_exists($className)  && $relationName && $relationName) {
                 $instance = new $className();
                  $facture->$relationName()->save($instance);
             } else {
@@ -376,9 +470,11 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
 
             // Si tu veux gérer des fichiers uploadés
             if ($request->hasFile("facture")) {
-                $document->save();
 
-                $fileName =
+                $document->save();
+                $this->handleUploadedFile($request, $document, $user_connected , "facture" , "facture-originale");
+
+             /*   $fileName =
                     Str::random(20) .
                     "_" .
                     time() .
@@ -413,18 +509,18 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
 
                 // Lancer le Job en arrière-plan
                 GeneratePdfThumbnail::dispatch($attachment);
+
+                */
             }
 
 
             //Si la reference de l'engagement correspond a un document dans le systeme, on associe directement a la facture
              if (isset($validated["linkedDocument"])) {
 
-                    
+            $this->handleLinkedDocument($validated, $document, $user_connected);
+                
 
-
-                ////////////on duplique le fichier
-
-                $linkedDocument = Document::with(["main_attachment.file", "document_type"])
+               /* $linkedDocument = Document::with(["main_attachment.file", "document_type"])
                     ->whereReference($validated["linkedDocument"])
                     ->first();
 
@@ -479,6 +575,7 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
 
                 $newAttachment->file()->save($newFile);
 
+                */
                 /**return  response()->json(
                     [
                         //"success" => true,
@@ -564,11 +661,174 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
                     201
                 );
             }
+
+        }
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
         }
     }
+
+    public function old_store(StoreDocumentRequest $request)
+{
+    try {
+        DB::beginTransaction();
+
+        $validated = $request->validated();
+        $user_connected = $request->get("user");
+        $documentType = DocumentType::findOrFail($validated["document_type_id"]);
+
+        // Création du document de base
+      return  $document = $this->createDocument($validated, $user_connected, $documentType);
+
+        // Gestion du fichier uploadé
+        if ($request->hasFile("facture")) {
+            $this->handleUploadedFile($request, $document, $user_connected , "facture" , "facture-originale");
+        }
+
+        // Gestion des documents liés
+        if (isset($validated["linkedDocument"])) {
+            $this->handleLinkedDocument($validated, $document, $user_connected);
+        }
+
+         // 4️⃣ Workflow selon le mode de réception
+        $workflowInstance = $this->processWorkflow($documentType, $validated, $document, $user_connected, $request);
+
+
+        DB::commit();
+
+        return response()->json([
+            "success" => true,
+            "message" => "Document créé avec succès",
+            "document" => $document,
+            "workflow_instance" => $workflowInstance ?? null,
+        ], 201);
+
+    } catch (\Throwable $th) {
+        DB::rollBack();
+        throw $th;
+    }
+}
+
+private function createDocument(array $validated, array $user_connected, DocumentType $documentType): Document
+{
+    $reference = $this->generateUniqueReference(6);
+
+    $document = Document::create([
+        "title" => $validated["titre"],
+        "document_type_id" => $validated["document_type_id"],
+        "department_id" => $validated["departement"] ?? null,
+        "workflow_id" => null, // sera rempli par le workflow
+        "created_by" => $user_connected["id"],
+        "created_at" => now(),
+        "updated_at" => now(),
+        "reference" => $reference,
+    ]);
+
+    // Création d’une instance liée au document selon le type
+    $className = $documentType->class_name;
+    $relationName = $documentType->relation_name;
+
+    if (class_exists($className)  && $relationName) {
+        $instance = new $className();
+        $document->{$relationName}()->save($instance);
+    }
+
+    return $document;
+}
+
+private function processWorkflow(DocumentType $documentType, array $validated, Document $document, array $user_connected, $request)
+{
+
+            // Choix du traitement workflow selon le mode de réception
+        if ($documentType->reception_mode === "AUTO_BY_ROLE") {
+            $workflowInstance = $this->processAutoByRoleWorkflow($validated, $document, $user_connected, $request);
+        } else {
+            $workflowInstance = $this->processManualWorkflow($validated, $document, $user_connected, $request);
+        }
+
+
+        return $workflowInstance;
+
+}
+
+
+private function handleUploadedFile($request, Document $document, array $user_connected , $input , $attachment_slug)
+{
+    $file = $request->file($input);
+
+    $fileName = Str::random(20) . "_" . time() . "." . $file->extension();
+    $type = $file->getClientMimeType();
+    $size = $file->getSize();
+
+    $file->move(storage_path("app/public/documents_attachments"), $fileName);
+
+    $attachment = new Attachment();
+    $attachment->document_id = $document->id;
+    $attachment->is_main = true;
+    $attachment->source = "UPLOAD";
+    $attachment->created_by = $user_connected["id"];
+    $attachment->attachment_type_id = AttachmentType::whereSlug($attachment_slug)->first()->id;
+    $attachment->save();
+
+    $fileModel = new File();
+    $fileModel->path = $fileName;
+    $fileModel->type = $type;
+    $fileModel->size = $size;
+
+    $attachment->file()->save($fileModel);
+
+    // Lancer le Job en arrière-plan
+    GeneratePdfThumbnail::dispatch($attachment);
+}
+
+private function handleLinkedDocument(array $validated, Document $document, array $user_connected)
+{
+    $linkedDocument = Document::with(["main_attachment.file", "document_type"])
+        ->whereReference($validated["linkedDocument"])
+        ->first();
+
+    if (!$linkedDocument || !$linkedDocument->main_attachment || !$linkedDocument->main_attachment->file) {
+        throw new \Exception("Reference introuvable ou fichier manquant.");
+    }
+
+    $originalFile = $linkedDocument->main_attachment->file;
+    $folder = "documents_attachments";
+
+    $newFileName = Str::random(20) . "_" . time() . "." . pathinfo($originalFile->path, PATHINFO_EXTENSION);
+    $newPath = $folder . "/" . $newFileName;
+    $originalPath = $folder . "/" . $originalFile->path;
+
+    Storage::disk("public")->copy($originalPath, $newPath);
+
+    $newFile = new File();
+    $newFile->path = $newFileName;
+    $newFile->type = $originalFile->type;
+    $newFile->size = $originalFile->size;
+
+    $newAttachment = new Attachment();
+    $newAttachment->is_main = false;
+    $newAttachment->attachment_type_id = $this->attachmentMapping($linkedDocument);
+    $newAttachment->created_by = $user_connected["id"];
+
+    $document->attachments()->save($newAttachment);
+    $newAttachment->file()->save($newFile);
+}
+
+
+
+
+    private function processAutoByRoleWorkflow(array $validated, Document $document, array $user_connected, $request)
+{
+
+}
+
+    private function processManualWorkflow(array $validated, Document $document, array $user_connected, $request)
+{
+    // Ici tu peux traiter les workflows manuels ou toute logique spécifique
+    // Par exemple, créer une instance vide ou notifier des utilisateurs sans lancer d’instance automatique
+    return null; // pas de workflow automatique
+}
 
     public function getDocumentsByIds(Request $request)
     {

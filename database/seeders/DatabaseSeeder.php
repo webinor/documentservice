@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Art;
 use App\Models\AttachmentTypeCategory;
 use App\Models\DepartmentDocumentType;
+use App\Models\FormalNotice;
 use App\Models\ItProvider;
 use App\Models\ItSupplier;
 use App\Models\LedgerCodeType;
@@ -12,6 +14,7 @@ use App\Models\MedicalSupplier;
 use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
 use App\Models\RequestOrder;
+use App\Models\Tax;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;  
@@ -68,6 +71,27 @@ $documentTypesConfig = [
         'class_name'    => RequestOrder::class,
         'relation_name' => 'request_order',
         'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+
+    [
+        'name'          => 'Courrier Impots',
+        'class_name'    => Tax::class,
+        'relation_name' => 'tax',
+        'reception_mode'=> 'AUTO_BY_ROLE',
+    ],
+
+        [
+        'name'          => 'Courrier Mises en demeure',
+        'class_name'    => FormalNotice::class,
+        'relation_name' => 'formal_notice',
+        'reception_mode'=> 'AUTO_BY_ROLE',
+    ],
+
+         [
+        'name'          => 'Courrier Art',
+        'class_name'    => Art::class,
+        'relation_name' => 'art',
+        'reception_mode'=> 'AUTO_BY_ROLE',
     ],
     /*[
         

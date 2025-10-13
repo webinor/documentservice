@@ -10,6 +10,7 @@ use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LedgerCodeTypeController;
 use App\Http\Controllers\TestThumbnailController;
 
@@ -32,6 +33,17 @@ Route::middleware("jwt.check")
             Route::get("/document_types/allowed", "getDocumentTypesWithPermissions");
             Route::get("/document_types/allowed-by-role", "getDocumentTypesWithPermissionsForRoles");
             Route::get("/getRolesByDocumentType/{documentTypeCode}", "getRolesByDocumentType");
+
+        });
+
+                /**
+         * 📌 FolderController
+         */
+        Route::controller(FolderController::class)->group(function () {
+            Route::get("/folders/allowed", "getFoldersWithPermissions");
+            Route::get("/folders/allowed-by-role", "getFoldersWithPermissionsForRoles");
+            Route::get("/getRolesByFolders/{folderCode}", "getRolesByFolders");
+
         });
 
         /**
@@ -67,6 +79,7 @@ Route::middleware("jwt.check")
          */
         Route::apiResource("/attachment-type-categories", AttachmentTypeCategoryController::class);
         Route::apiResource("/documentTypes", DocumentTypeController::class);
+        Route::apiResource("/folders", FolderController::class);
 
         // Documents CRUD
         Route::apiResource("/", DocumentController::class)->parameters([
