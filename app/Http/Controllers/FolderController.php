@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreFolderRequest;
-use App\Http\Requests\UpdateFolderRequest;
-use App\Models\DepartmentFolder;
-use App\Models\Folder;
-use App\Models\Misc\Document;
-use App\Services\CheckPermissionsService;
 use Exception;
+use App\Models\Folder;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\Misc\Document;
+use App\Models\DepartmentFolder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use App\Http\Requests\StoreFolderRequest;
+use App\Services\CheckPermissionsService;
+use App\Http\Requests\UpdateFolderRequest;
 
 class FolderController extends Controller
 {
@@ -88,23 +90,41 @@ public function index($id = null)
         $folderId = $request->query("folderId"); // &folderId=1015
         $foldersWithPermissions = [];
         $fullDocuments = [];
-        $documents = [];
+        $documents = collect();
         $documentsWithPermissions = [];
         $documentTypesWithPermissions = [];
 
        
 
         if ($folderId) {
+
+            $current_folder = Folder::find($folderId);
             
-               $department_folders = DepartmentFolder::whereHas("folder.parent",function($query) use($folderId){
-                $query->whereId($folderId);
+               $department_folders = DepartmentFolder::whereHas("folder.parent",function($query) use($current_folder){
+                $query->whereId($current_folder->id);
                })-> with(
             "folder"
         )
             ->whereDepartmentId($departmentId)
             ->get();
 
-            $documents = Document::with('document_type')-> whereFolderId($folderId)->get();
+           /* if (!$department_folders) {
+
+            $current_folder = Folder::find($current_folder->parent_id);
+
+
+                 $department_folders = DepartmentFolder::whereHas("folder.parent",function($query) use($current_folder){
+                $query->whereId($current_folder->id);
+               })-> with(
+            "folder"
+        )
+            ->whereDepartmentId($departmentId)
+            ->get();
+                
+                
+            } */
+
+            $documents = Document::with(['document_type','main_attachment.file'])-> whereFolderId($folderId)->get();
 
            
 
@@ -129,6 +149,7 @@ public function index($id = null)
             ->map(function ($item) {
                 return [
                     "id" => $item->folder->id, // id du folder
+                    "parent_id"=>$item->folder->parent_id,
                     "name" => $item->folder->name, // nom/name du document
                 ];
             })
@@ -155,13 +176,15 @@ public function index($id = null)
             return [
                 "id" => $folderId,
                 "name" => $item->folder->name,
+                "created_at"=> $item->folder->created_at,
+                "notify_allowed_user"=>$item->folder->notify_allowed_user,
                 "permissions" => $permissionsMap[$folderId] ?? [], // permissions correspondantes
             ];
         });
 
     }
 
-      if (!empty($documents)) {
+      if (!$documents->isEmpty()) {
 
                  $documentTypes = $documents
             ->map(function ($item) {
@@ -200,6 +223,17 @@ public function index($id = null)
 
       }
 
+
+      $foldersAndDocuments=  $this->mergeFoldersAndDocuments($foldersWithPermissions , $documentsWithPermissions);
+      
+
+
+      return response()->json([
+    'success' => true,
+    'items' => $foldersAndDocuments,
+]);
+
+
         // Retourner un DTO ou juste un JSON
         /* return response()->json([
             'folders' => $folders,
@@ -209,11 +243,111 @@ public function index($id = null)
         return response()->json(["success"=>true, 'folders'=>$foldersWithPermissions , 'documents'=>$documentsWithPermissions , 'document_type'=>$documentTypesWithPermissions], 200);
     }
 
+public function mergeFoldersAndDocuments($foldersWithPermissions, $documentsWithPermissions)  {
 
-public function filterDocuments($documentsList , $documentTypesList)  {
+    // Fusionner les deux ensembles dans une seule collection
+$items = collect([]);
+
+// Ajouter les dossiers
+foreach ($foldersWithPermissions as $folder) {
+    $items->push([
+        'id' => $folder['id'],
+        'name' => $folder['name'],
+        'type' => 'folder',
+        'attachment_icon' => '📁',
+        'attachment_slug'=> 'Dossier',
+        'should_notify'=>$folder['notify_allowed_user'] ? '✅' : '',
+        'date_creation'=>$folder['created_at'],
+        'permissions' => $folder['permissions'],
+    ]);
+}
+
+         //   throw new Exception(json_encode($documentsWithPermissions), 1);
+
+  
+
+// Ajouter les documents
+foreach ($documentsWithPermissions as $document) {
+
+       $attachmentType = $document['main_attachment']['file']['type'] ?? null;
+    $attachmentIcon = '📄'; // icône par défaut
+    $attachmentSlug = 'autre';
+
+    if ($attachmentType) {
+        switch (true) {
+            case str_contains($attachmentType, 'pdf'):
+                $attachmentIcon = '📕';
+                $attachmentSlug = 'pdf';
+                break;
+            case str_contains($attachmentType, 'image'):
+                $attachmentIcon = '🖼️';
+                $attachmentSlug = 'image';
+                break;
+            case str_contains($attachmentType, 'word'):
+            case str_contains($attachmentType, 'msword'):
+            case str_contains($attachmentType, 'officedocument.wordprocessingml'):
+                $attachmentIcon = '📘';
+                $attachmentSlug = 'word';
+                break;
+            case str_contains($attachmentType, 'excel'):
+            case str_contains($attachmentType, 'spreadsheet'):
+                $attachmentIcon = '📗';
+                $attachmentSlug = 'excel';
+                break;
+            case str_contains($attachmentType, 'powerpoint'):
+            case str_contains($attachmentType, 'presentation'):
+                $attachmentIcon = '📙';
+                $attachmentSlug = 'powerpoint';
+                break;
+            case str_contains($attachmentType, 'zip') || str_contains($attachmentType, 'compressed'):
+                $attachmentIcon = '🗜️';
+                $attachmentSlug = 'zip';
+                break;
+            case str_contains($attachmentType, 'text'):
+                $attachmentIcon = '📄';
+                $attachmentSlug = 'text';
+                break;
+            case str_contains($attachmentType, 'audio'):
+                $attachmentIcon = '🎵';
+                $attachmentSlug = 'audio';
+                break;
+            case str_contains($attachmentType, 'video'):
+                $attachmentIcon = '🎬';
+                $attachmentSlug = 'video';
+                break;
+        }
+    }
+
+    $items->push([
+        'id' => $document['id'],
+        'name' => $document['title'],
+        'type' => 'document',
+        'attachment_type' => $attachmentType,
+        'attachment_icon' => $attachmentIcon,
+        'attachment_slug'=>Str::headline($attachmentSlug),
+        'permissions' => $document['permissions'],
+        'date_creation' => $document['created_at'],
+        'download_url' => route('documents.download', ['id' => $document['id']]),
+    ]);
+}
+
+// Retourne une seule liste fusionnée, triée par nom
+
+return $items->sortBy('name')->values();
+
+
+    
+}
+
+public function filterDocuments($documentsList , $documentTypesList) 
+{
 
     $documents = collect($documentsList);
 $documentTypes = collect($documentTypesList);
+
+// On indexe les permissions par id du document_type pour un accès rapide
+$permissionsByType = collect($documentTypes)
+    ->mapWithKeys(fn($type) => [$type['id'] => $type['permissions']]);
 
 // On récupère les IDs des types de document autorisés à la vue
 $authorizedTypeIds = $documentTypes
@@ -221,9 +355,20 @@ $authorizedTypeIds = $documentTypes
     ->pluck('id')
     ->toArray();
 
-// On garde seulement les documents ayant un type autorisé
-$filteredDocuments = $documents
+// On garde seulement les documents dont le type est autorisé
+$filteredDocuments = collect($documents)
     ->filter(fn($doc) => in_array($doc['document_type_id'], $authorizedTypeIds))
+    ->map(function ($doc) use ($permissionsByType) {
+        $doc['permissions'] = $permissionsByType[$doc['document_type_id']] ?? [
+            'create' => false,
+            'view' => false,
+            'validate' => false,
+            'delete' => false,
+            'reject' => false,
+            'forward' => false,
+        ];
+        return $doc;
+    })
     ->values()
     ->toArray();
 
@@ -252,6 +397,7 @@ public function store(StoreFolderRequest $request)
             'description' => $validated['description'] ?? null,
             'recipient_mode' => $validated['recipientMode'] ?? null,
             'created_by' => $userConnected['id'],
+            'parent_id' => $validated['parent_id'] ?? null,
             'notify_allowed_user' => $validated['notify_allowed_user'] ?? null,
             
         ]);
@@ -330,6 +476,7 @@ public function store(StoreFolderRequest $request)
             return [
                 "id" => $folderId,
                 "name" => $item->folder->name,
+                "parent_id"=>$item->folder->parent_id,
                 "permissions" => $permissionsMap[$folderId] ?? [], // permissions correspondantes
             ];
         });
@@ -344,6 +491,79 @@ public function store(StoreFolderRequest $request)
     }
 
 
+     /**
+     * 🔹 Endpoint : Récupère les départements autorisés à gérer un sous-dossier.
+     * 
+     * GET /api/folders/{parentFolderId}/authorized-departments
+     */
+    public function getAuthorizedDepartments(Request $request, $folderId)
+    {
+        try {
+            // 🗂️ Vérifie si le dossier existe
+            $folder = Folder::find($folderId);
+            if (!$folder) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Le dossier avec l'ID {$folderId} est introuvable.",
+                ], 404);
+            }
+
+            // 🧭 Détermine si c’est un dossier racine ou non
+            $targetFolderId = $folder->parent_id ?: $folder->id;
+
+            // 🔍 Récupère les départements autorisés sur le dossier cible (parent ou dossier actuel)
+            $allowedDepartmentIds = DepartmentFolder::where('folder_id', $targetFolderId)
+                ->pluck('department_id')
+                ->toArray();
+
+            if (empty($allowedDepartmentIds)) {
+                return response()->json([
+                    'success' => true,
+                    'departments' => [],
+                    'message' => "Aucun département n’a accès à ce dossier.",
+                ], 200);
+            }
+
+            // 🌐 Appel au microservice des départements
+            $departmentServiceUrl = config('services.department_service.base_url') . '/list-by-ids';
+            
+            $response = Http::withToken($request->bearerToken())
+                ->post($departmentServiceUrl, [
+                    'ids' => $allowedDepartmentIds,
+                ]);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de contacter le microservice des départements.',
+                    'error' => $response->body(),
+                ], 500);
+            }
+
+            $departments = $response->json('data') ?? [];
+
+            return response()->json([
+                'success' => true,
+                'folder' => [
+                    'id' => $folder->id,
+                    'name' => $folder->name,
+                    'is_root' => $folder->parent_id === null,
+                ],
+                'departments' => $departments,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des départements autorisés.',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+
 
     /**
      * Display the specified resource.
@@ -353,7 +573,9 @@ public function store(StoreFolderRequest $request)
      */
     public function show(Folder $folder)
     {
-        //
+        return response()->json(
+            $folder
+        );
     }
 
     /**

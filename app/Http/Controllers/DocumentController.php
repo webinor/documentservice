@@ -7,6 +7,7 @@ use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
 use App\Models\Finance\InvoiceProvider;
+use App\Models\Folder;
 use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
@@ -30,6 +31,19 @@ class DocumentController extends Controller
     {
         //
     }
+
+    public function download($id)
+{
+    $document = Document::findOrFail($id);
+
+    $path = storage_path('app/public/' . $document->path);
+
+    if (!file_exists($path)) {
+        abort(404, 'Fichier introuvable');
+    }
+
+    return response()->download($path, $document->title . '.pdf');
+}
 
     public function searchDocumentByReference (Request $request) {
 
@@ -308,9 +322,9 @@ if (!empty($documentAttachmentMap[$relationSlug]['attachment_type_id'])) {
         $response = Http::withToken($request->bearerToken())
             ->acceptJson()
             ->get($userServiceUrl, [
-                'actions' => ["view"],
+                'actions' => ["be_notify"],
                 'document_type_id' => $document->document_type->id,
-                'folder_id' =>1// $document->folder_id,
+                'folder_id' =>$document->folder_id,
             ]);
 
         if ($response->failed()) {
@@ -385,8 +399,15 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $this->handleUploadedFile($request, $document, $user_connected , "courrier" , "autre");
         }
 
+        $current_folder = Folder::find($validated["destination"]);
 
-        $this->notify_users($request ,  $document);
+        if ($current_folder && $current_folder->notify_allowed_user) {
+           
+            $this->notify_users($request ,  $document);
+            
+        }
+
+        
 
 
 

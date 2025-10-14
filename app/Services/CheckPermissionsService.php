@@ -35,7 +35,7 @@ class CheckPermissionsService
         $response = Http::acceptJson()->post($this->userServiceBaseUrl . '/permissions/check-batch', $payload);
 
         if ($response->failed()) {
-            throw new \Exception('Erreur lors de la vérification des permissions : ' . $response->body());
+            throw new \Exception('Erreur lors de la vérification des permissions du type de document : ' . $response->body());
         }
 
         $permissionsArray = $response->json(); // Tableau d'objets venant du user-service
@@ -71,7 +71,7 @@ class CheckPermissionsService
         $response = Http::acceptJson()->post($this->userServiceBaseUrl . '/permissions/check-batch-folders', $payload);
 
         if ($response->failed()) {
-            throw new \Exception('Erreur lors de la vérification des permissions : ' . $response->body());
+            throw new \Exception('Erreur lors de la vérification des permissions du dossier : ' . $response->body());
         }
 
         $permissionsArray = $response->json(); // Tableau d'objets venant du user-service

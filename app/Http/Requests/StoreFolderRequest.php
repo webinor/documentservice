@@ -24,7 +24,7 @@ class StoreFolderRequest extends FormRequest
             'description' => 'nullable|string',
             'departmentIds' => 'required|array',
             'departmentIds.*' => 'integer',
-            'fields' => 'nullable|array',
+            'parent_id' => 'nullable|integer',
             'notify_allowed_user' => 'required|boolean', // ✅ nouveau champ validé
 
         ];

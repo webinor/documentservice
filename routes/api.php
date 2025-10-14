@@ -44,6 +44,10 @@ Route::middleware("jwt.check")
             Route::get("/folders/allowed-by-role", "getFoldersWithPermissionsForRoles");
             Route::get("/getRolesByFolders/{folderCode}", "getRolesByFolders");
 
+                Route::get('/folders/{folderId}/authorized-departments','getAuthorizedDepartments')
+                ->whereNumber('folderId'); // ✅ Ne matchera pas "allowed-by-role"
+
+
         });
 
         /**
@@ -90,6 +94,9 @@ Route::middleware("jwt.check")
 /**
  * 📌 Public / hors middleware
  */
+
+Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
+
 
 // Génération de thumbnail
 Route::get("documents/{document}/generate-thumbnail", [TestThumbnailController::class, "handle"]);

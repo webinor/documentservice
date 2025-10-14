@@ -59,4 +59,12 @@ class Folder extends Model
     {
         return $this->hasMany(DepartmentFolder::class,);
     }
+
+        public function getCreatedAtAttribute($value)
+    {
+        if (!$value ) {
+            return null; // ou return '';
+        }
+        return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
+    }
 }
