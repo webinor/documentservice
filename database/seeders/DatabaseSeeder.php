@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Art;
 use App\Models\AttachmentTypeCategory;
 use App\Models\DepartmentDocumentType;
+use App\Models\FeeNote;
 use App\Models\FormalNotice;
 use App\Models\ItProvider;
 use App\Models\ItSupplier;
@@ -53,7 +54,16 @@ $documentTypesConfig = [
         'relation_name' => 'it_supplier',
         'reception_mode'=> 'WORKFLOW_DRIVEN',
     ],
-    [
+
+        [
+        'name'          => 'Facture Note honoraire',
+        'class_name'    => FeeNote::class,
+        'relation_name' => 'fee_note',
+        'reception_mode'=> 'WORKFLOW_DRIVEN',
+    ],
+
+
+  /*  [
         'name'          => 'Facture Prestataire Medical',
         'class_name'    => MedicalProvider::class,
         'relation_name' => 'medical_provider',
@@ -64,7 +74,7 @@ $documentTypesConfig = [
         'class_name'    => ItProvider::class,
         'relation_name' => 'it_provider',
         'reception_mode'=> 'WORKFLOW_DRIVEN',
-    ],
+    ],*/
 
         [
         'name'          => 'Demande Achat',
@@ -87,7 +97,7 @@ $documentTypesConfig = [
         'reception_mode'=> 'AUTO_BY_ROLE',
     ],
 
-         [
+    /*     [
         'name'          => 'Courrier Art',
         'class_name'    => Art::class,
         'relation_name' => 'art',
