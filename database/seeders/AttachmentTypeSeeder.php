@@ -29,7 +29,8 @@ class AttachmentTypeSeeder extends Seeder
 
         // Types pour la catégorie Engagement
         $engagementTypes = [
-            'Facture originale' => false,
+            //'Facture originale' => false,
+            'Contrat de prestation' => false,
             'Contrat' => false,
             'Bon de regularisation' => false,
             'Bon de commande' => false,
