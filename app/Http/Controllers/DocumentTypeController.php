@@ -36,7 +36,7 @@ class DocumentTypeController extends Controller
      */
     public function index(Request $request)
     {
-        $documentTypes = DocumentType::with("department_document_types")->get();
+        $documentTypes = DocumentType::orderBy('name')->with("department_document_types")->get();
         return response()->json(["success" => true, "data" => $documentTypes]);
     }
 
