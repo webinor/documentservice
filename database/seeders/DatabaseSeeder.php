@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Art;
 use App\Models\AttachmentTypeCategory;
+use App\Models\contract;
 use App\Models\DepartmentDocumentType;
 use App\Models\FeeNote;
 use App\Models\FormalNotice;
@@ -93,6 +94,13 @@ $documentTypesConfig = [
         [
         'name'          => 'Courrier Mises en demeure',
         'class_name'    => FormalNotice::class,
+        'relation_name' => 'formal_notice',
+        'reception_mode'=> 'AUTO_BY_ROLE',
+    ],
+
+            [
+        'name'          => 'Contrats',
+        'class_name'    => contract::class,
         'relation_name' => 'formal_notice',
         'reception_mode'=> 'AUTO_BY_ROLE',
     ],

@@ -15,6 +15,7 @@ class CreateFormalNoticesTable extends Migration
     {
         Schema::create('formal_notices', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('document_id');
             $table->timestamps();
         });
     }

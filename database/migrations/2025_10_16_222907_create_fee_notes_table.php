@@ -15,6 +15,7 @@ class CreateFeeNotesTable extends Migration
     {
         Schema::create('fee_notes', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('document_id');
             $table->timestamps();
         });
     }

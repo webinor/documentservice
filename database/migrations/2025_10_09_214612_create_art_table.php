@@ -15,6 +15,7 @@ class CreateArtTable extends Migration
     {
         Schema::create('art', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('document_id');
             $table->timestamps();
         });
     }
