@@ -67,4 +67,31 @@ class Folder extends Model
         }
         return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
     }
+
+        /**
+     * Retourne le chemin complet du dossier, ex: /Racine/Impots/2024
+     */
+    public function getFullPathAttribute(): string
+    {
+        if ($this->parent) {
+            return $this->parent->full_path . '/' . $this->name;
+        }
+        return '/' . $this->name; // dossier racine
+    }
+
+    public function getPathSegments(){
+
+        $pathSegments = [];
+    $currentFolder = $this;
+    while ($currentFolder) {
+        array_unshift($pathSegments, [
+            'id' => $currentFolder->id,
+            'name' => $currentFolder->name,
+        ]);
+        $currentFolder = $currentFolder->parent ?? null;
+    }
+
+    return $pathSegments;
+
+    }
 }

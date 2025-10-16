@@ -42,4 +42,8 @@ return [
     'base_url' => env('WORKFLOW_SERVICE_BASE_URL', 'http://localhost:8094/api/workflows'),
 ],
 
+    'frontend_service' => [
+        'base_url' => env('FRONTEND_SERVICE_BASE_URL', 'http://localhost:5173'),
+    ],
+
 ];

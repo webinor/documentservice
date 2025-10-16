@@ -32,18 +32,161 @@ class DocumentController extends Controller
         //
     }
 
-    public function download($id)
+ public function download($id)
 {
-    $document = Document::findOrFail($id);
+    $document = Document::with('main_attachment.file')->findOrFail($id);
 
-    $path = storage_path('app/public/' . $document->path);
+    $file = $document->main_attachment->file;
+    $path = storage_path('app/public/documents_attachments/' . $file->path);
 
     if (!file_exists($path)) {
         abort(404, 'Fichier introuvable');
     }
 
-    return response()->download($path, $document->title . '.pdf');
+    // Récupère l'extension réelle
+    $extension = pathinfo($file->path, PATHINFO_EXTENSION);
+
+    // Définir le nom de téléchargement avec l'extension correcte
+    $downloadName = $document->title . ($extension ? ".{$extension}" : '');
+
+    return response()->download($path, $downloadName);
 }
+
+
+
+
+    public function getDetails(Request $request, $id)
+{
+    // Récupérer l'utilisateur courant (ou depuis un paramètre)
+    $user = $request->get('user');
+
+    $userId = $user['id'];
+    if (!$userId) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Utilisateur non identifié.'
+        ], 401);
+    }
+
+
+
+        $document = Document::with(['folder', 'document_type', 'main_attachment.file', /*'history.user', 'relatedDocuments'*/])
+            ->findOrFail($id);
+
+        $creator = $document->creator();
+        // 🧠 Déterminer le type de fichier
+        $fileType = $document->main_attachment->file->type ?? null;
+
+        $canView = $document->userCan(request()->bearerToken(), $user, $document , 'view');
+
+            if (!$canView || $document->workflow_id) {
+        return response()->json([
+            'success' => false,
+            'message' => "Vous n'avez pas la permission de consulter ce document."
+        ], 403);
+    }
+        $canUpdate = $document->userCan(request()->bearerToken(), $user, $document , 'update');
+        $canDelete = $document->userCan(request()->bearerToken(), $user, $document , 'delete');
+        $canShare = $document->userCan(request()->bearerToken(), $user, $document , 'share');
+
+
+            // 🗂️ Construire les pathSegments
+    $pathSegments = $document->folder ? $document->folder->getPathSegments() : [];
+
+        // 📦 Définir les icônes selon le type MIME
+        $attachmentType = $fileType;
+        $attachmentIcon = '📄';
+        $attachmentSlug = 'autre';
+
+        if ($attachmentType) {
+            switch (true) {
+                case str_contains($attachmentType, 'pdf'):
+                    $attachmentIcon = '📕';
+                    $attachmentSlug = 'pdf';
+                    break;
+                case str_contains($attachmentType, 'image'):
+                    $attachmentIcon = '🖼️';
+                    $attachmentSlug = 'image';
+                    break;
+                case str_contains($attachmentType, 'word'):
+                case str_contains($attachmentType, 'officedocument.wordprocessingml'):
+                    $attachmentIcon = '📘';
+                    $attachmentSlug = 'word';
+                    break;
+                case str_contains($attachmentType, 'excel'):
+                case str_contains($attachmentType, 'spreadsheet'):
+                    $attachmentIcon = '📗';
+                    $attachmentSlug = 'excel';
+                    break;
+                case str_contains($attachmentType, 'powerpoint'):
+                case str_contains($attachmentType, 'presentation'):
+                    $attachmentIcon = '📙';
+                    $attachmentSlug = 'powerpoint';
+                    break;
+                case str_contains($attachmentType, 'zip') || str_contains($attachmentType, 'compressed'):
+                    $attachmentIcon = '🗜️';
+                    $attachmentSlug = 'zip';
+                    break;
+                case str_contains($attachmentType, 'audio'):
+                    $attachmentIcon = '🎵';
+                    $attachmentSlug = 'audio';
+                    break;
+                case str_contains($attachmentType, 'video'):
+                    $attachmentIcon = '🎬';
+                    $attachmentSlug = 'video';
+                    break;
+            }
+        }
+
+        // 🗂️ Construire la structure de retour
+        $response = [
+            'id' => $document->id,
+            'title' => $document->title,
+            'type' => $document->document_type->name ?? 'Autre document',
+            'folderPath' => isset($document->folder) ?  $document->folder->full_path : null,
+            'pathSegments' => $pathSegments, // ✅ ajouté
+            'date_creation' => $document->created_at,
+            'created_by' => $creator ?? 'Système',
+            'attachment_type' => $attachmentType,
+            'preview_url' => $document->main_attachment ? url('storage/documents_attachments/'.$document->main_attachment->file->path) : null,
+            'download_url' => route('documents.download', ['id' => $document->id]),
+
+            // 🔖 Métadonnées dynamiques (champs spécifiques à ce type de document)
+            //'metadata' => $document->metadata ?? [],
+            'metadata' => [
+            'Titre' => $document->title,
+            'Créé le' => $document->created_at,
+            'Référence' => $document->reference,
+        ],
+
+            // 🔐 Permissions calculées
+            'permissions' => [
+                'lecture' => $canView,
+                'modification' => $canUpdate,
+                'suppression' => $canDelete,
+                'partage' => $canShare,
+            ],
+
+            // 📜 Historique
+            'history' =>[],/* $document->history->map(function ($entry) {
+                return [
+                    'user' => $entry->user->name ?? 'Système',
+                    'action' => $entry->action,
+                    'date' => $entry->created_at->format('d/m/Y H:i'),
+                ];
+            })*/
+
+            // 🔗 Documents liés
+            'related' =>[], /*$document->relatedDocuments->map(function ($related) {
+                return [
+                    'id' => $related->id,
+                    'title' => $related->title,
+                ];
+            }),*/
+        ];
+
+        return response()->json($response);
+    }
 
     public function searchDocumentByReference (Request $request) {
 

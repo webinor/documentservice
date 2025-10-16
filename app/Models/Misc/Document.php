@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Http;
 
 class Document extends Model
 {
@@ -92,6 +93,53 @@ class Document extends Model
 {
     //return $this->hasOne(Contrat::class);
 }
+
+    public function creator()
+    {
+
+        if ($this->created_by) {
+    $response = Http::withToken(config('services.user_service.base_url'))
+        ->get(config('services.user_service.base_url') . "/{$this->created_by}");
+
+    if ($response->ok()) {
+        $creatorData = $response->json();
+       return $creator = $creatorData['user']['name'] ?? null;
+    }
+
+    return "inconnu";
+}
+
+
+    }
+
+
+    public function userCan($token , $user, $document , $action)
+{
+
+        // 🔹 Vérifier la permission via microservice
+    $permissionServiceUrl = config('services.user_service.base_url') . '/permissions/check';
+    $permissionResponse = Http::withToken($token)->get($permissionServiceUrl, [
+        'userId' => $user['id'],
+        'resourceType' => 'document_type',
+        'resourceId' => $document->document_type_id,
+        'action' => $action,
+        'folderId' => $document->folder_id,
+
+    ]);
+
+     if (!$permissionResponse->ok() || !$permissionResponse->json('allowed')) {
+        return false;
+
+        return response()->json([
+            'success' => false,
+            'message' => "Vous n'avez pas la permission de consulter ce document."
+        ], 403);
+    }
+
+    return $permissionResponse['allowed'];
+
+}
+
 
 public function demandeConge()
 {

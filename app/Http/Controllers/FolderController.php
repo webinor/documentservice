@@ -93,6 +93,7 @@ public function index($id = null)
         $documents = collect();
         $documentsWithPermissions = [];
         $documentTypesWithPermissions = [];
+        $current_folder = null;
 
        
 
@@ -230,6 +231,7 @@ public function index($id = null)
 
       return response()->json([
     'success' => true,
+    'pathSegments'=> $current_folder ? $current_folder->getPathSegments() : [],
     'items' => $foldersAndDocuments,
 ]);
 
@@ -242,102 +244,105 @@ public function index($id = null)
 
         return response()->json(["success"=>true, 'folders'=>$foldersWithPermissions , 'documents'=>$documentsWithPermissions , 'document_type'=>$documentTypesWithPermissions], 200);
     }
+public function mergeFoldersAndDocuments($foldersWithPermissions, $documentsWithPermissions)
+{
+    $items = collect([]);
 
-public function mergeFoldersAndDocuments($foldersWithPermissions, $documentsWithPermissions)  {
-
-    // Fusionner les deux ensembles dans une seule collection
-$items = collect([]);
-
-// Ajouter les dossiers
-foreach ($foldersWithPermissions as $folder) {
-    $items->push([
-        'id' => $folder['id'],
-        'name' => $folder['name'],
-        'type' => 'folder',
-        'attachment_icon' => '📁',
-        'attachment_slug'=> 'Dossier',
-        'should_notify'=>$folder['notify_allowed_user'] ? '✅' : '',
-        'date_creation'=>$folder['created_at'],
-        'permissions' => $folder['permissions'],
-    ]);
-}
-
-         //   throw new Exception(json_encode($documentsWithPermissions), 1);
-
-  
-
-// Ajouter les documents
-foreach ($documentsWithPermissions as $document) {
-
-       $attachmentType = $document['main_attachment']['file']['type'] ?? null;
-    $attachmentIcon = '📄'; // icône par défaut
-    $attachmentSlug = 'autre';
-
-    if ($attachmentType) {
-        switch (true) {
-            case str_contains($attachmentType, 'pdf'):
-                $attachmentIcon = '📕';
-                $attachmentSlug = 'pdf';
-                break;
-            case str_contains($attachmentType, 'image'):
-                $attachmentIcon = '🖼️';
-                $attachmentSlug = 'image';
-                break;
-            case str_contains($attachmentType, 'word'):
-            case str_contains($attachmentType, 'msword'):
-            case str_contains($attachmentType, 'officedocument.wordprocessingml'):
-                $attachmentIcon = '📘';
-                $attachmentSlug = 'word';
-                break;
-            case str_contains($attachmentType, 'excel'):
-            case str_contains($attachmentType, 'spreadsheet'):
-                $attachmentIcon = '📗';
-                $attachmentSlug = 'excel';
-                break;
-            case str_contains($attachmentType, 'powerpoint'):
-            case str_contains($attachmentType, 'presentation'):
-                $attachmentIcon = '📙';
-                $attachmentSlug = 'powerpoint';
-                break;
-            case str_contains($attachmentType, 'zip') || str_contains($attachmentType, 'compressed'):
-                $attachmentIcon = '🗜️';
-                $attachmentSlug = 'zip';
-                break;
-            case str_contains($attachmentType, 'text'):
-                $attachmentIcon = '📄';
-                $attachmentSlug = 'text';
-                break;
-            case str_contains($attachmentType, 'audio'):
-                $attachmentIcon = '🎵';
-                $attachmentSlug = 'audio';
-                break;
-            case str_contains($attachmentType, 'video'):
-                $attachmentIcon = '🎬';
-                $attachmentSlug = 'video';
-                break;
-        }
+    // --- Dossiers ---
+    foreach ($foldersWithPermissions as $folder) {
+        $items->push([
+            'id' => $folder['id'],
+            'name' => $folder['name'],
+            'type' => 'folder',
+            'attachment_icon' => '📁',
+            'attachment_slug' => 'Dossier',
+            'should_notify' => $folder['notify_allowed_user'] ? '✅' : '',
+            'date_creation' => $folder['created_at'],
+            'permissions' => $folder['permissions'],
+        ]);
     }
 
-    $items->push([
-        'id' => $document['id'],
-        'name' => $document['title'],
-        'type' => 'document',
-        'attachment_type' => $attachmentType,
-        'attachment_icon' => $attachmentIcon,
-        'attachment_slug'=>Str::headline($attachmentSlug),
-        'permissions' => $document['permissions'],
-        'date_creation' => $document['created_at'],
-        'download_url' => route('documents.download', ['id' => $document['id']]),
-    ]);
+    // --- Documents ---
+    foreach ($documentsWithPermissions as $document) {
+        $attachmentType = $document['main_attachment']['file']['type'] ?? null;
+        $attachmentIcon = '📄';
+        $attachmentSlug = 'autre';
+
+        if ($attachmentType) {
+            switch (true) {
+                case str_contains($attachmentType, 'pdf'):
+                    $attachmentIcon = '📕';
+                    $attachmentSlug = 'pdf';
+                    break;
+                case str_contains($attachmentType, 'image'):
+                    $attachmentIcon = '🖼️';
+                    $attachmentSlug = 'image';
+                    break;
+                case str_contains($attachmentType, 'word'):
+                case str_contains($attachmentType, 'msword'):
+                case str_contains($attachmentType, 'officedocument.wordprocessingml'):
+                    $attachmentIcon = '📘';
+                    $attachmentSlug = 'word';
+                    break;
+                case str_contains($attachmentType, 'excel'):
+                case str_contains($attachmentType, 'spreadsheet'):
+                    $attachmentIcon = '📗';
+                    $attachmentSlug = 'excel';
+                    break;
+                case str_contains($attachmentType, 'powerpoint'):
+                case str_contains($attachmentType, 'presentation'):
+                    $attachmentIcon = '📙';
+                    $attachmentSlug = 'powerpoint';
+                    break;
+                case str_contains($attachmentType, 'zip'):
+                case str_contains($attachmentType, 'compressed'):
+                    $attachmentIcon = '🗜️';
+                    $attachmentSlug = 'zip';
+                    break;
+                case str_contains($attachmentType, 'text'):
+                    $attachmentIcon = '📄';
+                    $attachmentSlug = 'text';
+                    break;
+                case str_contains($attachmentType, 'audio'):
+                    $attachmentIcon = '🎵';
+                    $attachmentSlug = 'audio';
+                    break;
+                case str_contains($attachmentType, 'video'):
+                    $attachmentIcon = '🎬';
+                    $attachmentSlug = 'video';
+                    break;
+            }
+        }
+
+        $items->push([
+            'id' => $document['id'],
+            'name' => $document['title'],
+            'type' => 'document',
+            'attachment_type' => $attachmentType,
+            'attachment_icon' => $attachmentIcon,
+            'attachment_slug' => Str::headline($attachmentSlug),
+            'permissions' => $document['permissions'],
+            'date_creation' => $document['created_at'],
+            'view_url' => config('services.frontend_service.base_url') . "/details-du-document/{$document['id']}",
+            'download_url' => route('documents.download', ['id' => $document['id']]),
+        ]);
+    }
+
+    // --- Grouper par type, puis trier chaque groupe par nom ---
+    $grouped = $items
+        ->groupBy('type') // regroupe 'folder' et 'document'
+        ->map(function ($group) {
+            return $group->sortBy('name')->values(); // trie les noms dans chaque groupe
+        });
+
+    // --- Si tu veux un seul tableau fusionné avec dossiers d’abord ---
+    $merged = $grouped->get('folder', collect())
+        ->merge($grouped->get('document', collect()))
+        ->values();
+
+    return $merged;
 }
 
-// Retourne une seule liste fusionnée, triée par nom
-
-return $items->sortBy('name')->values();
-
-
-    
-}
 
 public function filterDocuments($documentsList , $documentTypesList) 
 {

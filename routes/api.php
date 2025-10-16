@@ -58,6 +58,8 @@ Route::middleware("jwt.check")
             Route::get("/{id}/available-actions", "getAvailableActions");
             Route::get("/{documentId}/attachments", "getAttachments");
             Route::get("/search", "searchDocumentByReference");
+            Route::get('/{id}/details', 'getDetails')->name('documents.details');
+
         });
 
         /**
