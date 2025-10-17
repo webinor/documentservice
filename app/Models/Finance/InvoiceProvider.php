@@ -2,6 +2,7 @@
 
 namespace App\Models\Finance;
 
+use App\Models\FeeNote;
 use App\Models\ItSupplier;
 use App\Models\LedgerCode;
 use App\Models\MedicalSupplier;
@@ -63,6 +64,16 @@ public function medical_supplier(): HasOne
 public function it_supplier(): HasOne
 {
     return $this->hasOne(ItSupplier::class);
+}
+
+/**
+ * Get the it_supplier associated with the InvoiceProvider
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasOne
+ */
+public function fee_note(): HasOne
+{
+    return $this->hasOne(FeeNote::class);
 }
 
 

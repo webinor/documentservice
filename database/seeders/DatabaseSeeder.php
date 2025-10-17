@@ -57,7 +57,7 @@ $documentTypesConfig = [
     ],
 
         [
-        'name'          => 'Facture Note honoraire',
+        'name'          => 'Facture Note honoraire salaire',
         'class_name'    => FeeNote::class,
         'relation_name' => 'fee_note',
         'reception_mode'=> 'WORKFLOW_DRIVEN',
