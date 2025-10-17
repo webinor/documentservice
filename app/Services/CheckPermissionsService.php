@@ -23,7 +23,7 @@ class CheckPermissionsService
      */
     public function checkPermissionsForUserAndDocumentTypes(int $userId, array $documents): array
     {
-        $actions = ['create', 'view', 'validate', 'delete', 'reject', 'forward'];
+        $actions = ['create','submit', 'view_all','view_own', 'validate', 'delete', 'reject', 'forward'];
 
         $payload = [
             'userId' => $userId,
@@ -59,7 +59,7 @@ class CheckPermissionsService
      */
     public function checkPermissionsForUserAndFolders(int $userId, array $folders): array
     {
-        $actions = ['create', 'view', 'validate', 'delete', 'reject', 'forward'];
+        $actions = ['create', 'view_own','view_all', 'validate', 'delete', 'reject', 'forward'];
 
         $payload = [
             'userId' => $userId,

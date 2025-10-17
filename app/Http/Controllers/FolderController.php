@@ -356,7 +356,7 @@ $permissionsByType = collect($documentTypes)
 
 // On récupère les IDs des types de document autorisés à la vue
 $authorizedTypeIds = $documentTypes
-    ->filter(fn($type) => !empty($type['permissions']['view']))
+    ->filter(fn($type) => !empty($type['permissions']['view_all']))
     ->pluck('id')
     ->toArray();
 
@@ -366,7 +366,7 @@ $filteredDocuments = collect($documents)
     ->map(function ($doc) use ($permissionsByType) {
         $doc['permissions'] = $permissionsByType[$doc['document_type_id']] ?? [
             'create' => false,
-            'view' => false,
+            'view_all' => false,
             'validate' => false,
             'delete' => false,
             'reject' => false,
@@ -426,7 +426,7 @@ public function store(StoreFolderRequest $request)
         return response()->json([
             'success' => true,
             'message' => 'Dossier créé avec succès',
-            'folder' => $folder, // charge les relations si besoin
+            'folder' => $folder->load('department_folders'), // charge les relations si besoin
         ], 201);
 
     } catch (\Exception $e) {
