@@ -55,7 +55,7 @@ class DocumentController extends Controller
     public function getDetails(Request $request, $id)
     {
         // Récupérer l'utilisateur courant (ou depuis un paramètre)
-        $user = $request->get("user");
+      return  $user = $request->get("user");
 
         $userId = $user["id"];
         if (!$userId) {
