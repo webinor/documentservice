@@ -38,6 +38,7 @@ class AttachmentTypeSeeder extends Seeder
             'Devis' => false,
             'Attestation' => false,
             'Preuve de paiement' => false,
+            'Timesheet' => false,
             'Note avoir' => false,
             'Autre' => false,
         ];
