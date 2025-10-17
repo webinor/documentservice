@@ -224,7 +224,7 @@ class DocumentController extends Controller
             }),*/,
         ];
 
-        return response()->json(['success'=>true,'document'=>$response]);
+        return response()->json(["success" => true, "document" => $response]);
     }
 
     public function searchDocumentByReference(Request $request)

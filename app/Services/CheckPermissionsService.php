@@ -11,7 +11,7 @@ class CheckPermissionsService
     public function __construct()
     {
         // À mettre dans .env par exemple USER_SERVICE_BASE_URL
-        $this->userServiceBaseUrl = config('services.user_service.base_url');
+        $this->userServiceBaseUrl = config("services.user_service.base_url");
     }
 
     /**
@@ -21,21 +21,38 @@ class CheckPermissionsService
      * @param array $documents // Ex: [['id' => 1, 'type' => 'facture_fournisseur'], ...]
      * @return array // Format: [documentId => ['create' => true, 'view' => false, ...]]
      */
-    public function checkPermissionsForUserAndDocumentTypes(int $userId, array $documents): array
-    {
-        $actions = ['create','submit', 'view_all','view_own', 'validate', 'delete', 'reject', 'forward'];
+    public function checkPermissionsForUserAndDocumentTypes(
+        int $userId,
+        array $documents
+    ): array {
+        $actions = [
+            "create",
+            "submit",
+            "view_all",
+            "view_own",
+            "validate",
+            "delete",
+            "reject",
+            "forward",
+        ];
 
         $payload = [
-            'userId' => $userId,
-            'documents' => $documents,
-            'actions' => $actions,
+            "userId" => $userId,
+            "documents" => $documents,
+            "actions" => $actions,
         ];
 
         //return [$this->userServiceBaseUrl . '/permissions/check-batch'];
-        $response = Http::acceptJson()->post($this->userServiceBaseUrl . '/permissions/check-batch', $payload);
+        $response = Http::acceptJson()->post(
+            $this->userServiceBaseUrl . "/permissions/check-batch",
+            $payload
+        );
 
         if ($response->failed()) {
-            throw new \Exception('Erreur lors de la vérification des permissions du type de document : ' . $response->body());
+            throw new \Exception(
+                "Erreur lors de la vérification des permissions du type de document : " .
+                    $response->body()
+            );
         }
 
         $permissionsArray = $response->json(); // Tableau d'objets venant du user-service
@@ -43,35 +60,51 @@ class CheckPermissionsService
         // Transformer en mapping documentId => permissions
         $result = [];
         foreach ($permissionsArray as $perm) {
-            $documentId = $perm['documentId'];
-            $result[$documentId] = $perm['permissions'] ?? [];
+            $documentId = $perm["documentId"];
+            $result[$documentId] = $perm["permissions"] ?? [];
         }
 
         return $result;
     }
 
-        /**
+    /**
      * Vérifie les permissions d'un utilisateur pour une liste de dossiers
      *
      * @param int $userId
      * @param array $documents // Ex: [['id' => 1, 'type' => 'facture_fournisseur'], ...]
      * @return array // Format: [folderId => ['create' => true, 'view' => false, ...]]
      */
-    public function checkPermissionsForUserAndFolders(int $userId, array $folders): array
-    {
-        $actions = ['create', 'view_own','view_all', 'validate', 'delete', 'reject', 'forward'];
+    public function checkPermissionsForUserAndFolders(
+        int $userId,
+        array $folders
+    ): array {
+        $actions = [
+            "create",
+            "view_own",
+            "view_all",
+            "validate",
+            "delete",
+            "reject",
+            "forward",
+        ];
 
         $payload = [
-            'userId' => $userId,
-            'folders' => $folders,
-            'actions' => $actions,
+            "userId" => $userId,
+            "folders" => $folders,
+            "actions" => $actions,
         ];
 
         //return [$this->userServiceBaseUrl . '/permissions/check-batch'];
-        $response = Http::acceptJson()->post($this->userServiceBaseUrl . '/permissions/check-batch-folders', $payload);
+        $response = Http::acceptJson()->post(
+            $this->userServiceBaseUrl . "/permissions/check-batch-folders",
+            $payload
+        );
 
         if ($response->failed()) {
-            throw new \Exception('Erreur lors de la vérification des permissions du dossier : ' . $response->body());
+            throw new \Exception(
+                "Erreur lors de la vérification des permissions du dossier : " .
+                    $response->body()
+            );
         }
 
         $permissionsArray = $response->json(); // Tableau d'objets venant du user-service
@@ -79,28 +112,43 @@ class CheckPermissionsService
         // Transformer en mapping folderId => permissions
         $result = [];
         foreach ($permissionsArray as $perm) {
-            $folderId = $perm['folderId'];
-            $result[$folderId] = $perm['permissions'] ?? [];
+            $folderId = $perm["folderId"];
+            $result[$folderId] = $perm["permissions"] ?? [];
         }
 
         return $result;
     }
 
-    public function checkPermissionsForRoleAndDocumentTypes(int $roleId, array $documents): array
-    {
-        $actions = ['create', 'view', 'validate', 'delete', 'reject', 'forward'];
+    public function checkPermissionsForRoleAndDocumentTypes(
+        int $roleId,
+        array $documents
+    ): array {
+        $actions = [
+            "create",
+            "view",
+            "validate",
+            "delete",
+            "reject",
+            "forward",
+        ];
 
         $payload = [
-            'roleId' => $roleId,
-            'documents' => $documents,
-            'actions' => $actions,
+            "roleId" => $roleId,
+            "documents" => $documents,
+            "actions" => $actions,
         ];
 
         //return [$this->userServiceBaseUrl . '/permissions/check-batch'];
-        $response = Http::acceptJson()->post($this->userServiceBaseUrl . '/permissions/check-batch-role', $payload);
+        $response = Http::acceptJson()->post(
+            $this->userServiceBaseUrl . "/permissions/check-batch-role",
+            $payload
+        );
 
         if ($response->failed()) {
-            throw new \Exception('Erreur lors de la vérification des permissions pour ce role : ' . $response->body());
+            throw new \Exception(
+                "Erreur lors de la vérification des permissions pour ce role : " .
+                    $response->body()
+            );
         }
 
         $permissionsArray = $response->json(); // Tableau d'objets venant du user-service
@@ -108,28 +156,43 @@ class CheckPermissionsService
         // Transformer en mapping documentId => permissions
         $result = [];
         foreach ($permissionsArray as $perm) {
-            $documentId = $perm['documentId'];
-            $result[$documentId] = $perm['permissions'] ?? [];
+            $documentId = $perm["documentId"];
+            $result[$documentId] = $perm["permissions"] ?? [];
         }
 
         return $result;
     }
 
-        public function checkPermissionsForRoleAndFolders(int $roleId, array $folders): array
-    {
-        $actions = ['create', 'view', 'validate', 'delete', 'reject', 'forward'];
+    public function checkPermissionsForRoleAndFolders(
+        int $roleId,
+        array $folders
+    ): array {
+        $actions = [
+            "create",
+            "view",
+            "validate",
+            "delete",
+            "reject",
+            "forward",
+        ];
 
         $payload = [
-            'roleId' => $roleId,
-            'folders' => $folders,
-            'actions' => $actions,
+            "roleId" => $roleId,
+            "folders" => $folders,
+            "actions" => $actions,
         ];
 
         //return [$this->userServiceBaseUrl . '/permissions/check-batch'];
-        $response = Http::acceptJson()->post($this->userServiceBaseUrl . '/permissions/check-batch-role-folder', $payload);
+        $response = Http::acceptJson()->post(
+            $this->userServiceBaseUrl . "/permissions/check-batch-role-folder",
+            $payload
+        );
 
         if ($response->failed()) {
-            throw new \Exception('Erreur lors de la vérification des permissions pour ce role : ' . $response->body());
+            throw new \Exception(
+                "Erreur lors de la vérification des permissions pour ce role : " .
+                    $response->body()
+            );
         }
 
         $permissionsArray = $response->json(); // Tableau d'objets venant du user-service
@@ -137,8 +200,8 @@ class CheckPermissionsService
         // Transformer en mapping folderId => permissions
         $result = [];
         foreach ($permissionsArray as $perm) {
-            $folderId = $perm['folderId'];
-            $result[$folderId] = $perm['permissions'] ?? [];
+            $folderId = $perm["folderId"];
+            $result[$folderId] = $perm["permissions"] ?? [];
         }
 
         return $result;

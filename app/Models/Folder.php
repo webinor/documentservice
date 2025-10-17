@@ -11,19 +11,19 @@ class Folder extends Model
 {
     use HasFactory;
 
-       protected $fillable = [
-        'name',
-        'description',
-        'parent_id',
-        'created_by',        
-        'notify_allowed_user', // ✅ nouveau champ ajouté
+    protected $fillable = [
+        "name",
+        "description",
+        "parent_id",
+        "created_by",
+        "notify_allowed_user", // ✅ nouveau champ ajouté
     ];
 
     /**
      * Casts automatiques pour certains attributs.
      */
     protected $casts = [
-        'notify_allowed_user' => 'boolean',
+        "notify_allowed_user" => "boolean",
     ];
 
     /**
@@ -39,7 +39,7 @@ class Folder extends Model
      */
     public function parent()
     {
-        return $this->belongsTo(Folder::class, 'parent_id');
+        return $this->belongsTo(Folder::class, "parent_id");
     }
 
     /**
@@ -47,7 +47,7 @@ class Folder extends Model
      */
     public function children()
     {
-        return $this->hasMany(Folder::class, 'parent_id');
+        return $this->hasMany(Folder::class, "parent_id");
     }
 
     /**
@@ -57,41 +57,40 @@ class Folder extends Model
      */
     public function department_folders(): HasMany
     {
-        return $this->hasMany(DepartmentFolder::class,);
+        return $this->hasMany(DepartmentFolder::class);
     }
 
-        public function getCreatedAtAttribute($value)
+    public function getCreatedAtAttribute($value)
     {
-        if (!$value ) {
+        if (!$value) {
             return null; // ou return '';
         }
-        return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
+        return \Carbon\Carbon::parse($value)->format("d-m-Y");
     }
 
-        /**
+    /**
      * Retourne le chemin complet du dossier, ex: /Racine/Impots/2024
      */
     public function getFullPathAttribute(): string
     {
         if ($this->parent) {
-            return $this->parent->full_path . '/' . $this->name;
+            return $this->parent->full_path . "/" . $this->name;
         }
-        return '/' . $this->name; // dossier racine
+        return "/" . $this->name; // dossier racine
     }
 
-    public function getPathSegments(){
-
+    public function getPathSegments()
+    {
         $pathSegments = [];
-    $currentFolder = $this;
-    while ($currentFolder) {
-        array_unshift($pathSegments, [
-            'id' => $currentFolder->id,
-            'name' => $currentFolder->name,
-        ]);
-        $currentFolder = $currentFolder->parent ?? null;
-    }
+        $currentFolder = $this;
+        while ($currentFolder) {
+            array_unshift($pathSegments, [
+                "id" => $currentFolder->id,
+                "name" => $currentFolder->name,
+            ]);
+            $currentFolder = $currentFolder->parent ?? null;
+        }
 
-    return $pathSegments;
-
+        return $pathSegments;
     }
 }

@@ -19,9 +19,8 @@ use App\Models\RequestOrder;
 use App\Models\Tax;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;  
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
 
 class DatabaseSeeder extends Seeder
 {
@@ -34,37 +33,32 @@ class DatabaseSeeder extends Seeder
     {
         // \App\Models\User::factory(10)->create();
 
-       
-
         try {
-
             DB::beginTransaction();
 
+            // Configuration centralisée
+            $documentTypesConfig = [
+                [
+                    "name" => "Facture Fournisseur Medical",
+                    "class_name" => MedicalSupplier::class,
+                    "relation_name" => "medical_supplier",
+                    "reception_mode" => "WORKFLOW_DRIVEN",
+                ],
+                [
+                    "name" => "Facture Fournisseur Informatique",
+                    "class_name" => ItSupplier::class,
+                    "relation_name" => "it_supplier",
+                    "reception_mode" => "WORKFLOW_DRIVEN",
+                ],
 
-// Configuration centralisée
-$documentTypesConfig = [
-    [
-        'name'          => 'Facture Fournisseur Medical',
-        'class_name'    => MedicalSupplier::class,
-        'relation_name' => 'medical_supplier',
-        'reception_mode'=> 'WORKFLOW_DRIVEN',
-    ],
-    [
-        'name'          => 'Facture Fournisseur Informatique',
-        'class_name'    => ItSupplier::class,
-        'relation_name' => 'it_supplier',
-        'reception_mode'=> 'WORKFLOW_DRIVEN',
-    ],
+                [
+                    "name" => "Facture Note honoraire salaire",
+                    "class_name" => FeeNote::class,
+                    "relation_name" => "fee_note",
+                    "reception_mode" => "WORKFLOW_DRIVEN",
+                ],
 
-        [
-        'name'          => 'Facture Note honoraire salaire',
-        'class_name'    => FeeNote::class,
-        'relation_name' => 'fee_note',
-        'reception_mode'=> 'WORKFLOW_DRIVEN',
-    ],
-
-
-  /*  [
+                /*  [
         'name'          => 'Facture Prestataire Medical',
         'class_name'    => MedicalProvider::class,
         'relation_name' => 'medical_provider',
@@ -77,35 +71,35 @@ $documentTypesConfig = [
         'reception_mode'=> 'WORKFLOW_DRIVEN',
     ],*/
 
-        [
-        'name'          => 'Demande Achat',
-        'class_name'    => RequestOrder::class,
-        'relation_name' => 'request_order',
-        'reception_mode'=> 'WORKFLOW_DRIVEN',
-    ],
+                [
+                    "name" => "Demande Achat",
+                    "class_name" => RequestOrder::class,
+                    "relation_name" => "request_order",
+                    "reception_mode" => "WORKFLOW_DRIVEN",
+                ],
 
-    [
-        'name'          => 'Courrier Impots',
-        'class_name'    => Tax::class,
-        'relation_name' => 'tax',
-        'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
+                [
+                    "name" => "Courrier Impots",
+                    "class_name" => Tax::class,
+                    "relation_name" => "tax",
+                    "reception_mode" => "AUTO_BY_ROLE",
+                ],
 
-        [
-        'name'          => 'Courrier Mises en demeure',
-        'class_name'    => FormalNotice::class,
-        'relation_name' => 'formal_notice',
-        'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
+                [
+                    "name" => "Courrier Mises en demeure",
+                    "class_name" => FormalNotice::class,
+                    "relation_name" => "formal_notice",
+                    "reception_mode" => "AUTO_BY_ROLE",
+                ],
 
-            [
-        'name'          => 'Contrats',
-        'class_name'    => contract::class,
-        'relation_name' => 'formal_notice',
-        'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
+                [
+                    "name" => "Contrats",
+                    "class_name" => contract::class,
+                    "relation_name" => "formal_notice",
+                    "reception_mode" => "AUTO_BY_ROLE",
+                ],
 
-    /*     [
+                /*     [
         'name'          => 'Courrier Art',
         'class_name'    => Art::class,
         'relation_name' => 'art',
@@ -120,23 +114,25 @@ $documentTypesConfig = [
         'name'          => 'Demande de congé',
         'reception_mode'=> 'AUTO_BY_ROLE',
     ],*/
-];
+            ];
 
-// Génération de la sequence dynamiquement
-$sequence = array_map(fn ($config) => fn () => [
-    'code'           => Str::random(10),
-    'name'           => $config['name'],
-    'class_name'     => $config['class_name']     ?? null,
-    'relation_name'  => $config['relation_name']  ?? null,
-    'reception_mode' => $config['reception_mode'],
-    'slug'           => Str::slug($config['name']),
-], $documentTypesConfig);
-          
-            
-          DocumentType::factory()
-    ->count(count($documentTypesConfig))
-    ->state(new Sequence(...$sequence))
-    ->create();
+            // Génération de la sequence dynamiquement
+            $sequence = array_map(
+                fn($config) => fn() => [
+                    "code" => Str::random(10),
+                    "name" => $config["name"],
+                    "class_name" => $config["class_name"] ?? null,
+                    "relation_name" => $config["relation_name"] ?? null,
+                    "reception_mode" => $config["reception_mode"],
+                    "slug" => Str::slug($config["name"]),
+                ],
+                $documentTypesConfig
+            );
+
+            DocumentType::factory()
+                ->count(count($documentTypesConfig))
+                ->state(new Sequence(...$sequence))
+                ->create();
 
             /*DepartmentDocumentType::factory()
             ->count(1)
@@ -145,8 +141,7 @@ $sequence = array_map(fn ($config) => fn () => [
             ))
             ->create();*/
 
-
-           /* AttachmentType::factory()
+            /* AttachmentType::factory()
             ->count(10)
             ->state(new Sequence(
                 ['name'=>'Facture originale','slug'=>Str::slug("Facture originale")],
@@ -162,19 +157,15 @@ $sequence = array_map(fn ($config) => fn () => [
             ))
             ->create();*/
 
-
             $this->call([
-        AttachmentTypeSeeder::class,
-       // LedgerCodeTypeSeeder::class,
-    ]);
+                AttachmentTypeSeeder::class,
+                // LedgerCodeTypeSeeder::class,
+            ]);
 
             DB::commit();
-    
-            
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
         }
-
     }
 }

@@ -30,24 +30,35 @@ Route::middleware("jwt.check")
          * 📌 DocumentTypeController
          */
         Route::controller(DocumentTypeController::class)->group(function () {
-            Route::get("/document_types/allowed", "getDocumentTypesWithPermissions");
-            Route::get("/document_types/allowed-by-role", "getDocumentTypesWithPermissionsForRoles");
-            Route::get("/getRolesByDocumentType/{documentTypeCode}", "getRolesByDocumentType");
-
+            Route::get(
+                "/document_types/allowed",
+                "getDocumentTypesWithPermissions"
+            );
+            Route::get(
+                "/document_types/allowed-by-role",
+                "getDocumentTypesWithPermissionsForRoles"
+            );
+            Route::get(
+                "/getRolesByDocumentType/{documentTypeCode}",
+                "getRolesByDocumentType"
+            );
         });
 
-                /**
+        /**
          * 📌 FolderController
          */
         Route::controller(FolderController::class)->group(function () {
             Route::get("/folders/allowed", "getFoldersWithPermissions");
-            Route::get("/folders/allowed-by-role", "getFoldersWithPermissionsForRoles");
+            Route::get(
+                "/folders/allowed-by-role",
+                "getFoldersWithPermissionsForRoles"
+            );
             Route::get("/getRolesByFolders/{folderCode}", "getRolesByFolders");
 
-                Route::get('/folders/{folderId}/authorized-departments','getAuthorizedDepartments')
-                ->whereNumber('folderId'); // ✅ Ne matchera pas "allowed-by-role"
-
-
+            Route::get(
+                "/folders/{folderId}/authorized-departments",
+                "getAuthorizedDepartments"
+            )->whereNumber("folderId"); // ✅ Ne matchera pas "allowed-by-role"
         });
 
         /**
@@ -58,22 +69,34 @@ Route::middleware("jwt.check")
             Route::get("/{id}/available-actions", "getAvailableActions");
             Route::get("/{documentId}/attachments", "getAttachments");
             Route::get("/search", "searchDocumentByReference");
-            Route::get('/{id}/details', 'getDetails')->name('documents.details');
-
+            Route::get("/{id}/details", "getDetails")->name(
+                "documents.details"
+            );
         });
 
         /**
          * 📌 AttachmentTypeController
          */
-        Route::get("/attachment-types/{category}", [AttachmentTypeController::class, "index"]);
-        Route::get('/attachment-types/by-id/{attachmentType}', [AttachmentTypeController::class, 'show']);
-        Route::post('/{documentId}/missing-attachment-types', [AttachmentTypeController::class, 'missingForDocument']);
-
+        Route::get("/attachment-types/{category}", [
+            AttachmentTypeController::class,
+            "index",
+        ]);
+        Route::get("/attachment-types/by-id/{attachmentType}", [
+            AttachmentTypeController::class,
+            "show",
+        ]);
+        Route::post("/{documentId}/missing-attachment-types", [
+            AttachmentTypeController::class,
+            "missingForDocument",
+        ]);
 
         /**
          * 📌 LedgerCodeTypeController
          */
-        Route::get("/ledger-code-types", [LedgerCodeTypeController::class, "index"]);
+        Route::get("/ledger-code-types", [
+            LedgerCodeTypeController::class,
+            "index",
+        ]);
 
         /**
          * 📌 AttachmentController
@@ -83,7 +106,10 @@ Route::middleware("jwt.check")
         /**
          * 📌 API Resources
          */
-        Route::apiResource("/attachment-type-categories", AttachmentTypeCategoryController::class);
+        Route::apiResource(
+            "/attachment-type-categories",
+            AttachmentTypeCategoryController::class
+        );
         Route::apiResource("/documentTypes", DocumentTypeController::class);
         Route::apiResource("/folders", FolderController::class);
 
@@ -97,15 +123,26 @@ Route::middleware("jwt.check")
  * 📌 Public / hors middleware
  */
 
-Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
-
+Route::get("/documents/{id}/download", [
+    DocumentController::class,
+    "download",
+])->name("documents.download");
 
 // Génération de thumbnail
-Route::get("documents/{document}/generate-thumbnail", [TestThumbnailController::class, "handle"]);
+Route::get("documents/{document}/generate-thumbnail", [
+    TestThumbnailController::class,
+    "handle",
+]);
 
 // Affichage des pièces jointes
-Route::get("documents/attachments/{attachment}", [AttachmentController::class, "show"]);
-Route::get("documents/main_attachment/{document}", [AttachmentController::class, "getMainAttachment"]);
+Route::get("documents/attachments/{attachment}", [
+    AttachmentController::class,
+    "show",
+]);
+Route::get("documents/main_attachment/{document}", [
+    AttachmentController::class,
+    "getMainAttachment",
+]);
 
 // Thumbnail direct
 Route::get("documents/{document}/thumbnail", function (Document $document) {
@@ -115,5 +152,7 @@ Route::get("documents/{document}/thumbnail", function (Document $document) {
         return response()->json(["message" => "Thumbnail not found"], 404);
     }
 
-    return response()->file(storage_path("app/public/thumbnails/" . $file->path));
+    return response()->file(
+        storage_path("app/public/thumbnails/" . $file->path)
+    );
 });
