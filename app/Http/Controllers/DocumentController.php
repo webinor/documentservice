@@ -1267,6 +1267,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $documents_relation = [
             "facture-fournisseur-medical" => "invoice_provider.ledger_code",
             "facture-fournisseur-informatique" => "invoice_provider",
+            "facture-note-honoraire" => "invoice_provider",
         ];
 
         return $document->load(
