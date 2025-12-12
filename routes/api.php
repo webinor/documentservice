@@ -72,6 +72,8 @@ Route::middleware("jwt.check")
             Route::get("/{id}/details", "getDetails")->name(
                 "documents.details"
             );
+            Route::post('/notify-beneficiary', [DocumentController::class, 'notifyBeneficiary']);
+
         });
 
         /**

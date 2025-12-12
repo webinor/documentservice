@@ -17,6 +17,7 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
 use App\Models\RequestOrder;
 use App\Models\Tax;
+use App\Models\TaxiPaper;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +98,14 @@ class DatabaseSeeder extends Seeder
                     "class_name" => contract::class,
                     "relation_name" => "formal_notice",
                     "reception_mode" => "AUTO_BY_ROLE",
+                ],
+
+
+                 [
+                    "name" => "Papier Taxi",
+                    "class_name" => TaxiPaper::class,
+                    "relation_name" => "formal_notice",
+                    "reception_mode" => "WORKFLOW_DRIVEN",
                 ],
 
                 /*     [

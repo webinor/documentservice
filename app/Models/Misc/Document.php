@@ -2,8 +2,11 @@
 
 namespace App\Models\Misc;
 
+use App\Models\AbsenceRequest;
+use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
+use App\Models\TaxiPaper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,6 +54,21 @@ class Document extends Model
     public function invoice_provider(): HasOne
     {
         return $this->hasOne(InvoiceProvider::class);
+    }
+
+    public function taxi_paper(): HasOne
+    {
+        return $this->hasOne(TaxiPaper::class);
+    }
+
+       public function fee_note(): HasOne
+    {
+        return $this->hasOne(FeeNote::class);
+    }
+
+          public function absence_request(): HasOne
+    {
+        return $this->hasOne(AbsenceRequest::class);
     }
 
     public function getCreatedAtAttribute($value)

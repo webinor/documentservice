@@ -24,14 +24,74 @@ class StoreDocumentRequest extends FormRequest
      */
     public function rules()
     {
-        //$document_type = $this->document_type_id;
-        // Renvoyer un JSON temporaire
-        /*abort(response()->json([
-        'document_type_id' => $this->document_type_id,
-        'all_inputs' => $this->all(),
-    ], 422));*/
+       
+        $type = DocumentType::findOrFail($this->document_type_id);
 
-        $type = DocumentType::whereId($this->document_type_id)->first(); // depuis l'URL ou formulaire
+        // 🔥 Mapping dynamique : chaque type a ses règles
+        $baseRules = [
+    "titre" => "required|string",
+    "document_type_id" => "required|exists:document_types,id",
+    "departement" => "nullable",
+
+];
+
+$invoiceFields = [
+    "prestataire" => "required|string",
+    "reference_fournisseur" => "required|string",
+    "dateDepot" => "required|date|before:now",
+    "montant" => "required|numeric",
+];
+
+$taxiFields = [
+    "motif" => "required|string",
+    "trajets" => "required|array|min:1",
+    "trajets.*.trajet" => "required|string",
+    "trajets.*.montant" => "required|numeric",
+    "beneficiaire" => "required|numeric",
+];
+
+$feeNoteFields = [
+    "motif" => "required|string",
+    "montant" => "required|numeric",
+    "beneficiaire" => "required|numeric",
+];
+
+$absenceRequestFields = [
+
+    "motif"        => "required|string",
+    "beneficiaire" => "required|numeric",
+
+    "dateDepart"   => "required|date",
+    "heureDepart"  => [
+        "required",
+        "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/"
+    ],
+
+    "dateRetour"   => "required|date",
+    "heureRetour"  => [
+        "required",
+        "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/"
+    ],
+
+
+];
+
+
+
+$rulesByType = [
+    'facture-fournisseur-medical' => [$baseRules, $invoiceFields],
+    'facture-fournisseur-informatique' => [$baseRules, $invoiceFields],
+    'facture-note-honoraire' => [$baseRules, $invoiceFields],
+    'CREDIT_NOTE' => [$baseRules, $invoiceFields], // ✔️ mêmes champs !
+    'papier-taxi' => [$baseRules, $taxiFields],
+    'note-de-frais' => [$baseRules, $feeNoteFields],
+    'demande-d-absence' => [$baseRules, $absenceRequestFields],
+];
+
+
+       
+
+        //$type = DocumentType::whereId($this->document_type_id)->first(); // depuis l'URL ou formulaire
 
         if ($type->reception_mode == "AUTO_BY_ROLE") {
             /*$fields = DB::table('form_fields')
@@ -50,7 +110,15 @@ class StoreDocumentRequest extends FormRequest
                 "courrier" => "required|file|max:10240", // fichiers
             ];
         } elseif ($type->reception_mode == "WORKFLOW_DRIVEN") {
-            return [
+
+
+         $selected = $rulesByType[$type->slug] ?? [$baseRules];
+
+// Fusionne proprement les règles
+return array_merge(...$selected);
+
+
+        /*    return [
                 "titre" => "required",
                 "prestataire" => "required",
                 "reference_fournisseur" => "required",
@@ -61,7 +129,7 @@ class StoreDocumentRequest extends FormRequest
                 "document_type_id" => "required|exists:document_types,id",
                 "departement" => "nullable",
                 "facture" => "required|file|max:10240", // fichiers
-            ];
+            ];*/
         }
     }
 }
