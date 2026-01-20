@@ -20,11 +20,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
+
 
 class DocumentController extends Controller
 {
 
      private DocumentChildHandler $childHandler;
+     private $documents_relation = [
+            "facture-fournisseur-medical" => "invoice_provider.ledger_code",
+            "facture-fournisseur-informatique" => "invoice_provider",
+            "facture-note-honoraire" => "invoice_provider",
+            "papier-taxi" => "taxi_paper",
+            "note-de-frais" => "fee_note",
+            "demande-d-absence"=>"absence_request"
+        ]; 
 
     public function __construct(DocumentChildHandler $childHandler)
     {
@@ -62,6 +72,11 @@ class DocumentController extends Controller
             ]);
         }
 
+
+        $total = collect($child->rides)->reduce(function ($carry, $item) {
+    return $carry + (int) ($item['montant'] ?? 0);
+}, 0);
+
       //  return config("services.user_service.base_url") . ($child->beneficiary);
         //on recupere les information sur le beneficiaire
         $response = Http::withToken(request()->bearerToken())
@@ -75,7 +90,7 @@ class DocumentController extends Controller
 
 
 
-                return    $response_event = Http::withToken(request()->bearerToken())
+                    $response_event = Http::withToken(request()->bearerToken())
                     ->acceptJson()
                     ->post(
                         config("services.user_service.base_url") . "/events/dispatch/init-confirm-payment-receive",
@@ -84,7 +99,7 @@ class DocumentController extends Controller
                             "payload" => [
                                // "user_id" => $userId,
                                 "beneficiary" => $child->beneficiary,
-                                //"status" => "validated",
+                                "amount" => $total,
                             ]
                         ]
                     );
@@ -99,7 +114,7 @@ class DocumentController extends Controller
 
              //   return $response->json();
 
-        return  $response;
+       // return  $response;
             
         }
         else{
@@ -114,18 +129,59 @@ class DocumentController extends Controller
         }
 
         // 3. Envoyer OTP ou demande de signature selon ton workflow
-        $otp = rand(100000, 999999);
-        $document->otp_code = $otp;
-        $document->otp_sent_at = now();
-        $document->save();
+        // $otp = rand(100000, 999999);
+        // $document->otp_code = $otp;
+        // $document->otp_sent_at = now();
+        // $document->save();
 
         // Ici tu peux envoyer un SMS ou WhatsApp (mtn, orange, twilio, etc.)
         // SmsService::send($document->beneficiary_phone, "Votre code OTP est $otp");
 
+      //  return $response_event->json();
+
         return response()->json([
             'success' => true,
-            'message' => 'OTP envoyé avec succès au bénéficiaire.'
+            'message' => 'OTP envoyé avec succès au bénéficiaire.',
+            'user'=>$response->json()['user'],
+            'transaction_code'=>$response_event->json()['transaction_code']
         ]);
+    }
+
+     /**
+     * Télécharge le document au format PDF
+     */
+    public function download_document(Request $request , Document $document)
+    {
+        // Vérifier si l'utilisateur peut accéder au document
+        //$this->authorize('view', $document);
+
+        //return $document;
+       //return new Exception(json_encode($document));
+
+       $document->load('document_type');
+
+       $document = $this->enrichDocument($document , $request->bearerToken());
+
+
+        // Chercher le template selon le type de document
+        $template = $document->document_type->slug ?? null;
+
+        if (!$template || !view()->exists("templates.$template")) {
+            abort(404, "Template $template introuvable");
+        }
+
+        // Générer le PDF depuis le template Blade
+        $pdf = Pdf::loadView("templates.$template", [
+            'document' => $document
+        ]);
+
+        //new Exception(json_encode($template));
+
+        // Nom du fichier pour le téléchargement
+        $fileName = $template . '-' . $document->id . '.pdf';
+
+        // Retourner le PDF en téléchargement
+        return $pdf->download($fileName);
     }
 
     public function download($id)
@@ -1082,129 +1138,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         return null; // pas de workflow automatique
     }
 
-    public function getDocumentsByIdsOld(Request $request)
-    {
-        $ids = $request->input("ids", []);
-        $documentTypes = $request->input("documentTypes", []);
-        $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
-
-     
-
-        $query = Document::query();
-
-        // Filtre par IDs
-        if (!empty($ids)) {
-            $query->whereIn("id", $ids);
-        }
-
-        // Filtre par relations / types de document
-        if (!empty($documentTypes)) {
-            $query->where(function ($q) use ($documentTypes) {
-                foreach ($documentTypes as $relation) {
-                    $q->whereHas($relation);
-                }
-            });
-        }
-
-        // Filtre par statut
-        if (!empty($filters["status"])) {
-            $statuses = is_array($filters["status"])
-                ? $filters["status"]
-                : explode(",", $filters["status"]);
-            $query->whereIn("status", $statuses);
-        }
-
-        // Filtre par type de prestataire
-        if (!empty($filters["supplier_type"])) {
-            //$statuses = is_array($filters['status']) ? $filters['status'] : explode(',', $filters['status']);
-            $query->whereHas("invoice_provider." . $filters["supplier_type"]);
-        }
-
-        //   supplier_type
-
-        // Filtre par montant dans InvoiceProvider
-        if (!empty($filters["amount"])) {
-            $query->whereHas("invoice_provider", function ($q) use ($filters) {
-                switch ($filters["amount"]) {
-                    case "lt_100k":
-                        $q->where("amount", "<", 100000);
-                        break;
-                    case "100k_500k":
-                        $q->whereBetween("amount", [100000, 500000]);
-                        break;
-                    case "gt_500k":
-                        $q->where("amount", ">", 500000);
-                        break;
-                }
-            });
-        }
-
-        // Filtre par fournisseur (via InvoiceProvider)
-        if (!empty($filters["document_type_id"])) {
-            $document_type_id = $filters["document_type_id"];
-            $query->whereHas("document_type", function ($q) use (
-                $document_type_id
-            ) {
-                $q->whereId($document_type_id); // ou le champ correct dans DocumentType
-            });
-        }
-
-        // Filtre par fournisseur (via InvoiceProvider)
-        if (!empty($filters["fournisseur_id"])) {
-            $fournisseurId = $filters["fournisseur_id"];
-            $query->whereHas("invoice_provider", function ($q) use (
-                $fournisseurId
-            ) {
-                $q->where("id", $fournisseurId); // ou le champ correct dans InvoiceProvider
-            });
-        }
-
-        if (!empty($filters["date_start"])) {
-            $filters["date_start"] = Carbon::parse(
-                $filters["date_start"]
-            )->format("Y-m-d");
-        }
-        if (!empty($filters["date_end"])) {
-            $filters["date_end"] = Carbon::parse($filters["date_end"])->format(
-                "Y-m-d"
-            );
-        }
-
-        // Filtre par date
-        if (!empty($filters["date_start"]) && !empty($filters["date_end"])) {
-            $query->whereBetween("created_at", [
-                $filters["date_start"],
-                $filters["date_end"],
-            ]);
-        } elseif (!empty($filters["date_start"])) {
-            //  return ["ok"];
-            $query->whereDate("created_at", ">=", $filters["date_start"]);
-        } elseif (!empty($filters["date_end"])) {
-            $query->whereDate("created_at", "<=", $filters["date_end"]);
-        }
-
-        // Charger les relations
-        $query->with(array_merge(["document_type"], $documentTypes));
-
-        $documents = $query->get()->map(function ($doc) {
-            return [
-                "id" => $doc->id,
-                "title" => $doc->title,
-                "document_type_name" => $doc->document_type->name,
-                "document_type_id" => $doc->document_type_id,
-                "type" => $doc->document_type->name,
-                "status" => $doc->status,
-                "amount" => $doc->invoice_provider->amount,
-                "created_at" => $doc->created_at,
-                "created_by" => $doc->created_by,
-                "acteur_principal" => $doc->invoice_provider->provider ?? null, // ou autre champ clé
-            ];
-        });
-
-        return response()->json($documents);
-
-    }
-
+  
         public function getDocumentsByIds(Request $request)
     {
         $DOC_CONFIG = config("document_types");
@@ -1214,7 +1148,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $documentTypes = $request->input("documentTypes", []);
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
 
-     
+      
 
         $query = Document::query();
 
@@ -1224,9 +1158,23 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         }
 
         // Filtre par IDs
+        // if (!empty($userId)) {
+        //     $query->whereCreatedBy($userId);
+        // }
         if (!empty($userId)) {
-            $query->whereCreatedBy($userId);
-        }
+    
+            $query->where(function ($q) use ($userId, $documentTypes) {
+
+        // created_by (champ direct)
+        $q->where('created_by', $userId);
+
+        // requester (relation dynamique)
+        $q->orWhereHas($documentTypes[0]/*->slug */, function ($qr) use ($userId) {
+            $qr->where('beneficiary', $userId);
+        });
+
+    });
+}
 
         // Filtre par relations / types de document
         if (!empty($documentTypes)) {
@@ -1318,6 +1266,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // Charger les relations
         $query->with(array_merge(["document_type"], $documentTypes));
 
+        // return $documents = $query->get();
+
         $documents = $query->get()->map(function ($doc) use ($documentTypes , $DOC_CONFIG) {
 
             // Détecter quel type de document est réellement présent
@@ -1351,13 +1301,37 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
     // Injecter dynamiquement les champs configurés
     foreach ($fields as $responseKey => $modelField) {
-        $base[$responseKey] = $relationObj->$modelField ?? null;
+        $value = $relationObj->$modelField ?? null;
+
+          // Si la clé est susceptible de contenir un ID utilisateur
+    $userKeys = ['demandeur', 'validateur', 'beneficiaire']; // Liste des clés à enrichir
+    if (in_array($responseKey, $userKeys) && $value) {
+        // Appel au microservice User pour récupérer les infos
+        $response = Http:://withToken(config('services.user_service.token'))
+            acceptJson()
+            ->get(config('services.user_service.base_url') . "/{$value}");
+
+    //new Exception(json_encode($response));
+
+        if ($response->successful()) {
+            $value = $response->json()['user']; // ou filtrer certaines infos, ex: ['id','name','email']
+        }
+        else{
+   
+            // new Exception(json_encode($response));
+
+        }
+    }
+
+    //new Exception(json_encode($value));
+
+    $base[$responseKey] = $value;
     }
 
     return $base;
 
 
-            return [
+            /*return [
                 "id" => $doc->id,
                 "title" => $doc->title,
                 "document_type_name" => $doc->document_type->name,
@@ -1368,44 +1342,19 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 "created_at" => $doc->created_at,
                 "created_by" => $doc->created_by,
                 "acteur_principal" => $doc->invoice_provider->provider ?? null, // ou autre champ clé
-            ];
+            ];*/
         });
 
         return response()->json($documents);
 
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Misc\Document  $document
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Request $request , Document $document)
-    {
-        $document->load("document_type");
+    public function enrichDocument($document , $token){
 
-        $documents_relation = [
-            "facture-fournisseur-medical" => "invoice_provider.ledger_code",
-            "facture-fournisseur-informatique" => "invoice_provider",
-            "facture-note-honoraire" => "invoice_provider",
-            "papier-taxi" => "taxi_paper",
-            "note-de-frais" => "fee_note",
-            "demande-d-absence"=>"absence_request"
-        ];
-
-         $document->load(
-            $documents_relation[$document->document_type->slug],
-            "attachments.file",
-            "secondary_attachments"
-        );
-
-
-           // ######## DYNAMIQUE : enrichir beneficiary ########
         if (in_array($document->document_type->slug ,["papier-taxi" , "note-de-frais" , "demande-d-absence" ])) {
 
                 $slug = $document->document_type->slug;
-    $relation = $documents_relation[$slug] ?? null;
+    $relation = $this->documents_relation[$slug] ?? null;
          // Charger la relation dynamique
     if ($relation) {
         $document->load($relation);
@@ -1418,7 +1367,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 $userServiceUrl = config(
                     "services.user_service.base_url"
                 ); // ex: http://user-service/api
-                $userResponse = Http::withToken($request->bearerToken())
+                $userResponse = Http::withToken($token)
                     ->acceptJson()
                     ->get(
                         "$userServiceUrl/".($entity->beneficiary > 0 ? $entity->beneficiary : 1)
@@ -1432,6 +1381,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 // On attache les infos sans toucher à la DB
                 $entity->beneficiary_details = $userData;
+                $document->beneficiary = $userData['id'];
 
                 //$document->relation = $entity;
                 $document->setRelation($relation, $entity);
@@ -1441,6 +1391,31 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 }
 
             }
+
+            return $document;
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Models\Misc\Document  $document
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Request $request , Document $document)
+    {
+        $document->load("document_type");
+
+        
+
+         $document->load(
+            $this->documents_relation[$document->document_type->slug],
+            "attachments.file",
+            "secondary_attachments"
+        );
+
+
+           // ######## DYNAMIQUE : enrichir beneficiary ########
+        $document =  $this->enrichDocument($document , $request->bearerToken());
 
         return $document;
     }

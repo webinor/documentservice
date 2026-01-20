@@ -130,6 +130,11 @@ Route::get("/documents/{id}/download", [
     "download",
 ])->name("documents.download");
 
+Route::get("/documents/{document}/download-document", [
+    DocumentController::class,
+    "download_document",
+])->name("documents.download_document");
+
 // Génération de thumbnail
 Route::get("documents/{document}/generate-thumbnail", [
     TestThumbnailController::class,

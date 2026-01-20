@@ -9,17 +9,18 @@ return [
         ],
     ],
 
-    "taxi_provider" => [
+    "taxi_paper" => [
         "fields" => [
-            "amount" => "amount",
-            "acteur_principal" => "driver_name",
+            "rides" => "rides",
+            "demandeur" => "beneficiary",
         ],
     ],
 
         "fee_note" => [
         "fields" => [
             "amount" => "amount",
-            "acteur_principal" => "driver_name",
+            "rides" => "rides",
+            "demandeur" => "beneficiary",
         ],
     ],
 

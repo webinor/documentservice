@@ -76,7 +76,7 @@ class Document extends Model
         if (!$value) {
             return null; // ou return '';
         }
-        return \Carbon\Carbon::parse($value)->format("d-m-Y");
+        return \Carbon\Carbon::parse($value)->format("d-m-Y   H:i");
     }
 
     /**
