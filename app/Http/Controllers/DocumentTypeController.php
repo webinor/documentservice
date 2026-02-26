@@ -13,6 +13,7 @@ use App\Services\CheckPermissionsService;
 
 use App\Http\Requests\StoreDocumentTypeRequest;
 use App\Http\Requests\UpdateDocumentTypeRequest;
+use Illuminate\Support\Facades\Log;
 
 class DocumentTypeController extends Controller
 {
@@ -36,10 +37,27 @@ class DocumentTypeController extends Controller
      */
     public function index(Request $request)
     {
-        $documentTypes = DocumentType::orderBy("name")
-            ->with("department_document_types")
-            ->get();
-        return response()->json(["success" => true, "data" => $documentTypes]);
+
+        try {
+
+    $documentTypes = DocumentType::orderBy("name")
+        ->with("department_document_types")
+        ->get();
+
+    Log::info("Récupération des types de documents OK", [
+        'count' => $documentTypes->count(),
+    ]);
+
+    return response()->json(["success" => true, "data" => $documentTypes]);
+
+} catch (\Exception $e) {
+
+    Log::error("Erreur récupération types de documents", [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+    ]);
+}
+        
     }
 
     public function getRolesByDocumentType($documentTypeCode)
