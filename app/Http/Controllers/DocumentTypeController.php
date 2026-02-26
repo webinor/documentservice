@@ -46,6 +46,7 @@ class DocumentTypeController extends Controller
 
     Log::info("Récupération des types de documents OK", [
         'count' => $documentTypes->count(),
+        'documentTypes' => $documentTypes
     ]);
 
     return response()->json(["success" => true, "data" => $documentTypes]);
