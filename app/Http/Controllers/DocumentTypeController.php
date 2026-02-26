@@ -40,7 +40,7 @@ class DocumentTypeController extends Controller
 
         try {
 
-    $documentTypes = DocumentType::orderBy("name")
+    $documentTypes = DocumentTyp::orderBy("name")
         ->with("department_document_types")
         ->get();
 
