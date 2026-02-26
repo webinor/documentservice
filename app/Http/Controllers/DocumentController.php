@@ -47,7 +47,10 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        //
+        return response()->json([
+                'success' => true,
+                'data' => "ok"
+            ]);
     }
 
 
