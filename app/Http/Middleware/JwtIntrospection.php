@@ -14,7 +14,6 @@ class JwtIntrospection
     {
         $token = $request->bearerToken();
 
-        $token = $request->bearerToken();
         Log::info('Token reçu : ' . ($token ?? 'NULL'));
 
         if (!$token) {

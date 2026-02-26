@@ -112,7 +112,7 @@ Route::middleware("jwt.check")
             "/attachment-type-categories",
             AttachmentTypeCategoryController::class
         );
-        Route::apiResource("/documentTypesaa", DocumentTypeController::class);
+        Route::apiResource("/documentTypes", DocumentTypeController::class);
         Route::apiResource("/folders", FolderController::class);
 
         // Documents CRUD
