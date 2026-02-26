@@ -3,6 +3,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class JwtIntrospection
 {
@@ -13,7 +14,8 @@ class JwtIntrospection
     {
         $token = $request->bearerToken();
 
-        //dd($token);
+        $token = $request->bearerToken();
+        Log::info('Token reçu : ' . ($token ?? 'NULL'));
 
         if (!$token) {
             return response()->json(['error' => 'Token manquant'], 401);
