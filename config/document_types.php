@@ -16,7 +16,7 @@ return [
         ],
     ],
 
-        "fee_note" => [
+    "fee_note" => [
         "fields" => [
             "amount" => "amount",
             "rides" => "rides",

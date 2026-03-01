@@ -13,6 +13,7 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
 use App\Services\DocumentChildHandler;
+use App\Services\NotifyBeneficiaryService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -26,7 +27,10 @@ use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
 class DocumentController extends Controller
 {
 
+
+
      private DocumentChildHandler $childHandler;
+     private NotifyBeneficiaryService $notifyBeneficiaryService;
      private $documents_relation = [
             "facture-fournisseur-medical" => "invoice_provider.ledger_code",
             "facture-fournisseur-informatique" => "invoice_provider",
@@ -36,9 +40,10 @@ class DocumentController extends Controller
             "demande-d-absence"=>"absence_request"
         ]; 
 
-    public function __construct(DocumentChildHandler $childHandler)
+    public function __construct(DocumentChildHandler $childHandler , NotifyBeneficiaryService $notifyBeneficiaryService)
     {
         $this->childHandler = $childHandler;
+        $this->notifyBeneficiaryService = $notifyBeneficiaryService;
     }
     /**
      * Display a listing of the resource.
@@ -53,102 +58,127 @@ class DocumentController extends Controller
             ]);
     }
 
-
     public function notifyBeneficiary(Request $request)
-    {
-        // 1. Validation
-        $request->validate([
-            'document' => 'required|integer|exists:documents,id',
-        ]);
+{
+    $request->validate([
+        'document' => 'required|integer|exists:documents,id',
+    ]);
 
-        $documentId = $request->input('document');
-        $document = Document::with('document_type')->find($documentId);
-        $child = $document->{$document->document_type->relation_name};
+    try {
+        $result = $this->notifyBeneficiaryService
+            ->execute($request->input('document'));
 
-        // 2. Exemple : vérifier si le document permet la notification
-        if (!$child->beneficiary) {
-            return response()->json([
-                'success' => false,
-                'data' => [
-                    'required_type' => 'beneficiary'
-                ]
-            ]);
-        }
+                return response()->json(
+            array_merge([
+                'success' => true,
+                'message' => 'OTP envoyé avec succès.',
+            ], $result)
+        );
 
-
-        $total = collect($child->rides)->reduce(function ($carry, $item) {
-    return $carry + (int) ($item['montant'] ?? 0);
-}, 0);
-
-      //  return config("services.user_service.base_url") . ($child->beneficiary);
-        //on recupere les information sur le beneficiaire
-        $response = Http::withToken(request()->bearerToken())
-    ->acceptJson()
-    ->get(
-        config("services.user_service.base_url") . "/" .($child->beneficiary)
-    );
-
-    // Vérifier la réponse
-        if ($response->successful()) {
-
-
-
-                    $response_event = Http::withToken(request()->bearerToken())
-                    ->acceptJson()
-                    ->post(
-                        config("services.user_service.base_url") . "/events/dispatch/init-confirm-payment-receive",
-                        [
-                           // "event_type" => "USER_DOCUMENT_VALIDATED",
-                            "payload" => [
-                               // "user_id" => $userId,
-                                "beneficiary" => $child->beneficiary,
-                                "amount" => $total,
-                            ]
-                        ]
-                    );
-
-                if (!$response_event->successful()) {
-                    return response()->json([
-                        "success" => false,
-                        "message" => "Impossible de dispatcher l’évènement au User-Service.",
-                        "details" => $response->json()
-                    ], $response->status());
-                }
-
-             //   return $response->json();
-
-       // return  $response;
-            
-        }
-        else{
-
-            // Réponse KO → on gère l’erreur
-    return response()->json([
-        "success" => false,
-        "message" => "Impossible de récupérer les informations de l’utilisateur.",
-        "details" => $response->json()
-    ], $response->status());
-
-        }
-
-        // 3. Envoyer OTP ou demande de signature selon ton workflow
-        // $otp = rand(100000, 999999);
-        // $document->otp_code = $otp;
-        // $document->otp_sent_at = now();
-        // $document->save();
-
-        // Ici tu peux envoyer un SMS ou WhatsApp (mtn, orange, twilio, etc.)
-        // SmsService::send($document->beneficiary_phone, "Votre code OTP est $otp");
-
-      //  return $response_event->json();
-
+    } catch (\Exception $e) {
         return response()->json([
-            'success' => true,
-            'message' => 'OTP envoyé avec succès au bénéficiaire.',
-            'user'=>$response->json()['user'],
-            'transaction_code'=>$response_event->json()['transaction_code']
-        ]);
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
     }
+}
+
+
+//     public function notifyBeneficiary(Request $request)
+//     {
+//         // 1. Validation
+//         $request->validate([
+//             'document' => 'required|integer|exists:documents,id',
+//         ]);
+
+//         $documentId = $request->input('document');
+//         $document = Document::with('document_type')->find($documentId);
+//         $child = $document->{$document->document_type->relation_name};
+
+//         // 2. Exemple : vérifier si le document permet la notification
+//         if (!$child->beneficiary) {
+//             return response()->json([
+//                 'success' => false,
+//                 'data' => [
+//                     'required_type' => 'beneficiary'
+//                 ]
+//             ]);
+//         }
+
+
+//         $total = collect($child->rides)->reduce(function ($carry, $item) {
+//     return $carry + (int) ($item['montant'] ?? 0);
+// }, 0);
+
+//       //  return config("services.user_service.base_url") . ($child->beneficiary);
+//         //on recupere les information sur le beneficiaire
+//         $response = Http::withToken(request()->bearerToken())
+//     ->acceptJson()
+//     ->get(
+//         config("services.user_service.base_url") . "/" .($child->beneficiary)
+//     );
+
+//     // Vérifier la réponse
+//         if ($response->successful()) {
+
+
+
+//                     $response_event = Http::withToken(request()->bearerToken())
+//                     ->acceptJson()
+//                     ->post(
+//                         config("services.user_service.base_url") . "/events/dispatch/init-confirm-payment-receive",
+//                         [
+//                            // "event_type" => "USER_DOCUMENT_VALIDATED",
+//                             "payload" => [
+//                                // "user_id" => $userId,
+//                                 "beneficiary" => $child->beneficiary,
+//                                 "amount" => $total,
+//                             ]
+//                         ]
+//                     );
+
+//                 if (!$response_event->successful()) {
+//                     return response()->json([
+//                         "success" => false,
+//                         "message" => "Impossible de dispatcher l’évènement au User-Service.",
+//                         "details" => $response->json()
+//                     ], $response->status());
+//                 }
+
+//              //   return $response->json();
+
+//        // return  $response;
+            
+//         }
+//         else{
+
+//             // Réponse KO → on gère l’erreur
+//     return response()->json([
+//         "success" => false,
+//         "message" => "Impossible de récupérer les informations de l’utilisateur.",
+//         "details" => $response->json()
+//     ], $response->status());
+
+//         }
+
+//         // 3. Envoyer OTP ou demande de signature selon ton workflow
+//         // $otp = rand(100000, 999999);
+//         // $document->otp_code = $otp;
+//         // $document->otp_sent_at = now();
+//         // $document->save();
+
+//         // Ici tu peux envoyer un SMS ou WhatsApp (mtn, orange, twilio, etc.)
+//         // SmsService::send($document->beneficiary_phone, "Votre code OTP est $otp");
+
+//       //  return $response_event->json();
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'OTP envoyé avec succès au bénéficiaire.',
+//             'user'=>$response->json()['user'],
+//             'transaction_code'=>$response_event->json()['transaction_code']
+//         ]);
+//     }
 
      /**
      * Télécharge le document au format PDF

@@ -40,9 +40,19 @@ class DocumentTypeController extends Controller
 
         try {
 
-    $documentTypes = DocumentType::orderBy("name")
-        ->with("department_document_types")
-        ->get();
+     $query = DocumentType::orderBy('name')
+        ->with('department_document_types');
+
+    // Si plusieurs IDs sont fournis
+    if ($request->has('ids') && is_array($request->ids) && count($request->ids)) {
+        $query->whereIn('id', $request->ids);
+    }
+    // Si un seul ID est fourni
+    elseif ($request->has('id') && is_numeric($request->id)) {
+        $query->where('id', $request->id);
+    }
+
+    $documentTypes = $query->get();
 
     Log::info("Récupération des types de documents OK", [
         'count' => $documentTypes->count(),
