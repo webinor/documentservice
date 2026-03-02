@@ -18,7 +18,7 @@ class UserServiceClient
         return $this->client()->get("/{$userId}");
     }
 
-    public function dispatchPaymentEvent(int $beneficiaryId, int $amount)
+    public function dispatchPaymentEvent(int $beneficiaryId, int $amount , string $reason)
     {
         return $this->client()->post(
             "/events/dispatch/init-confirm-payment-receive",
@@ -26,6 +26,7 @@ class UserServiceClient
                 "payload" => [
                     "beneficiary" => $beneficiaryId,
                     "amount" => $amount,
+                    "reason" => $reason,
                 ]
             ]
         );

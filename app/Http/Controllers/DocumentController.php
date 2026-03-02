@@ -185,6 +185,14 @@ class DocumentController extends Controller
      */
     public function download_document(Request $request , Document $document)
     {
+//         $logoPath = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
+
+// if (file_exists($logoPath)) {
+//     $logoUrl = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
+// } else {
+//     $logoUrl = asset('assets/img/default-logo.png'); // fallback
+// }
+// return $logoUrl;
         // Vérifier si l'utilisateur peut accéder au document
         //$this->authorize('view', $document);
 
@@ -203,9 +211,13 @@ class DocumentController extends Controller
             abort(404, "Template $template introuvable");
         }
 
+        $signatureDonneur = asset('assets/img/signaturearol.jpg') ;
+        $signatureBeneficiaire = asset('assets/img/benef.jpg') ;
         // Générer le PDF depuis le template Blade
         $pdf = Pdf::loadView("templates.$template", [
-            'document' => $document
+            'document' => $document,
+            'signatureDonneur'=>$signatureDonneur,
+            'signatureBeneficiaire'=>$signatureBeneficiaire
         ]);
 
         //new Exception(json_encode($template));

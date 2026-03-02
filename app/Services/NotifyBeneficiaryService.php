@@ -37,7 +37,8 @@ class NotifyBeneficiaryService
 
         $eventResponse = $this->userService->dispatchPaymentEvent(
             $child->beneficiary,
-            $total
+            $total,
+            $child->reason ?? ""
         );
 
         if (!$eventResponse->successful()) {
