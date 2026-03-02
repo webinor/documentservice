@@ -378,7 +378,7 @@ class DocumentController extends Controller
             "created_by" => $creator ?? "Système",
             "attachment_type" => $attachmentType,
             "preview_url" => $document->main_attachment
-                ? url(
+                ? secure_url(
                     "storage/documents_attachments/" .
                         $document->main_attachment->file->path
                 )
