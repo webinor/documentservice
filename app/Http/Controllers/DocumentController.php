@@ -385,7 +385,7 @@ class DocumentController extends Controller
                 : null,
             "download_url" => route("documents.download", [
                 "id" => $document->id,
-            ]),
+            ],true),
 
             // 🔖 Métadonnées dynamiques (champs spécifiques à ce type de document)
             //'metadata' => $document->metadata ?? [],
