@@ -383,9 +383,12 @@ class DocumentController extends Controller
                         $document->main_attachment->file->path
                 )
                 : null,
-            "download_url" => route("documents.download", [
-                "id" => $document->id,
-            ],true),
+
+                
+            "download_url" => secure_url("api/documents/".$document->id."/download"),
+            // "download_url" => route("documents.download", [
+            //     "id" => $document->id,
+            // ],true),
 
             // 🔖 Métadonnées dynamiques (champs spécifiques à ce type de document)
             //'metadata' => $document->metadata ?? [],
