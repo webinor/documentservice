@@ -16,6 +16,14 @@ class InvoiceProvider extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'provider_reference',
+        'provider',
+        'amount',
+        'deposit_date',
+        'document_id'
+    ];
+
 
     public function getDepositDateAttribute($value)
 {

@@ -6,6 +6,7 @@ use App\Models\AbsenceRequest;
 use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
+use App\Models\ItSupplier;
 use App\Models\TaxiPaper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,6 +61,18 @@ class Document extends Model
     {
         return $this->hasOne(TaxiPaper::class);
     }
+
+    /**
+ * Get the it_supplier associated with the InvoiceProvider
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasOne
+ */
+public function it_supplier(): HasOne
+{
+    return $this->hasOne(ItSupplier::class);
+}
+
+   
 
        public function fee_note(): HasOne
     {
