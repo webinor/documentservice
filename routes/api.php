@@ -42,6 +42,11 @@ Route::middleware("jwt.check")
                 "/getRolesByDocumentType/{documentTypeCode}",
                 "getRolesByDocumentType"
             );
+
+            Route::get(
+                "/document_types/getByRelation",
+                "getDocumentTypesByRelationName"
+            );
         });
 
         /**

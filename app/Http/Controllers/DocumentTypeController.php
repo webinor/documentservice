@@ -162,6 +162,107 @@ class DocumentTypeController extends Controller
         }
     }
 
+        public function getDocumentTypesByRelationName(Request $request)
+    {
+        try {
+
+        $relations = $request->query("relations"); // &userId=1015
+
+
+           $documentTypes = DocumentType::where(function ($query) use ($relations) {
+    foreach ($relations as $relation) {
+        $query->orWhere('relation_name', 'like', "%$relation%");
+    }
+})->get();
+
+            if (!$documentTypes) {
+                return response()->json(["success" => true, "data" => []]);
+            }
+
+            return response()->json(["success" => true, "data" => $documentTypes]);
+
+            $department_documentTypes = DepartmentDocumentType::whereDocumentTypeId(
+                $documentType->id
+            )->get();
+
+            if ($department_documentTypes->count() == 0) {
+                return response()->json(["success" => true, "data" => []]);
+            }
+
+            $departmentIds = array_column(
+                $department_documentTypes->toArray(),
+                "department_id"
+            );
+
+            $bodySent = ["departmentIds" => $departmentIds];
+            $rolesResponse = Http::withHeaders([
+                "Accept" => "application/json",
+            ])->post(
+                $this->departmentServiceBaseUrl . "/getRolesByDepartments",
+                $bodySent
+            );
+
+            $rolesEnrichis = [];
+
+            // Vérifier si la requête a réussi
+            if ($rolesResponse->successful()) {
+                $roles = $rolesResponse->json()["data"];
+
+                $bodyEnrichSent = [
+                    "documentTypes" => $documentType->pluck("id"),
+                    "rolesNames" => $roles,
+                ];
+
+                // Ensuite enrichir les rôles
+                //$rolesEnrichisResponse = Http::post($this->userServiceBaseUrl."/getRolesByNames", $bodyEnrichSent);
+                $rolesEnrichisResponse = Http::withHeaders([
+                    "Accept" => "application/json",
+                ])->post(
+                    $this->userServiceBaseUrl . "/getPermissionsByRolesNames",
+                    $bodyEnrichSent
+                );
+
+                if ($rolesEnrichisResponse->successful()) {
+                    $rolesEnrichis = $rolesEnrichisResponse->json();
+                    //return $rolesEnrichis;
+                } else {
+                    // Gérer l'erreur de la deuxième requête
+                    return response()->json(
+                        [
+                            "url" =>
+                                $this->userServiceBaseUrl . "/getRolesByNames",
+                            "error" =>
+                                "Erreur lors de l'enrichissement des rôles",
+                            "status" => $rolesEnrichisResponse->status(),
+                            "body_sent" => $bodyEnrichSent,
+                            "response_body" => $rolesEnrichisResponse->body(),
+                        ],
+                        $rolesEnrichisResponse->status()
+                    );
+                }
+            } else {
+                // Gérer l'erreur de la première requête
+                return response()->json(
+                    [
+                        "error" => "Erreur lors de la récupération des rôles",
+                        "status" => $rolesResponse->status(),
+                        "body" => $rolesResponse->body(),
+                        "body_sent" => $bodySent,
+                        "response_body" => $rolesResponse->body(),
+                    ],
+                    $rolesResponse->status()
+                );
+            }
+
+            return response()->json([
+                "success" => true,
+                "data" => $rolesEnrichis,
+            ]);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
     public function getDocumentTypesWithPermissions(Request $request)
     {
         $departmentId = $request->query("departmentId"); // ?departmentId=67

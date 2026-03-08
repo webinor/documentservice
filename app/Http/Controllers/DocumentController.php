@@ -1233,13 +1233,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             });
         }
 
-        // Filtre par statut
-        if (!empty($filters["status"])) {
-            $statuses = is_array($filters["status"])
-                ? $filters["status"]
-                : explode(",", $filters["status"]);
-            $query->whereIn("status", $statuses);
-        }
+        // // Filtre par statut
+        // if (!empty($filters["status"])) {
+        //     $statuses = is_array($filters["status"])
+        //         ? $filters["status"]
+        //         : explode(",", $filters["status"]);
+        //     $query->whereIn("status", $statuses);
+        // }
 
         // Filtre par type de prestataire
         if (!empty($filters["supplier_type"])) {
@@ -1280,9 +1280,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["fournisseur_id"])) {
             $fournisseurId = $filters["fournisseur_id"];
-            $query->whereHas("invoice_provider", function ($q) use (
-                $fournisseurId
-            ) {
+            $query->whereHas("invoice_provider", function ($q) use ($fournisseurId) {
                 $q->where("id", $fournisseurId); // ou le champ correct dans InvoiceProvider
             });
         }
@@ -1373,7 +1371,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
     //new Exception(json_encode($value));
 
-    $base[$responseKey] = $value;
+    $base[$responseKey] = $responseKey === 'amount'
+    ? number_format($value, 0, ',', '.')
+    : $value;
     }
 
     return $base;

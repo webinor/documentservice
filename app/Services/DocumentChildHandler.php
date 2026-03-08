@@ -18,45 +18,90 @@ class DocumentChildHandler
     public function handle($parentModel, $documentType, array $validated)
     {
 
-                  //  throw new \Exception(json_encode($validated));
+            // Récupère les classes et relations séparées par des points
+            $classNames = explode('.', $documentType->class_name);   // Ex: ["App\Models\Finance\InvoiceProvider", "App\Models\Finance\ItSupplier"]
+            $relationNames = explode('.', $documentType->relation_name); // Ex: ["invoice_provider", "it_supplier"]
 
-
-        $className = $documentType->class_name;        // Exemple: \App\Models\InvoiceProvider
-        $relationName = $documentType->relation_name;  // Exemple: invoiceProvider
-        $type = $documentType->slug ?? null;           // Type utilisé pour mapper les données
-
-        if (!class_exists($className)) {
-            throw new \Exception("Classe {$className} introuvable !");
-        }
-
-        if (!method_exists($parentModel, $relationName)) {
-            throw new \Exception("Relation '{$relationName}' introuvable sur " . get_class($parentModel));
-        }
-
-        // Mapper de données selon le type
-        $data = $this->mapData($type, $validated , $parentModel);
-
-        // Crée l'instance de l'enfant
-        $child = new $className();
-
-        $this->fillModelAttributes($child , $data);
-
-        /*foreach ($data as $key => $value) {
-            if (property_exists($child, $key)) {
-                $child->$key = $value;
+            // Vérification : le nombre de classes et de relations doit correspondre
+            if (count($classNames) !== count($relationNames)) {
+                throw new \Exception("Le nombre de classes et de relations ne correspond pas !");
             }
-            else{
-                return $key;
+
+            // Mapper les données selon le type
+            $type = $documentType->slug ?? null;
+            $data = $this->mapData($type, $validated , $parentModel);
+
+            // Parent actuel pour la relation
+            $currentParent = $parentModel;
+
+            foreach ($classNames as $index => $className) {
+
+                $relationName = $relationNames[$index];
+
+                // Vérifie que la classe existe
+                if (!class_exists($className)) {
+                    throw new \Exception("Classe {$className} introuvable !");
+                }
+
+                // Vérifie que la relation existe sur le parent actuel
+                if (!method_exists($currentParent, $relationName)) {
+                    throw new \Exception("Relation '{$relationName}' introuvable sur " . get_class($currentParent));
+                }
+
+                // Crée l'instance de l'enfant
+                $child = new $className();
+
+                // Remplit les attributs uniquement pour le premier enfant (niveau immédiat)
+                if ($index === 0) {
+                    $this->fillModelAttributes($child, $data);
+                }
+
+                // Sauvegarde via la relation
+                $currentParent->$relationName()->save($child);
+
+                // Le nouvel enfant devient le parent pour le prochain niveau
+                $currentParent = $child;
             }
-        }/**/
 
-        //return $child;
-
-        //throw new \Exception(json_encode($parentModel));
+        //           //  throw new \Exception(json_encode($validated));
 
 
-        // Sauvegarde via la relation
-        $parentModel->$relationName()->save($child);
+        // $className = $documentType->class_name;        // Exemple: \App\Models\InvoiceProvider
+        // $relationName = $documentType->relation_name;  // Exemple: invoiceProvider
+        // $type = $documentType->slug ?? null;           // Type utilisé pour mapper les données
+
+        // if (!class_exists($className)) {
+        //     throw new \Exception("Classe {$className} introuvable !");
+        // }
+
+        // if (!method_exists($parentModel, $relationName)) {
+        //     throw new \Exception("Relation '{$relationName}' introuvable sur " . get_class($parentModel));
+        // }
+
+        // // Mapper de données selon le type
+        // $data = $this->mapData($type, $validated , $parentModel);
+
+        // // Crée l'instance de l'enfant
+        // $child = new $className();
+
+        // $this->fillModelAttributes($child , $data);
+
+        // /*foreach ($data as $key => $value) {
+        //     if (property_exists($child, $key)) {
+        //         $child->$key = $value;
+        //     }
+        //     else{
+        //         return $key;
+        //     }
+        // }/**/
+
+        // //return $child;
+
+        // //throw new \Exception(json_encode($parentModel));
+
+
+        // // Sauvegarde via la relation
+        // $parentModel->$relationName()->save($child);
     }
 
 
