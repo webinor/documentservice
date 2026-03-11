@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Route;
 
 // Controllers
 use App\Http\Controllers\AttachmentController;
+
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
-use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\FolderController;
@@ -92,6 +92,12 @@ Route::middleware("jwt.check")
             AttachmentTypeController::class,
             "show",
         ]);
+
+        Route::get("/get-attachment-types", [
+            AttachmentTypeController::class,
+            "get_attachment_types",
+        ]);
+
         Route::post("/{documentId}/missing-attachment-types", [
             AttachmentTypeController::class,
             "missingForDocument",

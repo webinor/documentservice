@@ -16,6 +16,10 @@ class DocumentType extends Model
     protected $fillable = [ 
     "code",
     "name" ,
+    "slug" ,
+    "class_name",
+    "relation_name",
+    "return_policy",
     "reception_mode" 
     ];
 

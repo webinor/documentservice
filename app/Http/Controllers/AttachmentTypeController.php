@@ -6,9 +6,8 @@ use App\Http\Requests\StoreAttachmentTypeRequest;
 use App\Http\Requests\UpdateAttachmentTypeRequest;
 use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
-use App\Models\Misc\Document;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class AttachmentTypeController extends Controller
 {
@@ -39,6 +38,55 @@ class AttachmentTypeController extends Controller
             'success' => true,
             'data' => $attachmentTypes
         ]);
+    }
+
+    
+
+    /**
+     * Retourne les types d’attachment avec leur catégorie
+     *
+     * @param Request $request
+     * @return JsonResponse
+     *
+     * Paramètres attendus :
+     * - ids (array) : liste des attachment_type_id à récupérer
+     *
+     * Réponses :
+     * - 200 : succès, retourne les types d’attachments
+     * - 400 : ids manquants ou invalides
+     * - 500 : erreur serveur
+     */
+    public function get_attachment_types(Request $request): JsonResponse
+    {
+        try {
+            // $ids = $request->query('ids', []);
+            $ids_string = $request->query('ids'); // string "11,12,13"
+            $ids = explode(',', $ids_string);
+
+            if (!is_array($ids) || count($ids) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Paramètre ids manquant ou invalide'
+                ], 400);
+            }
+
+            $attachmentTypes = AttachmentType::whereIn('id', $ids)
+                ->with(['attachmentTypeCategory'])
+                ->select('id', 'name', 'slug', 'attachment_type_category_id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $attachmentTypes
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur serveur',
+                'error' => $th->getMessage()
+            ], 500);
+        }
     }
 
 
