@@ -859,7 +859,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
             
 
-                // Si tu veux gérer des fichiers uploadés
+                // Si on veut gérer des fichiers uploadés
                 if ($request->hasFile("facture")) {
                     $document->save();
                     $this->handleUploadedFile(
