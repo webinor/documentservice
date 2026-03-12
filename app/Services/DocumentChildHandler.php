@@ -161,6 +161,12 @@ function fillModelAttributes($model, array $data)
                 'provider_reference' => fn($v) => $v['reference_fournisseur'] ?? null,
                 'deposit_date' => fn($v) => isset($v['dateDepot']) ? Carbon::parse($v['dateDepot'])->format('Y-m-d H:i:s') : null,
             ],
+            'facture-prestataires-generaux' => [
+                'amount' => fn($v) => $v['montant'] ?? null,
+                'provider' => fn($v) => $v['prestataire'] ?? null,
+                'provider_reference' => fn($v) => $v['reference_fournisseur'] ?? null,
+                'deposit_date' => fn($v) => isset($v['dateDepot']) ? Carbon::parse($v['dateDepot'])->format('Y-m-d H:i:s') : null,
+            ],
             'papier-taxi' => [
                 'reason' => fn($v) => $v['motif'] ?? null,
                 'rides' => fn($v) => $v['trajets'] ?? null,

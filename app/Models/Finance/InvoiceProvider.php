@@ -2,6 +2,7 @@
 
 namespace App\Models\Finance;
 
+use App\Models\FeeInvoice;
 use App\Models\FeeNote;
 use App\Models\ItSupplier;
 use App\Models\LedgerCode;
@@ -62,6 +63,18 @@ public function medical_supplier(): HasOne
 {
     return $this->hasOne(MedicalSupplier::class);
 }
+
+/**
+ * Get the medical_supplier associated with the InvoiceProvider
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasOne
+ */
+public function fee_invoice(): HasOne
+{
+    return $this->hasOne(FeeInvoice::class);
+}
+
+
 
 
 /**
