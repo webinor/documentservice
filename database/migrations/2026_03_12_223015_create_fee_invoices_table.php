@@ -15,6 +15,7 @@ class CreateFeeInvoicesTable extends Migration
     {
         Schema::create('fee_invoices', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('invoice_provider_id')->constrained('invoice_providers')->onDelete('cascade');  
             $table->timestamps();
         });
     }

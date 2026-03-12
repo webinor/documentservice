@@ -15,6 +15,7 @@ class CreateGeneralProvidersTable extends Migration
     {
         Schema::create('general_providers', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('invoice_provider_id')->constrained('invoice_providers')->onDelete('cascade');  
             $table->timestamps();
         });
     }
