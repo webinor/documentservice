@@ -1054,7 +1054,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
     $ids = $request->input("ids", []);
     $userId = $request->input("userId", null);
-    $documentTypes = $request->input("documentTypes", []);
+    $documentTypes = $request->input("documentTypes", ["invoice_provider"]);
     $filters = $request->input("filters", []);
 
     $query = Document::query();
