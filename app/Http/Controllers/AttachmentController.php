@@ -55,7 +55,7 @@ class AttachmentController extends Controller
             // Vérifier que le document existe
             $document = Document::findOrFail($validated["documentId"]);
 
-            $existing_attachment = $validated["attachment_number"] ? Attachment::whereAttachmentNumber(
+            $existing_attachment = isset($validated["attachment_number"]) ? Attachment::whereAttachmentNumber(
                 $validated["attachment_number"]
             )->first() : null;
 
