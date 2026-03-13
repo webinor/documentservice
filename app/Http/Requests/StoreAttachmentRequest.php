@@ -23,7 +23,7 @@ class StoreAttachmentRequest extends FormRequest
      */
     public function rules()
     {
-        $rules = [];
+        $rules = ['selectedCategory' => 'required|string',];
 
         if ($this->source=="new") {
             $rules += [
@@ -38,13 +38,14 @@ class StoreAttachmentRequest extends FormRequest
 
         }
 
-
-                if ($this->selectedCategory=="Paiement") {
+        
+        // dd("ok");      
+        if ($this->selectedCategory=="Payment") {
             $rules += [
                 'attachment_number' => 'nullable|string', // max 10MB
             ];
         }
-        else if($this->selectedCategory=="Engagement"){
+        else if($this->selectedCategory=="Engagment"){
 
              $rules += [
                 'attachment_number' => 'nullable|string', // max 10MB
@@ -58,7 +59,7 @@ class StoreAttachmentRequest extends FormRequest
         'attachmentType' => 'required|exists:attachment_types,id',
         'documentId' => 'required|exists:documents,id',
         'source' => 'required|string',
-        'selectedCategory' => 'required|string',
+        // 'selectedCategory' => 'required|string',
         
             
     ];

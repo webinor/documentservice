@@ -45,7 +45,7 @@ class AttachmentController extends Controller
     public function store(StoreAttachmentRequest $request)
     {
         // Validation
-        $validated = $request->validated();
+     return   $validated = $request->validated();
 
         $user = $request->get("user");
 
@@ -205,6 +205,7 @@ class AttachmentController extends Controller
                 $newFile->size = $originalFile->size;
                 //$newFile->save();
 
+                return $validated;
                 // 4️⃣ Créer le nouvel attachment et lier au document
                 $newAttachment = new Attachment();
                 $newAttachment->is_main = false; // ou true selon le cas
