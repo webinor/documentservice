@@ -206,7 +206,7 @@ class AttachmentController extends Controller
                 $newFile->size = $originalFile->size;
                 //$newFile->save();
 
-                return $validated;
+                // return $validated;
                 // 4️⃣ Créer le nouvel attachment et lier au document
                 $newAttachment = new Attachment();
                 $newAttachment->is_main = false; // ou true selon le cas
