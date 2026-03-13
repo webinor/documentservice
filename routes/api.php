@@ -79,6 +79,8 @@ Route::middleware("jwt.check")
             );
             Route::post('/notify-beneficiary', [DocumentController::class, 'notifyBeneficiary']);
 
+            Route::post("/export-invoices","exportInvoices");
+
         });
 
         /**

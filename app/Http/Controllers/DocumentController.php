@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DocumentsExport;
 use App\Models\Misc\Document;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
-
+use Maatwebsite\Excel\Facades\Excel;
 
 class DocumentController extends Controller
 {
@@ -84,101 +85,24 @@ class DocumentController extends Controller
 }
 
 
-//     public function notifyBeneficiary(Request $request)
-//     {
-//         // 1. Validation
-//         $request->validate([
-//             'document' => 'required|integer|exists:documents,id',
-//         ]);
-
-//         $documentId = $request->input('document');
-//         $document = Document::with('document_type')->find($documentId);
-//         $child = $document->{$document->document_type->relation_name};
-
-//         // 2. Exemple : vérifier si le document permet la notification
-//         if (!$child->beneficiary) {
-//             return response()->json([
-//                 'success' => false,
-//                 'data' => [
-//                     'required_type' => 'beneficiary'
-//                 ]
-//             ]);
-//         }
+public function exportInvoices(Request $request)
+    {
 
 
-//         $total = collect($child->rides)->reduce(function ($carry, $item) {
-//     return $carry + (int) ($item['montant'] ?? 0);
-// }, 0);
+        
 
-//       //  return config("services.user_service.base_url") . ($child->beneficiary);
-//         //on recupere les information sur le beneficiaire
-//         $response = Http::withToken(request()->bearerToken())
-//     ->acceptJson()
-//     ->get(
-//         config("services.user_service.base_url") . "/" .($child->beneficiary)
-//     );
+        $documents = $this->getFilteredDocuments($request);
 
-//     // Vérifier la réponse
-//         if ($response->successful()) {
+        // dd($documents);
+        // throw new Exception($documents, 1);
+        
 
-
-
-//                     $response_event = Http::withToken(request()->bearerToken())
-//                     ->acceptJson()
-//                     ->post(
-//                         config("services.user_service.base_url") . "/events/dispatch/init-confirm-payment-receive",
-//                         [
-//                            // "event_type" => "USER_DOCUMENT_VALIDATED",
-//                             "payload" => [
-//                                // "user_id" => $userId,
-//                                 "beneficiary" => $child->beneficiary,
-//                                 "amount" => $total,
-//                             ]
-//                         ]
-//                     );
-
-//                 if (!$response_event->successful()) {
-//                     return response()->json([
-//                         "success" => false,
-//                         "message" => "Impossible de dispatcher l’évènement au User-Service.",
-//                         "details" => $response->json()
-//                     ], $response->status());
-//                 }
-
-//              //   return $response->json();
-
-//        // return  $response;
-            
-//         }
-//         else{
-
-//             // Réponse KO → on gère l’erreur
-//     return response()->json([
-//         "success" => false,
-//         "message" => "Impossible de récupérer les informations de l’utilisateur.",
-//         "details" => $response->json()
-//     ], $response->status());
-
-//         }
-
-//         // 3. Envoyer OTP ou demande de signature selon ton workflow
-//         // $otp = rand(100000, 999999);
-//         // $document->otp_code = $otp;
-//         // $document->otp_sent_at = now();
-//         // $document->save();
-
-//         // Ici tu peux envoyer un SMS ou WhatsApp (mtn, orange, twilio, etc.)
-//         // SmsService::send($document->beneficiary_phone, "Votre code OTP est $otp");
-
-//       //  return $response_event->json();
-
-//         return response()->json([
-//             'success' => true,
-//             'message' => 'OTP envoyé avec succès au bénéficiaire.',
-//             'user'=>$response->json()['user'],
-//             'transaction_code'=>$response_event->json()['transaction_code']
-//         ]);
-//     }
+    return Excel::download(
+        new DocumentsExport($documents),
+        "documents.xlsx",
+    \Maatwebsite\Excel\Excel::XLSX
+    );
+    }
 
      /**
      * Télécharge le document au format PDF
@@ -958,69 +882,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         }
     }
 
-    public function old_store(StoreDocumentRequest $request)
-    {
-        try {
-            DB::beginTransaction();
-
-            $validated = $request->validated();
-            $user_connected = $request->get("user");
-            $documentType = DocumentType::findOrFail(
-                $validated["document_type_id"]
-            );
-
-            // Création du document de base
-            return $document = $this->createDocument(
-                $validated,
-                $user_connected,
-                $documentType
-            );
-
-            // Gestion du fichier uploadé
-            if ($request->hasFile("facture")) {
-                $this->handleUploadedFile(
-                    $request,
-                    $document,
-                    $user_connected,
-                    "facture",
-                    "facture-originale"
-                );
-            }
-
-            // Gestion des documents liés
-            if (isset($validated["linkedDocument"])) {
-                $this->handleLinkedDocument(
-                    $validated,
-                    $document,
-                    $user_connected
-                );
-            }
-
-            // 4️⃣ Workflow selon le mode de réception
-            $workflowInstance = $this->processWorkflow(
-                $documentType,
-                $validated,
-                $document,
-                $user_connected,
-                $request
-            );
-
-            DB::commit();
-
-            return response()->json(
-                [
-                    "success" => true,
-                    "message" => "Document créé avec succès",
-                    "document" => $document,
-                    "workflow_instance" => $workflowInstance ?? null,
-                ],
-                201
-            );
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
-        }
-    }
+  
 
     private function createDocument(
         array $validated,
@@ -1186,9 +1048,124 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         return null; // pas de workflow automatique
     }
 
+    private function getFilteredDocuments(Request $request)
+{
+    $DOC_CONFIG = config("document_types");
+
+    $ids = $request->input("ids", []);
+    $userId = $request->input("userId", null);
+    $documentTypes = $request->input("documentTypes", []);
+    $filters = $request->input("filters", []);
+
+    $query = Document::query();
+
+    if (!empty($ids)) {
+        $query->whereIn("id", $ids);
+    }
+
+    if (!empty($userId)) {
+        $query->where(function ($q) use ($userId, $documentTypes) {
+            $q->where('created_by', $userId);
+
+            $q->orWhereHas($documentTypes[0], function ($qr) use ($userId) {
+                $qr->where('beneficiary', $userId);
+            });
+        });
+    }
+
+    if (!empty($documentTypes)) {
+        $query->where(function ($q) use ($documentTypes) {
+            foreach ($documentTypes as $relation) {
+                $q->whereHas($relation);
+            }
+        });
+    }
+
+    // supplier_type
+    if (!empty($filters["supplier_type"])) {
+        $query->whereHas("invoice_provider." . $filters["supplier_type"]);
+    }
+
+    // document_type
+    if (!empty($filters["document_type_id"])) {
+        $query->where("document_type_id", $filters["document_type_id"]);
+    }
+
+    // amount
+    if (!empty($filters["amount"])) {
+        $query->whereHas("invoice_provider", function ($q) use ($filters) {
+            switch ($filters["amount"]) {
+                case "lt_100k":
+                    $q->where("amount", "<", 100000);
+                    break;
+                case "100k_500k":
+                    $q->whereBetween("amount", [100000, 500000]);
+                    break;
+                case "gt_500k":
+                    $q->where("amount", ">", 500000);
+                    break;
+            }
+        });
+    }
+
+    // dates
+    if (!empty($filters["date_start"])) {
+        $query->whereDate("created_at", ">=", $filters["date_start"]);
+    }
+
+    if (!empty($filters["date_end"])) {
+        $query->whereDate("created_at", "<=", $filters["date_end"]);
+    }
+
+    $query->with(array_merge(["document_type"], $documentTypes));
+
+    $documents = $query->get()->map(function ($doc) use ($documentTypes, $DOC_CONFIG) {
+
+        $activeRelation = null;
+
+        foreach ($documentTypes as $relation) {
+            if ($doc->relationLoaded($relation) && $doc->$relation) {
+                $activeRelation = $relation;
+                break;
+            }
+        }
+
+        $base = [
+            "id" => $doc->id,
+            "title" => $doc->title,
+            "document_type_name" => $doc->document_type->name,
+            "status" => $doc->status,
+            "created_at" => $doc->created_at,
+        ];
+
+        if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
+            return $base;
+        }
+
+        $fields = $DOC_CONFIG[$activeRelation]["fields"];
+        $relationObj = $doc->$activeRelation;
+
+        foreach ($fields as $responseKey => $modelField) {
+
+            $value = $relationObj->$modelField ?? null;
+
+            $base[$responseKey] = $value;
+        }
+
+        return $base;
+    });
+
+    return $documents;
+}
+
   
         public function getDocumentsByIds(Request $request)
     {
+
+    //     return response()->json(
+    //     $this->getFilteredDocuments($request)
+    // );
+
         $DOC_CONFIG = config("document_types");
         
         $ids = $request->input("ids", []);
