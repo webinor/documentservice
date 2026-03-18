@@ -34,6 +34,10 @@ return [
     'base_url' => env('USER_SERVICE_BASE_URL', 'http://localhost:8088/api/users'),
 ],
 
+  'supplier_service' => [
+    'base_url' => env('SUPPLIER_SERVICE_BASE_URL', 'http://localhost:8097/api/suppliers'),
+],
+
 'department_service' => [
     'base_url' => env('DEPARTMENT_SERVICE_BASE_URL', 'http://localhost:8089/api/departments'),
 ],

@@ -7,6 +7,7 @@ use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
 use App\Models\ItSupplier;
+use App\Models\Payment;
 use App\Models\TaxiPaper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +28,38 @@ class Document extends Model
         "created_by",
         "reference",
         "folder_id", // 🆕 on ajoute folder_id
+        "status",
+        "date_due",
+        "prestataire_name",
     ];
+
+    protected $casts = [
+    'amount' => 'decimal:2'
+];
+
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Met à jour le statut du document en fonction des paiements
+     */
+    public function updatePaymentStatus(): void
+    {
+        $totalPaid = $this->payments()->where('status', 'completed')->sum('amount');
+
+        if ($totalPaid == 0) {
+            $this->status = 'En attente de paiement';
+        } elseif ($totalPaid < $this->amount) {
+            $this->status = 'Partiellement payée';
+        } else {
+            $this->status = 'Payée';
+        }
+
+        $this->save();
+    }
 
     /**
      * 🔁 Dossier parent du document

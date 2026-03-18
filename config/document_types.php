@@ -5,7 +5,7 @@ return [
     "invoice_provider" => [
         "fields" => [
             "amount" => "amount",
-            "acteur_principal" => "provider",
+            "prestataire" => "provider",
         ],
     ],
 

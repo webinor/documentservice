@@ -48,6 +48,8 @@ $taxiFields = [
     "trajets.*.trajet" => "required|string",
     "trajets.*.montant" => "required|numeric",
     "beneficiaire" => "required|numeric",
+    "montant" => "required|numeric",
+
 ];
 
 $feeNoteFields = [

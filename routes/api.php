@@ -9,6 +9,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LedgerCodeTypeController;
@@ -80,8 +81,17 @@ Route::middleware("jwt.check")
             Route::post('/notify-beneficiary', [DocumentController::class, 'notifyBeneficiary']);
 
             Route::post("/export-invoices","exportInvoices");
-
+            
         });
+        
+        Route::controller(DocumentPaymentController::class)->group(function () {
+            Route::get("/{document}/payment-status", "paymentStatus");
+            Route::post('/{document}/register-payment', 'registerPayment');
+            
+        });
+
+
+
 
         /**
          * 📌 AttachmentTypeController
