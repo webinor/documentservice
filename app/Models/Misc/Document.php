@@ -31,6 +31,7 @@ class Document extends Model
         "status",
         "date_due",
         "prestataire_name",
+        "amount"
     ];
 
     protected $casts = [

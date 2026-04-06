@@ -827,6 +827,23 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                         }
                 }
 
+
+           
+                if (isset($validated['trajets'])) {
+                    
+                    // Calcul du montant total
+$montantTotal = collect($validated['trajets'])
+    ->sum('montant');
+
+// Injecter dans les données du document
+$validated['montant'] = $montantTotal;
+
+                }
+
+                // return $validated;
+
+
+
                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
                 // Créer le document
                 $document = Document::create([
