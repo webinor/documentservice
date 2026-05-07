@@ -23,10 +23,19 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+
+
+// 1. Champ ajouté dans form ✔
+// 2. Ajouté dans mapData ✔
+// 3. Ajouté en migration ✔
+// 4. Ajouté dans $fillable ✔
+
 
 class DocumentController extends Controller
 {
+
 
 
 
@@ -38,7 +47,8 @@ class DocumentController extends Controller
             "facture-note-honoraire" => "invoice_provider",
             "papier-taxi" => "taxi_paper",
             "note-de-frais" => "fee_note",
-            "demande-d-absence"=>"absence_request"
+            "demande-d-absence"=>"absence_request",
+            "mission"=>"mission.mission_expenses"
         ]; 
 
     public function __construct(DocumentChildHandler $childHandler , NotifyBeneficiaryService $notifyBeneficiaryService)
@@ -749,11 +759,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
 
-            // return ($user_connected);
+            // return $validated;
 
             //on recupere le workflow
 
-            if ($documentType->reception_mode == "AUTO_BY_ROLE") {
+            if ($documentType->reception_mode == "AUTO_BY_ROLE") {//non lié a un workflow
                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
                 // Créer le document
                 $document = Document::create([
@@ -797,7 +807,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     ],
                     201
                 );
-            } else {
+            } else {//lié a un workflow
                 // 🔹 Appel au microservice workflow
                 $workflowServiceUrl = config(
                     "services.workflow_service.base_url"
@@ -940,8 +950,7 @@ $validated['montant'] = $montantTotal;
                         $document->delete(); // supprime le doc créé
                         return response()->json(
                             [
-                                "message" =>
-                                "Échec de l’initialisation du workflow. Document supprimé.",
+                                "message" =>"Échec de l’initialisation du workflow. Document supprimé.",
                                 "backend-message" => $instanceResponse->json(),
                             ],
                             500
@@ -949,7 +958,8 @@ $validated['montant'] = $montantTotal;
                     }
 
 
-                    $workflowInstance = $instanceResponse->json();
+                // return 
+                   $workflowInstance = $instanceResponse->json();
 
                     return response()->json(
                         [
@@ -1330,6 +1340,7 @@ $validated['montant'] = $montantTotal;
     // Base commune à tous les documents
     $base = [
         "id" => $doc->id,
+        "code" => $doc->code,
         "title" => $doc->title,
         "date_due" => $doc->date_due,
         "document_type_name" => $doc->document_type->name,
@@ -1353,25 +1364,68 @@ $validated['montant'] = $montantTotal;
         $value = $relationObj->$modelField ?? null;
 
           // Si la clé est susceptible de contenir un ID utilisateur
-    $userKeys = ['demandeur', 'validateur', 'beneficiaire']; // Liste des clés à enrichir
-    $providerKeys = ['prestataire']; // Liste des clés à enrichir
-    if (in_array($responseKey, $userKeys) && $value) {
-        // Appel au microservice User pour récupérer les infos
-        $response = Http:://withToken(config('services.user_service.token'))
-            acceptJson()
-            ->get(config('services.user_service.base_url') . "/{$value}");
+    // $userKeys = ['demandeur', 'validateur', 'beneficiaire','acteur']; // Liste des clés à enrichir
+    // $providerKeys = ['prestataire']; // Liste des clés à enrichir
+    // if (in_array($responseKey, $userKeys) && $value) {
+    //     // Appel au microservice User pour récupérer les infos
+    //     $response = Http:://withToken(config('services.user_service.token'))
+    //         acceptJson()
+    //         ->get(config('services.user_service.base_url') . "/{$value}");
 
-    //new Exception(json_encode($response));
+    // //new Exception(json_encode($response));
 
-        if ($response->successful()) {
-            $value = $response->json()['user']; // ou filtrer certaines infos, ex: ['id','name','email']
-        }
-        else{
+    //     if ($response->successful()) {
+    //         $value = $response->json()['user']; // ou filtrer certaines infos, ex: ['id','name','email']
+    //     }
+    //     else{
    
-            // new Exception(json_encode($response));
+    //         // new Exception(json_encode($response));
 
+    //     }
+    // }
+
+    $userKeys = ['demandeur', 'validateur', 'beneficiaire', 'actor_type'];
+    $providerKeys = ['prestataire']; // Liste des clés à enrichir
+
+if (in_array($responseKey, $userKeys) && $value) {
+
+    // 👉 récupération standardisée
+    $type = $value;// $filters['actor_type'] ?? null;
+    $id   = $relationObj->actor_id ?? null;
+    // throw new Exception("-- $id --", 1);
+    
+
+    if ($id && $type) {
+
+
+        // $missions_with_expenses = $relationObj->load('missions_expenses');
+       $relationObj->load('mission_expenses');
+
+        $mission = $relationObj->toArray();
+
+        $base["mission"] = $mission;
+
+        // $doc->load("mission.missions_expenses");
+
+        $baseUrl = null;
+
+        if ($type === 'INTERNAL') {
+            $baseUrl = config('services.user_service.base_url');
+
+        } elseif ($type === 'EXTERNAL') {
+            $baseUrl = config('services.external_actor_service.base_url');
+        }
+
+        if ($baseUrl) {
+            $response = Http::acceptJson()
+                ->get($baseUrl . "/{$id}");
+
+            if ($response->successful()) {
+                $value = $response->json()['user'] ?? $response->json();
+            }
         }
     }
+}
 
     if (in_array($responseKey, $providerKeys) && $value) {
         // Appel au microservice User pour récupérer les infos
@@ -1393,7 +1447,8 @@ $validated['montant'] = $montantTotal;
 
     //new Exception(json_encode($value));
 
-        $base[$responseKey] = $value;
+
+        $base[$responseKey == "actor_type" ? "actor" : $responseKey ] = $value;
 
     // $base[$responseKey] = $responseKey === 'amount'
     // ? number_format($value, 0, ',', '.')
@@ -1649,51 +1704,152 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
     }
 
-    public function enrichDocument($document , $token){
+    // public function enrichDocument($document , $token){
 
-        if (in_array($document->document_type->slug ,["papier-taxi" , "note-de-frais" , "demande-d-absence" ])) {
+    //     if (in_array($document->document_type->slug ,["papier-taxi" , "note-de-frais" , "demande-d-absence" ,"mission" ])) {
 
-                $slug = $document->document_type->slug;
+    //             $slug = $document->document_type->slug;
+    // $relation = $this->documents_relation[$slug] ?? null;
+    //      // Charger la relation dynamique
+    // if ($relation) {
+    //     $document->load($relation);
+    // }
+
+    // // Récupérer l'entité
+    //   $entity = $relation ? $document->$relation : null;
+
+    //      // 🔹 Appel au microservice user
+    //             $userServiceUrl = config(
+    //                 "services.user_service.base_url"
+    //             ); // ex: http://user-service/api
+    //             $userResponse = Http::withToken($token)
+    //                 ->acceptJson()
+    //                 ->get(
+    //                     "$userServiceUrl/".($entity->beneficiary > 0 ? $entity->beneficiary : 1)
+    //                 );
+
+    //             //dd($userResponse);
+
+    //             $userData = null;
+    //             if ($userResponse->ok()) {
+    //                 $userData = $userResponse->json("user"); // récupère l'id du user
+
+    //             // On attache les infos sans toucher à la DB
+    //             $entity->beneficiary_details = $userData;
+    //             $document->beneficiary = $userData['id'];
+
+    //             //$document->relation = $entity;
+    //             $document->setRelation($relation, $entity);
+
+    //             } else {
+    //                 $userResponse->json();
+    //             }
+
+    //         }
+
+    //         return $document;
+    // }
+
+    public function enrichDocument($document, $token)
+{
+    $slug = $document->document_type->slug ?? null;
+
+    $beneficiarySlugs = [
+        "papier-taxi",
+        "note-de-frais",
+        "demande-d-absence"
+    ];
+
+    $actorSlugs = [
+        "mission"
+    ];
+
     $relation = $this->documents_relation[$slug] ?? null;
-         // Charger la relation dynamique
+    $main_relation = null;
+    $secondary_relation = null;
+    // Charger la relation dynamique
     if ($relation) {
+
+        $relations = explode('.', $relation);
+        $main_relation = $relations[0] ;
+        $secondary_relation = $relations[1] ?? null;
         $document->load($relation);
     }
 
-    // Récupérer l'entité
-      $entity = $relation ? $document->$relation : null;
+    // Récupérer l'entité liée
+    $entity = $main_relation ? $document->$main_relation : null;
 
-         // 🔹 Appel au microservice user
-                $userServiceUrl = config(
-                    "services.user_service.base_url"
-                ); // ex: http://user-service/api
-                $userResponse = Http::withToken($token)
-                    ->acceptJson()
-                    ->get(
-                        "$userServiceUrl/".($entity->beneficiary > 0 ? $entity->beneficiary : 1)
-                    );
-
-                //dd($userResponse);
-
-                $userData = null;
-                if ($userResponse->ok()) {
-                    $userData = $userResponse->json("user"); // récupère l'id du user
-
-                // On attache les infos sans toucher à la DB
-                $entity->beneficiary_details = $userData;
-                $document->beneficiary = $userData['id'];
-
-                //$document->relation = $entity;
-                $document->setRelation($relation, $entity);
-
-                } else {
-                    $userResponse->json();
-                }
-
-            }
-
-            return $document;
+    if (!$entity) {
+        return $document;
     }
+
+    $userServiceUrl = config("services.user_service.base_url");
+
+    $userId = null;
+
+    // =========================
+    // 👤 CAS BENEFICIARY
+    // =========================
+    if (in_array($slug, $beneficiarySlugs)) {
+        $userId = $entity->beneficiary ?? null;
+    }
+
+    // =========================
+    // 🚀 CAS ACTOR (MISSION)
+    // =========================
+    if (in_array($slug, $actorSlugs)) {
+        $userId = $entity->actor ?? null;
+    }
+
+    // fallback sécurité
+    $userId = $userId > 0 ? $userId : 1;
+
+    // =========================
+    // 🔹 APPEL USER SERVICE
+    // =========================
+    $userResponse = Http::withToken($token)
+        ->acceptJson()
+        ->timeout(5)
+        ->get("$userServiceUrl/{$userId}");
+
+    if ($userResponse->ok()) {
+
+        $userData = $userResponse->json("user");
+
+        // Attachement sans persistance DB
+        $entityKey = in_array($slug, $actorSlugs)
+            ? 'actor_details'
+            : 'beneficiary_details';
+
+        $entity->{$entityKey} = $userData;
+
+
+        if ($secondary_relation) {
+             $entity->load("mission_expenses") ;
+        }
+       
+
+
+        // optionnel : normalisation ID
+        if ($entityKey === 'beneficiary_details') {
+            $document->beneficiary = $userData['id'] ?? null;
+        } else {
+            $document->actor = $userData['id'] ?? null;
+        }
+
+        $document->setRelation($main_relation, $entity);
+        
+    } else {
+        // log silencieux (important en prod)
+        Log::warning("User service failed", [
+            'slug' => $slug,
+            'status' => $userResponse->status(),
+            'body' => $userResponse->body(),
+        ]);
+    }
+
+    return $document;
+}
 
     /**
      * Display the specified resource.

@@ -11,6 +11,7 @@ use App\Models\Misc\DocumentType;
 use Illuminate\Support\Facades\DB;
 use App\Models\Misc\AttachmentType;
 use App\Models\DepartmentDocumentType;
+use App\Models\Mission;
 use Database\Seeders\AttachmentTypeSeeder;
 use Database\Seeders\LedgerCodeTypeSeeder;
 use Illuminate\Database\Eloquent\Factories\Sequence;
@@ -34,32 +35,44 @@ class DocumentTypeSeeder extends Seeder
 $documentTypesConfig = [
     
 
+    // [
+    //     'name'          => 'Courrier Impots',
+    //     'class_name'    => Tax::class,
+    //     'relation_name' => 'tax',
+    //     'reception_mode'=> 'AUTO_BY_ROLE',
+    // ],
+
+    //     [
+    //     'name'          => 'Courrier Mises en demeure',
+    //     'class_name'    => FormalNotice::class,
+    //     'relation_name' => 'formal_notice',
+    //     'reception_mode'=> 'AUTO_BY_ROLE',
+    // ],
+
+    //      [
+    //     'name'          => 'Courrier Art',
+    //     'class_name'    => Art::class,
+    //     'relation_name' => 'art',
+    //     'reception_mode'=> 'AUTO_BY_ROLE',
+    // ],
+
     [
-        'name'          => 'Courrier Impots',
-        'class_name'    => Tax::class,
-        'relation_name' => 'tax',
-        'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
-
-        [
-        'name'          => 'Courrier Mises en demeure',
-        'class_name'    => FormalNotice::class,
-        'relation_name' => 'formal_notice',
-        'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
-
-         [
-        'name'          => 'Courrier Art',
-        'class_name'    => Art::class,
-        'relation_name' => 'art',
-        'reception_mode'=> 'AUTO_BY_ROLE',
-    ],
+                'code' => 'MISSION',
+                'name' => 'Mission',
+                'class_name'    => Mission::class,
+                'relation_name' => 'mission',
+                // 'slug' => Str::slug('Mission'),
+                'return_policy' => 'ROLE',
+                'reception_mode' => 'WORKFLOW_DRIVEN',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
     
 ];
 
 // Génération de la sequence dynamiquement
 $sequence = array_map(fn ($config) => fn () => [
-    'code'           => Str::random(10),
+    'code'           => $config['code'] ?? Str::random(10),
     'name'           => $config['name'],
     'class_name'     => $config['class_name']     ?? null,
     'relation_name'  => $config['relation_name']  ?? null,
@@ -98,12 +111,12 @@ $sequence = array_map(fn ($config) => fn () => [
             ->create();*/
 
 
-            $this->call([
-        AttachmentTypeSeeder::class,
-       // LedgerCodeTypeSeeder::class,
-    ]);
+    //         $this->call([
+    //     AttachmentTypeSeeder::class,
+    //    // LedgerCodeTypeSeeder::class,
+    // ]);
 
-            DB::commit();
+           DB::commit();
     
             
         } catch (\Throwable $th) {

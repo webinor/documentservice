@@ -78,6 +78,40 @@ $absenceRequestFields = [
 
 ];
 
+$missionFields = [
+
+    // Infos mission
+    "destination" => "required|string",
+    "start_date" => "required|date",
+    "end_date" => "required|date|after_or_equal:start_date",
+
+    // Budget
+    "estimated_budget" => "nullable|numeric|min:0",
+    "advance_amount" => "nullable|numeric|min:0",
+
+    // Mission spéciale
+    "mission_special" => "required|in:YES,NO",
+
+    // Acteur (missionnaire)
+    "actor_type" => "required|in:me,collaborator,external",
+
+    // Collaborateur interne
+    // "actor_collaborator" => "required_if:actor_type,collaborator|nullable|exists:users,id",
+    "actor_collaborator" => "required_if:actor_type,collaborator|nullable",
+
+    // Prestataire externe
+    // "actor_external" => "required_if:actor_type,external|nullable|exists:external_actors,id",
+    "actor_external" => "required_if:actor_type,external|nullable",
+
+    // Dépenses
+    // "expenses" => "nullable|array",
+    // "expenses.*.category_id" => "required|exists:expense_categories,id",
+    // "expenses.*.montant" => "required|numeric|min:0",
+
+    // Optionnel : justificatif (si upload direct)
+    "expenses.*.receipt" => "nullable|file|max:5120",
+];
+
 
 
 $rulesByType = [
@@ -88,6 +122,9 @@ $rulesByType = [
     'papier-taxi' => [$baseRules, $taxiFields],
     'note-de-frais' => [$baseRules, $feeNoteFields],
     'demande-d-absence' => [$baseRules, $absenceRequestFields],
+
+       // 🔥 AJOUT ICI
+    'mission' => [$baseRules, $missionFields],
 ];
 
 

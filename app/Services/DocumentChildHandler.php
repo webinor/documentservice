@@ -208,13 +208,28 @@ function fillModelAttributes($model, array $data)
 
              ],
             'mission' => [
-                'title' => fn($v) => $v['title'] ?? null,
-                'employee_id' => fn($v) => $v['employee_id'] ?? null,
-                'start_date' => fn($v) => isset($v['start_date']) ? Carbon::parse($v['start_date'])->format('Y-m-d') : null,
-                'end_date' => fn($v) => isset($v['end_date']) ? Carbon::parse($v['end_date'])->format('Y-m-d') : null,
-                'description' => fn($v) => $v['description'] ?? null,
-                'beneficiary' => fn($v) => $v['beneficiaire'] ?? null,
-            ],
+    'destination' => fn($v) => $v['destination'] ?? null,
+
+    'start_date' => fn($v) =>
+        isset($v['start_date'])
+            ?  \Carbon\Carbon::createFromFormat('d-m-Y', $v['start_date'])->format('Y-m-d') //Carbon::parse($v['start_date'])->format('Y-m-d')
+            : null,
+
+    'end_date' => fn($v) =>
+        isset($v['end_date'])
+            ? \Carbon\Carbon::createFromFormat('d-m-Y', $v['end_date'])->format('Y-m-d') //Carbon::parse($v['end_date'])->format('Y-m-d')
+            : null,
+
+    'estimated_budget' => fn($v) => $v['estimated_budget'] ?? 0,
+    'advance_amount' => fn($v) => $v['advance_amount'] ?? 0,
+
+    // 'is_special' => fn($v) => ($v['mission_special'] ?? 'NO') === 'YES',
+    'is_special' => fn($v) => $v['mission_special'] ?? 0,
+
+    // 🔥 ACTEUR (clé critique)
+    'actor_id' => fn($v) => $this->resolveActorId($v),
+    'actor_type' => fn($v) => $this->resolveActorType($v),
+],
             // Ajoute ici d'autres types si nécessaire
         ];
 
@@ -235,4 +250,38 @@ function fillModelAttributes($model, array $data)
 
     return array_merge($data, $common);
     }
+
+private function resolveActorId($v)
+{
+    switch ($v['actor_type'] ?? null) {
+
+        case 'me':
+            return auth()->id();
+
+        case 'collaborator':
+            return $v['actor_collaborator'] ?? null;
+
+        case 'external':
+            return $v['actor_external'] ?? null;
+
+        default:
+            return null;
+    }
+}
+
+private function resolveActorType($v)
+{
+    switch ($v['actor_type'] ?? null) {
+
+        case 'me':
+        case 'collaborator':
+            return 'INTERNAL';
+
+        case 'external':
+            return 'EXTERNAL';
+
+        default:
+            return null;
+    }
+}
 }

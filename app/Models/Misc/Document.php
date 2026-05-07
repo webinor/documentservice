@@ -7,6 +7,7 @@ use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
 use App\Models\ItSupplier;
+use App\Models\Mission;
 use App\Models\Payment;
 use App\Models\TaxiPaper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,6 +44,11 @@ class Document extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
+    public function mission()
+{
+    return $this->hasOne(Mission::class);
+}
 
     /**
      * Met à jour le statut du document en fonction des paiements
