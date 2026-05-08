@@ -1859,6 +1859,7 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
      */
     public function show(Request $request , Document $document)
     {
+        // return $document;
         $document->load("document_type");
 
         $totalPaid = $document->payments()->sum('amount');

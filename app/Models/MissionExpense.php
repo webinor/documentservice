@@ -10,6 +10,17 @@ class MissionExpense extends Model
 {
     use HasFactory;
 
+
+     protected $fillable = [
+        'mission_id',
+        'expense_category_id',
+        'amount',
+        'expense_date',
+        'description',
+        'receipt_path',
+        'is_validated',
+    ];
+
     /**
      * Get the missions that owns the MissionExpense
      *
@@ -19,4 +30,13 @@ class MissionExpense extends Model
     {
         return $this->belongsTo(Mission::class);
     }
+
+
+           public function getAmountAttribute($value)
+{
+    if (!$value ) {
+        return null; 
+    }
+    return (int)$value;
+}
 }

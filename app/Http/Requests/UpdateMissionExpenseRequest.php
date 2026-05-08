@@ -13,7 +13,7 @@ class UpdateMissionExpenseRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,28 @@ class UpdateMissionExpenseRequest extends FormRequest
     public function rules()
     {
         return [
-            //
-        ];
+        'expense_category_id' => [
+            'nullable',
+            'exists:expense_categories,id'
+        ],
+
+        'amount' => [
+            'nullable',
+            'numeric',
+            'min:0'
+        ],
+
+        'expense_date' => [
+            'nullable',
+            'date'
+        ],
+
+        'description' => [
+            'nullable',
+            'string'
+        ],
+    ];
+
+    
     }
 }

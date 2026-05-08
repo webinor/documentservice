@@ -11,8 +11,10 @@ use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LedgerCodeTypeController;
+use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\TestThumbnailController;
 
 // Models
@@ -91,7 +93,14 @@ Route::middleware("jwt.check")
         });
 
 
+        Route::get('/expense-categories', [ExpenseCategoryController::class, 'index']);
 
+        Route::post('/{document}/mission-expenses', [MissionExpenseController::class, 'store']);
+
+        Route::delete('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'destroy']);
+
+        Route::put('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'update']
+);
 
         /**
          * 📌 AttachmentTypeController

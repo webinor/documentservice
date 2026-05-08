@@ -15,7 +15,13 @@ class ExpenseCategoryController extends Controller
      */
     public function index()
     {
-        //
+        $categories = ExpenseCategory::select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'data' => $categories
+        ]);
     }
 
     /**
