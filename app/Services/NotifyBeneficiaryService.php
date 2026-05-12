@@ -53,7 +53,7 @@ class NotifyBeneficiaryService
     //     ];
     // }
 
-     public function execute(int $documentId): array
+     public function execute(int $documentId , string $transactionTypeCode): array
     {
             $document = Document::with('document_type')
                 ->findOrFail($documentId);
@@ -64,21 +64,36 @@ class NotifyBeneficiaryService
                 throw new Exception("Document not payable.");
             }
 
-            $recipient = $child->getPaymentRecipient();
+            $recipient = $child->getSettlementActor();
 
-            $amount = $child->getPaymentAmount();
+            $amount = $child->getSettlementAmount();
 
-            $reason = $child->getPaymentReason();
+            $reason = $child->getSettlementReason();
+
+            $direction = $child->getSettlementDirection();
+
 
             $eventResponse = $this->userService
                 ->dispatchPaymentEvent(
                     $recipient,
                     $amount,
-                    $reason
+                    $reason,
+                    $direction,
+                    $transactionTypeCode,
+                    $document->id
                 );
 
             if (!$eventResponse->successful()) {
-                throw new Exception("Event dispatch failed.");
+                // throw new Exception("Event $transactionTypeCode dispatch failed.");
+
+                 $errorMessage = $eventResponse->json('message')
+        ?? $eventResponse->body()
+        ?? 'Unknown error';
+
+    throw new Exception(
+        "Event {$transactionTypeCode} dispatch failed: " . $errorMessage
+    );
+
             }
 
             return [

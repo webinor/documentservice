@@ -62,17 +62,34 @@ public function allowances()
 }
 
 
-    public function getPaymentRecipient(): int
+    public function getSettlementActor(): int
     {
         return $this->actor_id;
     }
 
-    public function getPaymentAmount(): float
+    public function getSettlementAmount(): float
     {
         return $this->calculateSettlementAmount();
     }
 
-    public function getPaymentReason(): string
+    public function getSettlementDirection(): string
+{
+    $balance = $this->calculateSettlementAmount();
+
+    if ($balance > 0) {
+        return 'OUT';
+    }
+
+    if ($balance < 0) {
+        return 'IN';
+    }
+
+    return 'NONE';
+}
+
+    
+
+    public function getSettlementReason(): string
     {
         return "Régularisation mission";
     }

@@ -4,9 +4,11 @@ namespace App\Contracts;
 
 interface PayableDocumentInterface
 {
-    public function getPaymentRecipient(): int;
+    public function getSettlementActor(): int;
 
-    public function getPaymentAmount(): float;
+    public function getSettlementAmount(): float;
 
-    public function getPaymentReason(): string;
+    public function getSettlementReason(): string;
+
+    public function getSettlementDirection(): string;
 }

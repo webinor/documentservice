@@ -18,15 +18,17 @@ class UserServiceClient
         return $this->client()->get("/{$userId}");
     }
 
-    public function dispatchPaymentEvent(int $beneficiaryId, int $amount , string $reason)
+    public function dispatchPaymentEvent(int $actor_id, int $amount , string $reason , string $direction,string $transactionTypeCode , int $document_id)
     {
-        return $this->client()->post(
-            "/events/dispatch/init-confirm-payment-receive",
+        return $this->client()->post("/events/dispatch/init-confirm-payment-receive",
             [
                 "payload" => [
-                    "beneficiary" => $beneficiaryId,
+                    "actor_id" => $actor_id,
                     "amount" => $amount,
                     "reason" => $reason,
+                    'direction' => $direction,
+                    'transactionTypeCode' => $transactionTypeCode,
+                    'document_id'=>$document_id
                 ]
             ]
         );

@@ -73,11 +73,13 @@ class DocumentController extends Controller
 {
     $request->validate([
         'document' => 'required|integer|exists:documents,id',
+        'transactionTypeCode' => 'required|string',
     ]);
 
     try {
         $result = $this->notifyBeneficiaryService
-            ->execute($request->input('document'));
+            ->execute($request->input('document'),
+        $request->input('transactionTypeCode'));
 
                 return response()->json(
             array_merge([

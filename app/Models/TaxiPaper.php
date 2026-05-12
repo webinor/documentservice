@@ -23,12 +23,12 @@ class TaxiPaper extends Model implements PayableDocumentInterface
     ];
 
 
-    public function getPaymentRecipient(): int
+    public function getSettlementActor(): int
     {
         return $this->beneficiary;
     }
 
-    public function getPaymentAmount(): float
+    public function getSettlementAmount(): float
     {
         // return collect($this->rides)
         //     ->sum('montant');
@@ -38,8 +38,23 @@ class TaxiPaper extends Model implements PayableDocumentInterface
         }, 0);
     }
 
-    public function getPaymentReason(): string
+    public function getSettlementReason(): string
     {
-        return $this->reason ?? "";
+        return $this->reason ?? "Reglement Papier Taxi";
     }
+
+          public function getSettlementDirection(): string
+{
+    $balance = $this->getSettlementAmount();
+
+    if ($balance > 0) {
+        return 'OUT';
+    }
+
+    if ($balance < 0) {
+        return 'IN';
+    }
+
+    return 'NONE';
+}
 }
