@@ -900,9 +900,7 @@ $validated['montant'] = $montantTotal;
                         $user_connected,
                         "facture",
                         "facture-originale"
-                    );
-
-                    
+                    );   
                 }
 
                 //Si la reference de l'engagement correspond a un document dans le systeme, on associe directement a la facture
@@ -1825,7 +1823,7 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
 
         if ($secondary_relation) {
-             $entity->load("mission_expenses") ;
+             $entity->load("mission_expenses.expense_category") ;
         }
        
 

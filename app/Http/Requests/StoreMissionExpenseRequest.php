@@ -27,6 +27,14 @@ class StoreMissionExpenseRequest extends FormRequest
                 'min:0'
             ],
 
+            'type' => [
+                'nullable',
+                'string',
+                'max:1000'
+            ],
+
+            
+
             'expense_date' => [
                 'nullable',
                 'date'

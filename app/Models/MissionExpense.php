@@ -19,6 +19,7 @@ class MissionExpense extends Model
         'description',
         'receipt_path',
         'is_validated',
+        'type'
     ];
 
     /**
@@ -29,6 +30,16 @@ class MissionExpense extends Model
     public function missions(): BelongsTo
     {
         return $this->belongsTo(Mission::class);
+    }
+
+    /**
+     * Get the expense_category that owns the MissionExpense
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function expense_category(): BelongsTo
+    {
+        return $this->belongsTo(ExpenseCategory::class);
     }
 
 

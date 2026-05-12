@@ -14,6 +14,7 @@ use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LedgerCodeTypeController;
+use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\TestThumbnailController;
 
@@ -97,10 +98,35 @@ Route::middleware("jwt.check")
 
         Route::post('/{document}/mission-expenses', [MissionExpenseController::class, 'store']);
 
+        Route::get(
+    '{document}/mission-expenses',
+    [MissionExpenseController::class, 'getMissionExpenses']
+);
+
         Route::delete('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'destroy']);
 
-        Route::put('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'update']
-);
+        Route::put('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'update']);
+
+        Route::prefix('missions')->group(function () {
+
+            Route::post('/generate', [MissionDocumentController::class, 'generate']);
+
+    Route::get(
+        '/{mission}/generate-mission-letter',
+        [MissionDocumentController::class, 'generateMissionLetter']
+    );
+
+    Route::get(
+        '/{mission}/generate-mission-order',
+        [MissionDocumentController::class, 'generateMissionOrder']
+    );
+
+    Route::get(
+        '/{mission}/generate-regularization-sheet',
+        [MissionDocumentController::class, 'generateRegularizationSheet']
+    );
+
+});
 
         /**
          * 📌 AttachmentTypeController

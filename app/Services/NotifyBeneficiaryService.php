@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
 use App\Services\UserServiceClient;
 use Exception;
@@ -15,40 +16,74 @@ class NotifyBeneficiaryService
         $this->userService = $userService;
     }
 
-    public function execute(int $documentId): array
+    // public function execute(int $documentId): array
+    // {
+    //     $document = Document::with('document_type')->findOrFail($documentId);
+    //     $child = $document->{$document->document_type->relation_name};
+
+    //     if (!$child->beneficiary) {
+    //         throw new Exception("Beneficiary missing.");
+    //     }
+
+    //     $total = collect($child->rides)->reduce(function ($carry, $item) {
+    //         return $carry + (int) ($item['montant'] ?? 0);
+    //     }, 0);
+
+    //     // Optionnel : vérifier existence user
+    //     // $userResponse = $this->userService->getUser($child->beneficiary);
+
+    //     // if (!$userResponse->successful()) {
+    //     //     throw new Exception("Unable to fetch beneficiary.");
+    //     // }
+
+    //     $eventResponse = $this->userService->dispatchPaymentEvent(
+    //         $child->beneficiary,
+    //         $total,
+    //         $child->reason ?? ""
+    //     );
+
+    //     if (!$eventResponse->successful()) {
+    //         throw new Exception("Event dispatch failed.");
+    //     }
+
+    //     return [
+    //         // "user" => $userResponse->json()['user'],
+    //         "user" => $eventResponse->json()['user'],
+    //         "transaction_code" => $eventResponse->json()['transaction_code']
+    //     ];
+    // }
+
+     public function execute(int $documentId): array
     {
-        $document = Document::with('document_type')->findOrFail($documentId);
-        $child = $document->{$document->document_type->relation_name};
+            $document = Document::with('document_type')
+                ->findOrFail($documentId);
 
-        if (!$child->beneficiary) {
-            throw new Exception("Beneficiary missing.");
-        }
+            $child = $document->{$document->document_type->relation_name};
 
-        $total = collect($child->rides)->reduce(function ($carry, $item) {
-            return $carry + (int) ($item['montant'] ?? 0);
-        }, 0);
+            if (!$child instanceof PayableDocumentInterface) {
+                throw new Exception("Document not payable.");
+            }
 
-        // Optionnel : vérifier existence user
-        // $userResponse = $this->userService->getUser($child->beneficiary);
+            $recipient = $child->getPaymentRecipient();
 
-        // if (!$userResponse->successful()) {
-        //     throw new Exception("Unable to fetch beneficiary.");
-        // }
+            $amount = $child->getPaymentAmount();
 
-        $eventResponse = $this->userService->dispatchPaymentEvent(
-            $child->beneficiary,
-            $total,
-            $child->reason ?? ""
-        );
+            $reason = $child->getPaymentReason();
 
-        if (!$eventResponse->successful()) {
-            throw new Exception("Event dispatch failed.");
-        }
+            $eventResponse = $this->userService
+                ->dispatchPaymentEvent(
+                    $recipient,
+                    $amount,
+                    $reason
+                );
 
-        return [
-            // "user" => $userResponse->json()['user'],
-            "user" => $eventResponse->json()['user'],
-            "transaction_code" => $eventResponse->json()['transaction_code']
-        ];
+            if (!$eventResponse->successful()) {
+                throw new Exception("Event dispatch failed.");
+            }
+
+            return [
+                "user" => $eventResponse->json()['user'],
+                "transaction_code" => $eventResponse->json()['transaction_code']
+            ];
     }
 }
