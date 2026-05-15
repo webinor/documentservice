@@ -89,6 +89,62 @@ public function allowances()
 
     
 
+   public function getSettlementDetails(): array
+{
+    return [
+
+        "document_type" => "mission",
+
+        "reference" => $this->reference,
+
+        "mission" => [
+            "id" => $this->id,
+            "reference" => $this->reference,
+            "title" => $this->title,
+            "purpose" => $this->purpose,
+            "destination" => $this->destination,
+            "departure_date" => $this->departure_date,
+            "return_date" => $this->return_date,
+            "status" => $this->status,
+        ],
+
+        "missionnaire" => [
+            "id" => $this->actor_type == "INTERNAL" ?  $this->actor_id : 0, //////////REVOIR LE CAS OU C'EST EXTERNAL
+            "type" => $this->actor_type ?? "--",
+            "name" => $this->missionary->name ?? "--",
+            "email" => $this->missionary->email ?? "--",
+            "phone" => $this->missionary->phone ?? "--",
+        ],
+
+        // "department" => [
+        //     "id" => $this->department->id,
+        //     "name" => $this->department->name,
+        // ],
+
+        // "financial" => [
+        //     "currency" => $this->currency ?? "XAF",
+
+        //     "advance_amount" => $this->advance_amount,
+
+        //     "real_expense_amount" => $this->real_expense_amount,
+
+        //     "settlement_amount" => $this->settlement_amount,
+
+        //     "remaining_amount" => $this->remaining_amount,
+        // ],
+
+        // "workflow" => [
+        //     "current_step" => $this->current_step,
+        //     "validated_at" => $this->validated_at,
+        // ],
+
+        // "metadata" => [
+        //     "generated_at" => now()->toDateTimeString(),
+        //     "service" => "mission-service",
+        // ]
+    ];
+}
+
     public function getSettlementReason(): string
     {
         return "Régularisation mission";

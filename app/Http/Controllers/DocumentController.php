@@ -7,6 +7,7 @@ use App\Models\Misc\Document;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
+use App\Models\DocumentStatus;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
 use App\Models\Misc\Attachment;
@@ -95,6 +96,54 @@ class DocumentController extends Controller
         ], 400);
     }
 }
+
+
+
+/**
+     * Retourne les documents par status
+     */
+    public function getByStatus(Request $request)
+    {
+        $statusId = $request->status_id;
+
+        if (!$statusId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'status_id is required'
+            ], 422);
+        }
+
+        // $status = DocumentStatus::find($statusId);
+
+        $documents = Document::query()
+        ->with(['document_type','document_status'])
+            ->where('document_status_id', $statusId)
+            // ->where('status', $status->code)
+            ->get()
+            ->map(function ($document) {
+
+                return [
+                    'id' => $document->id,
+
+                    'type' => optional($document->document_type)->name,
+
+                    'status' => optional($document->document_status)->code,
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | IMPORTANT
+                    |--------------------------------------------------------------------------
+                    | utilisé par le Reminder Service
+                    */
+
+                    'status_updated_at' => $document->status_updated_at,
+
+                    'created_at' => $document->created_at,
+                ];
+            });
+
+        return response()->json($documents);
+    }
 
 
 

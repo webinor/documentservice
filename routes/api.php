@@ -27,6 +27,9 @@ use App\Models\Misc\Document;
 |--------------------------------------------------------------------------
 */
 
+
+Route::get('/documents/by-status', [DocumentController::class, 'getByStatus']);
+
 Route::middleware("jwt.check")
     ->prefix("documents")
     ->group(function () {
@@ -105,16 +108,18 @@ Route::middleware("jwt.check")
 
         Route::delete('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'destroy']);
 
+        
+
         Route::put('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'update']);
 
         Route::prefix('missions')->group(function () {
 
-            Route::post('/generate', [MissionDocumentController::class, 'generate']);
+        Route::post('/generate', [MissionDocumentController::class, 'generate']);
 
-    Route::get(
-        '/{mission}/generate-mission-letter',
-        [MissionDocumentController::class, 'generateMissionLetter']
-    );
+        Route::get(
+            '/{mission}/generate-mission-letter',
+            [MissionDocumentController::class, 'generateMissionLetter']
+        );
 
     Route::get(
         '/{mission}/generate-mission-order',

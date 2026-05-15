@@ -3,6 +3,7 @@
 namespace App\Models\Misc;
 
 use App\Models\AbsenceRequest;
+use App\Models\DocumentStatus;
 use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
@@ -84,6 +85,12 @@ class Document extends Model
     public function document_type(): BelongsTo
     {
         return $this->belongsTo(DocumentType::class);
+    }
+
+
+    public function document_status(): BelongsTo
+    {
+        return $this->belongsTo(DocumentStatus::class);
     }
 
     /**

@@ -11,4 +11,9 @@ interface PayableDocumentInterface
     public function getSettlementReason(): string;
 
     public function getSettlementDirection(): string;
+
+    public function getSettlementDetails(): array;
+
+
+
 }

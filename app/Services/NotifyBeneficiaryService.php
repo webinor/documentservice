@@ -72,6 +72,9 @@ class NotifyBeneficiaryService
 
             $direction = $child->getSettlementDirection();
 
+            $details = $child->getSettlementDetails();
+
+
 
             $eventResponse = $this->userService
                 ->dispatchPaymentEvent(
@@ -80,7 +83,8 @@ class NotifyBeneficiaryService
                     $reason,
                     $direction,
                     $transactionTypeCode,
-                    $document->id
+                    $document->id,
+                    $details
                 );
 
             if (!$eventResponse->successful()) {
