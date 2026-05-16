@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
+use App\Services\Mission\MissionAllowanceCalculator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -176,5 +177,26 @@ public function allowances()
         ($totalRealExpenses + $totalAllowances)
         - $totalAdvances
     );
+}
+
+public function simulate($missionId)
+{
+    $mission = Mission::findOrFail($missionId);
+
+    $employees = $mission->participants;
+
+    $calculator = new MissionAllowanceCalculator();
+
+    $results = [];
+
+    foreach ($employees as $employee) {
+
+        $results[] = [
+            'employee_id' => $employee->id,
+            'amount' => $calculator->calculate($mission, $employee)
+        ];
+    }
+
+    return $results;
 }
 }

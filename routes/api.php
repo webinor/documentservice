@@ -14,6 +14,7 @@ use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LedgerCodeTypeController;
+use App\Http\Controllers\MissionAllowanceController;
 use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\TestThumbnailController;
@@ -132,6 +133,12 @@ Route::middleware("jwt.check")
     );
 
 });
+
+
+            Route::get(
+    '/{document}/mission-allowances',
+    [MissionAllowanceController::class, 'index']
+);
 
         /**
          * 📌 AttachmentTypeController
