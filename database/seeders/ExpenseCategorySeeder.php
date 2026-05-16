@@ -9,12 +9,193 @@ class ExpenseCategorySeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('expense_categories')->insert([
-            ['code' => 'TRANSPORT', 'name' => 'Transport', 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'REPAS', 'name' => 'Repas', 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'HEBERGEMENT', 'name' => 'Hébergement', 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'COMMUNICATION', 'name' => 'Communication', 'created_at' => now(), 'updated_at' => now()],
-            ['code' => 'DIVERS', 'name' => 'Divers', 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        $now = now();
+
+        $categories = [
+
+            /**
+             * ============================================
+             * TRANSPORTS
+             * ============================================
+             */
+
+            [
+                'code' => 'TRANSPORT',
+                'name' => 'Transport interurbain',
+            ],
+
+            [
+                'code' => 'TAXI',
+                'name' => 'Taxi',
+            ],
+
+            [
+                'code' => 'LOCAL_TAXI',
+                'name' => 'Taxi local',
+            ],
+
+            [
+                'code' => 'TAXI_SUPPLEMENT',
+                'name' => 'Complément Taxi',
+            ],
+
+            [
+                'code' => 'FUEL',
+                'name' => 'Carburant',
+            ],
+
+            [
+                'code' => 'TOLL',
+                'name' => 'Péage routier',
+            ],
+
+            [
+                'code' => 'PARKING',
+                'name' => 'Parking',
+            ],
+
+            [
+                'code' => 'VEHICLE_RENTAL',
+                'name' => 'Location véhicule',
+            ],
+
+            /**
+             * ============================================
+             * HEBERGEMENT
+             * ============================================
+             */
+
+            [
+                'code' => 'HEBERGEMENT',
+                'name' => 'Hébergement',
+            ],
+
+            [
+                'code' => 'HOTEL',
+                'name' => 'Hôtel',
+            ],
+
+            /**
+             * ============================================
+             * REPAS / RATIONS
+             * ============================================
+             */
+
+            [
+                'code' => 'REPAS',
+                'name' => 'Repas',
+            ],
+
+            [
+                'code' => 'BREAKFAST',
+                'name' => 'Petit déjeuner',
+            ],
+
+            [
+                'code' => 'LUNCH',
+                'name' => 'Déjeuner',
+            ],
+
+            [
+                'code' => 'DINNER',
+                'name' => 'Dîner',
+            ],
+
+            [
+                'code' => 'RATION',
+                'name' => 'Ration',
+            ],
+
+            /**
+             * ============================================
+             * COMMUNICATION
+             * ============================================
+             */
+
+            [
+                'code' => 'COMMUNICATION',
+                'name' => 'Communication',
+            ],
+
+            [
+                'code' => 'INTERNET',
+                'name' => 'Internet / Data',
+            ],
+
+            /**
+             * ============================================
+             * INTERNATIONAL
+             * ============================================
+             */
+
+            [
+                'code' => 'VISA',
+                'name' => 'Visa',
+            ],
+
+            [
+                'code' => 'TRAVEL_INSURANCE',
+                'name' => 'Assurance voyage',
+            ],
+
+            [
+                'code' => 'EXCHANGE_FEES',
+                'name' => 'Frais de change',
+            ],
+
+            /**
+             * ============================================
+             * FRAIS SPECIAUX
+             * ============================================
+             */
+
+            [
+                'code' => 'PUBLIC_RELATIONS',
+                'name' => 'Relations publiques',
+            ],
+
+            [
+                'code' => 'MISSION_BONUS',
+                'name' => 'Prime de mission',
+            ],
+
+            /**
+             * ============================================
+             * AUTRES
+             * ============================================
+             */
+
+            [
+                'code' => 'LUGGAGE',
+                'name' => 'Frais de bagages',
+            ],
+
+            [
+                'code' => 'BANK_FEES',
+                'name' => 'Frais bancaires',
+            ],
+
+            [
+                'code' => 'DIVERS',
+                'name' => 'Divers',
+            ],
+
+        ];
+
+        foreach ($categories as $category) {
+
+            DB::table('expense_categories')->updateOrInsert(
+
+                [
+                    'code' => $category['code']
+                ],
+
+                [
+                    'name' => $category['name'],
+                    'updated_at' => $now,
+                    'created_at' => $now,
+                ]
+            );
+        }
     }
 }

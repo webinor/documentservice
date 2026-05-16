@@ -2,10 +2,12 @@
 
 namespace App\Services\Mission;
 
+use App\Models\Mission;
+use App\Models\MissionPolicy;
 
 class MissionAllowanceCalculator
 {
-    public function calculate($mission , $employee)
+    public function calculate(Mission $mission ,  array $employee)
     {
         $matcher = new PolicyMatcherService();
         $resolver = new PolicyResolver();
@@ -21,7 +23,22 @@ class MissionAllowanceCalculator
         return $this->applyPolicy($policy, $mission);
     }
 
-    private function applyPolicy($policy, $mission)
+
+    //     public function calculate(Mission $mission , array $policies)
+    // {
+    //     $resolver = new PolicyResolver();
+
+
+    //     $policy = $resolver->resolve($policies);
+
+    //     if (!$policy) {
+    //         return 0;
+    //     }
+
+    //     return $this->applyPolicy($policy, $mission);
+    // }
+
+    private function applyPolicy(MissionPolicy $policy, Mission $mission)
     {
         $days = $mission->duration_days;
 

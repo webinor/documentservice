@@ -140,6 +140,8 @@ Route::middleware("jwt.check")
     [MissionAllowanceController::class, 'index']
 );
 
+Route::get('mission-expenses/categories-limits', [MissionExpenseController::class, 'categoriesLimits']);
+
         /**
          * 📌 AttachmentTypeController
          */

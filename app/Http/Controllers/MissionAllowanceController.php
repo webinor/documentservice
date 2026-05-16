@@ -29,11 +29,102 @@ class MissionAllowanceController extends Controller
      */
     public function index(Request $request , Document $document)
     {
-        $token = $request->bearerToken() ;
+           
+        $document->load(['mission']);
+
+
+        $missionId =  $document -> mission->id;
+
+        Log::info('Consultation des indemnités mission', [
+            'mission_id' => $missionId,
+            'viewer_id' => auth()->id(),
+            'ip' => request()->ip(),
+        ]);
+
+        $mission = Mission::find($missionId);
+
+        if (!$mission) {
+
+            Log::warning('Mission introuvable', [
+                'mission_id' => $missionId,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Mission not found',
+            ], 404);
+        }
+
+        $allowances = $mission->allowances()
+            ->with('allowanceType')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $total = $allowances->sum('total');
+
+        Log::info('Indemnités récupérées', [
+            'mission_id' => $missionId,
+            'count' => $allowances->count(),
+            'total' => $total,
+        ]);
+
+        return response()->json([
+
+            'success' => true,
+
+            'mission_id' => $mission->id,
+
+            'total_allowances' => $total,
+
+            'allowances' => $allowances->map(function ($item) {
+
+                return [
+
+                    'id' => $item->id,
+
+                    'allowance_type_id' => $item->allowance_type_id,
+
+                    'name' => optional($item->allowanceType)->name,
+
+                    'code' => optional($item->allowanceType)->code,
+
+                    'quantity' => $item->quantity,
+
+                    'unit_amount' => (float) $item->unit_amount,
+
+                    'total' => (float) $item->total,
+
+                    'currency' => $item->currency,
+
+                    'status' => $item->status,
+
+                    'calculation_stage' => $item->calculation_stage,
+
+                    'approved_at' => $item->approved_at,
+
+                    'paid_at' => $item->paid_at,
+
+                    'created_at' => $item->created_at,
+                ];
+            }),
+
+        ]);
+    
+       
+
+    }
+
+
+    public function calculate(Request $request , Document $document)
+    {
+
+     $token = $request->bearerToken() ;
         $userServiceUrl = config("services.user_service.base_url");
 
         
         $document->load(['mission']);
+
+        $userData=[];
 
         $mission =  $document -> mission;
 
@@ -44,7 +135,7 @@ class MissionAllowanceController extends Controller
 
         if ($userResponse->ok()) {
 
-      return  $userData = $userResponse;
+        $userData = $userResponse["employee"];
 
         // Attachement sans persistance DB
     
@@ -60,7 +151,7 @@ class MissionAllowanceController extends Controller
 
         $policies = MissionPolicy::where('is_active', true)->get();
 
-        $allowances = $this -> mission_allowance_calculator -> calculate( $mission->toArray() , $policies->toArray() );
+        $allowances = $this -> mission_allowance_calculator -> calculate( $mission , $userData );
 
         return response()->json([
             'success' => true,

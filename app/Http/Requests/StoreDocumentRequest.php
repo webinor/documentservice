@@ -95,6 +95,8 @@ $missionFields = [
     // Acteur (missionnaire)
     "actor_type" => "required|in:me,collaborator,external",
 
+    'scope' => 'required|in:LOCAL,NATIONAL,INTERNATIONAL',
+
     // Collaborateur interne
     // "actor_collaborator" => "required_if:actor_type,collaborator|nullable|exists:users,id",
     "actor_collaborator" => "required_if:actor_type,collaborator|nullable",

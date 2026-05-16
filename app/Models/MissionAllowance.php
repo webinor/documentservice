@@ -10,7 +10,7 @@ class MissionAllowance extends Model
     use HasFactory;
 
 
-    public function type()
+    public function allowanceType()
 {
     return $this->belongsTo(AllowanceType::class, 'allowance_type_id');
 }

@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ExpenseCategory extends Model
+class ExpenseCategoryRule extends Model
 {
     use HasFactory;
 
-    public function rules()
+    public function category()
 {
-    return $this->hasMany(ExpenseCategoryRule::class);
+    return $this->belongsTo(ExpenseCategory::class);
 }
 }

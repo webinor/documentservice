@@ -4,8 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMissionExpenseRequest;
 use App\Http\Requests\UpdateMissionExpenseRequest;
+use App\Models\ExpenseLimit;
 use App\Models\Misc\Document;
 use App\Models\MissionExpense;
+use App\Services\Mission\MissionExpenseCalculatorService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MissionExpenseController extends Controller
 {
@@ -28,6 +33,86 @@ class MissionExpenseController extends Controller
     {
         //
     }
+
+
+    public function calculate(Request $request, MissionExpenseCalculatorService $service)
+{
+    $data = $request->validate([
+        'departure_date' => 'required|date',
+        'departure_time' => 'required',
+        'return_date' => 'required|date',
+        'return_time' => 'required',
+        'rules' => 'required|array',
+    ]);
+
+
+//     $departure = $this->buildDateTime(
+//     $data['departure_date'],
+//     $data['departure_time']
+// );
+
+// $return = $this->buildDateTime(
+//     $data['return_date'],
+//     $data['return_time']
+// );
+
+    $departure = Carbon::createFromFormat(
+        'Y-m-d H:i',
+        $data['departure_date'] . ' ' . $data['departure_time']
+    );
+
+    $return = Carbon::createFromFormat(
+        'Y-m-d H:i',
+        $data['return_date'] . ' ' . $data['return_time']
+    );
+
+
+
+    $result = $service->calculate($departure, $return, $data['rules']);
+
+    return response()->json([
+        'success' => true,
+        'data' => $result
+    ], 200, [], JSON_UNESCAPED_UNICODE);
+}
+
+     /**
+     * Retourne les limites par catégorie de dépense
+     */
+    public function categoriesLimits()
+    {
+      
+
+try {
+
+    $today = Carbon::today();
+
+    $limits = ExpenseLimit::
+    whereHas('expense_category')
+    ->with(['expense_category'])
+    ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $limits
+    ], 200, [], JSON_UNESCAPED_UNICODE);
+
+} catch (\Exception $e) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Impossible de récupérer les limites des catégories',
+        'error' => $e->getMessage()
+    ], 500, [], JSON_UNESCAPED_UNICODE);
+}
+    }
+
+    private function buildDateTime($date, $time)
+{
+    return Carbon::createFromFormat(
+        'Y-m-d H:i',
+        $date . ' ' . $time
+    );
+}
 
      public function getMissionExpenses(Document $document)
     {

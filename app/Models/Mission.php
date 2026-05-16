@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
 use App\Services\Mission\MissionAllowanceCalculator;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +24,7 @@ class Mission extends Model implements PayableDocumentInterface
         'actor_type',
         'actor_id',
         'document_id',
+        'scope'
     ];
 
     public function document()
@@ -40,6 +42,18 @@ public function mission_expenses(): HasMany
     return $this->hasMany(MissionExpense::class);
 }
 
+public function getDurationDaysAttribute()
+{
+    if (!$this->start_date || !$this->end_date) {
+        return 0;
+    }
+
+    return Carbon::parse($this->start_date)
+        ->diffInDays(
+            Carbon::parse($this->end_date)
+        ) + 1;
+}
+
 
 public function allowances()
 {
@@ -51,7 +65,7 @@ public function allowances()
     if (!$value ) {
         return null; // ou return '';
     }
-    return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
+    return Carbon::parse($value)->format('d-m-Y'); 
 }
 
        public function getEndDateAttribute($value)
@@ -59,7 +73,7 @@ public function allowances()
     if (!$value ) {
         return null; // ou return '';
     }
-    return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
+    return Carbon::parse($value)->format('d-m-Y'); 
 }
 
 

@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreExpenseLimitRequest;
-use App\Http\Requests\UpdateExpenseLimitRequest;
-use App\Models\ExpenseLimit;
-use Illuminate\Support\Facades\DB;
+use App\Http\Requests\StoreExpenseCategoryRuleRequest;
+use App\Http\Requests\UpdateExpenseCategoryRuleRequest;
+use App\Models\ExpenseCategoryRule;
 
-class ExpenseLimitController extends Controller
+class ExpenseCategoryRuleController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -18,9 +17,6 @@ class ExpenseLimitController extends Controller
     {
         //
     }
-
-
-   
 
     /**
      * Show the form for creating a new resource.
@@ -35,10 +31,10 @@ class ExpenseLimitController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\StoreExpenseLimitRequest  $request
+     * @param  \App\Http\Requests\StoreExpenseCategoryRuleRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreExpenseLimitRequest $request)
+    public function store(StoreExpenseCategoryRuleRequest $request)
     {
         //
     }
@@ -46,10 +42,10 @@ class ExpenseLimitController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\ExpenseLimit  $expenseLimit
+     * @param  \App\Models\ExpenseCategoryRule  $expenseCategoryRule
      * @return \Illuminate\Http\Response
      */
-    public function show(ExpenseLimit $expenseLimit)
+    public function show(ExpenseCategoryRule $expenseCategoryRule)
     {
         //
     }
@@ -57,10 +53,10 @@ class ExpenseLimitController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\ExpenseLimit  $expenseLimit
+     * @param  \App\Models\ExpenseCategoryRule  $expenseCategoryRule
      * @return \Illuminate\Http\Response
      */
-    public function edit(ExpenseLimit $expenseLimit)
+    public function edit(ExpenseCategoryRule $expenseCategoryRule)
     {
         //
     }
@@ -68,11 +64,11 @@ class ExpenseLimitController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \App\Http\Requests\UpdateExpenseLimitRequest  $request
-     * @param  \App\Models\ExpenseLimit  $expenseLimit
+     * @param  \App\Http\Requests\UpdateExpenseCategoryRuleRequest  $request
+     * @param  \App\Models\ExpenseCategoryRule  $expenseCategoryRule
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateExpenseLimitRequest $request, ExpenseLimit $expenseLimit)
+    public function update(UpdateExpenseCategoryRuleRequest $request, ExpenseCategoryRule $expenseCategoryRule)
     {
         //
     }
@@ -80,10 +76,10 @@ class ExpenseLimitController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\ExpenseLimit  $expenseLimit
+     * @param  \App\Models\ExpenseCategoryRule  $expenseCategoryRule
      * @return \Illuminate\Http\Response
      */
-    public function destroy(ExpenseLimit $expenseLimit)
+    public function destroy(ExpenseCategoryRule $expenseCategoryRule)
     {
         //
     }
