@@ -9,8 +9,8 @@ class ExpenseCategory extends Model
 {
     use HasFactory;
 
-    public function rules()
+    public function rule()
 {
-    return $this->hasMany(ExpenseCategoryRule::class);
+    return $this->hasOne(ExpenseCategoryRule::class);
 }
 }

@@ -1373,9 +1373,13 @@ $validated['montant'] = $montantTotal;
         // Charger les relations
         $query->with(array_merge(["document_type"], $documentTypes));
 
-        // return $documents = $query->get();
+         
+        $documents = $query->get();
 
-        $documents = $query->get()->map(function ($doc) use ($documentTypes , $DOC_CONFIG) {
+        // throw new Exception(json_encode($documents), 1);
+
+
+        $documentsEnrich = $documents->map(function ($doc) use ($documentTypes , $DOC_CONFIG) {
 
             // Détecter quel type de document est réellement présent
     $activeRelation = null;
@@ -1385,6 +1389,8 @@ $validated['montant'] = $montantTotal;
             break;
         }
     }
+      
+
 
     // Base commune à tous les documents
     $base = [
@@ -1400,6 +1406,8 @@ $validated['montant'] = $montantTotal;
         "created_by" => $doc->created_by,
     ];
 
+  
+
     // Si aucun type trouvé → retourner juste la base
     if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
         return $base;
@@ -1408,30 +1416,19 @@ $validated['montant'] = $montantTotal;
     $fields = $DOC_CONFIG[$activeRelation]["fields"];
     $relationObj = $doc->$activeRelation;
 
+
     // Injecter dynamiquement les champs configurés
     foreach ($fields as $responseKey => $modelField) {//prestataire
         $value = $relationObj->$modelField ?? null;
 
-          // Si la clé est susceptible de contenir un ID utilisateur
-    // $userKeys = ['demandeur', 'validateur', 'beneficiaire','acteur']; // Liste des clés à enrichir
-    // $providerKeys = ['prestataire']; // Liste des clés à enrichir
-    // if (in_array($responseKey, $userKeys) && $value) {
-    //     // Appel au microservice User pour récupérer les infos
-    //     $response = Http:://withToken(config('services.user_service.token'))
-    //         acceptJson()
-    //         ->get(config('services.user_service.base_url') . "/{$value}");
 
-    // //new Exception(json_encode($response));
+      if (array_key_exists($modelField , $base)) {
+        
+        // throw new Exception(json_encode($modelField), 1);
+        continue;
 
-    //     if ($response->successful()) {
-    //         $value = $response->json()['user']; // ou filtrer certaines infos, ex: ['id','name','email']
-    //     }
-    //     else{
-   
-    //         // new Exception(json_encode($response));
-
-    //     }
-    // }
+      
+      }
 
     $userKeys = ['demandeur', 'validateur', 'beneficiaire', 'actor_type'];
     $providerKeys = ['prestataire']; // Liste des clés à enrichir
@@ -1504,12 +1501,15 @@ if (in_array($responseKey, $userKeys) && $value) {
     // : $value;
 
     }
+        
 
     return $base;
 
         });
+        // throw new Exception(json_encode($documentsEnrich), 1);
 
-    return $documents;
+
+    return $documentsEnrich;
 }
 
   

@@ -19,7 +19,8 @@ class MissionExpense extends Model
         'description',
         'receipt_path',
         'is_validated',
-        'type'
+        'type',
+        'quantity'
     ];
 
     /**

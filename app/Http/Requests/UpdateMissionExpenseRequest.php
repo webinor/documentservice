@@ -35,6 +35,12 @@ class UpdateMissionExpenseRequest extends FormRequest
             'min:0'
         ],
 
+        'actual_quantity' => [
+            'nullable',
+            'numeric',
+            'min:1'
+        ],
+
         'expense_date' => [
             'nullable',
             'date'

@@ -24,7 +24,20 @@ class Mission extends Model implements PayableDocumentInterface
         'actor_type',
         'actor_id',
         'document_id',
-        'scope'
+        'scope',
+            'start_date_planned' ,
+            'end_date_planned' ,
+
+            'start_date_actual' ,
+            'end_date_actual' ,
+
+            'departure_time_planned',
+            'return_time_planned',
+
+            'departure_time_actual',
+            'return_time_actual',
+
+      
     ];
 
     public function document()
@@ -60,7 +73,7 @@ public function allowances()
     return $this->hasMany(MissionAllowance::class);
 }
 
-        public function getStartDateAttribute($value)
+        public function getStartDatAttribute($value)
 {
     if (!$value ) {
         return null; // ou return '';
@@ -68,7 +81,7 @@ public function allowances()
     return Carbon::parse($value)->format('d-m-Y'); 
 }
 
-       public function getEndDateAttribute($value)
+       public function getEndDatAttribute($value)
 {
     if (!$value ) {
         return null; // ou return '';

@@ -6,7 +6,7 @@ use Carbon\Carbon;
 
 class MissionExpenseCalculatorService
 {
-    public function calculate($departure, $return, $rules)
+    public function calculate(Carbon $departure, Carbon $return, object $rules)
     {
         $departure = Carbon::parse($departure);
         $return = Carbon::parse($return);
@@ -19,26 +19,38 @@ class MissionExpenseCalculatorService
 
             foreach ($rules as $rule) {
 
-                if ($rule['rule_type'] === 'TIME_WINDOW') {
+                if ($rule->rule_type === 'TIME_WINDOW') {
 
                     $count = $this->evaluateTimeWindow(
                         $departure,
                         $return,
                         $currentDay,
-                        $rule['start_time'],
-                        $rule['end_time']
+                        $rule->start_time,
+                        $rule->end_time
                     );
 
-                    $this->add($result, $rule['expense_category_id'], $count);
+                    $this->add($result, $rule->expense_category_id, $count);
                 }
 
-                if ($rule['rule_type'] === 'DAILY') {
-                    $this->add($result, $rule['expense_category_id'], 1);
+                if ($rule->rule_type === 'DAILY') {
+                    $this->add($result, $rule->expense_category_id, 1);
                 }
             }
 
             $currentDay->addDay();
         }
+
+        return collect($result)
+    ->map(function ($quantity, $categoryId) {
+
+        return [
+            'expense_category_id' => (int) $categoryId,
+            'quantity' => $quantity
+        ];
+
+    })
+    ->values()
+    ->toArray();
 
         return $result;
     }
@@ -66,6 +78,7 @@ class MissionExpenseCalculatorService
         if (!isset($result[$categoryId])) {
             $result[$categoryId] = 0;
         }
+
 
         $result[$categoryId] += $value;
     }

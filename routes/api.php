@@ -15,6 +15,7 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LedgerCodeTypeController;
 use App\Http\Controllers\MissionAllowanceController;
+use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\TestThumbnailController;
@@ -56,6 +57,9 @@ Route::middleware("jwt.check")
                 "getDocumentTypesByRelationName"
             );
         });
+
+
+         Route::post('/mission-expenses/calculate',[MissionExpenseController::class, 'calculate']);
 
         /**
          * 📌 FolderController
@@ -105,6 +109,12 @@ Route::middleware("jwt.check")
         Route::get(
     '{document}/mission-expenses',
     [MissionExpenseController::class, 'getMissionExpenses']
+);
+
+
+Route::patch(
+    '/{document}/mission',
+    [MissionController::class, 'update']
 );
 
         Route::delete('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'destroy']);

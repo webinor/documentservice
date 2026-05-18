@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMissionRequest;
 use App\Http\Requests\UpdateMissionRequest;
+use App\Models\Misc\Document;
 use App\Models\Mission;
 
 class MissionController extends Controller
@@ -68,9 +69,35 @@ class MissionController extends Controller
      * @param  \App\Models\Mission  $mission
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateMissionRequest $request, Mission $mission)
-    {
-        //
+    public function update(UpdateMissionRequest $request, Document $document)
+{
+
+    //   return  
+      $mission = $document->mission;
+
+        if (!$mission) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Mission introuvable'
+            ], 404);
+        }
+
+        /**
+         * ✅ Validation dynamique
+         */
+        $validated = $request->validated();
+
+        /**
+         * ✅ UPDATE
+         */
+        $mission->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mission mise à jour',
+            'data' => $mission->fresh()
+        ]);
     }
 
     /**
