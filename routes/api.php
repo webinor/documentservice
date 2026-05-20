@@ -145,9 +145,7 @@ Route::patch(
 });
 
 
-            Route::get(
-    '/{document}/mission-allowances',
-    [MissionAllowanceController::class, 'index']
+            Route::get('/{document}/mission-allowances',[MissionAllowanceController::class, 'index']
 );
 
 Route::get('mission-expenses/categories-limits', [MissionExpenseController::class, 'categoriesLimits']);
