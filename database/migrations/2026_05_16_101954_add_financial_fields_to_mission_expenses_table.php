@@ -15,10 +15,10 @@ class AddFinancialFieldsToMissionExpensesTable extends Migration
     {
         Schema::table('mission_expenses', function (Blueprint $table) {
 
-            // Total calculé
-            $table->decimal('total', 15, 2)
-                  ->default(0)
-                  ->after('amount');
+            // // Total calculé
+            // $table->decimal('total', 15, 2)
+            //       ->default(0)
+            //       ->after('amount');
 
             // Devise
             $table->string('currency', 10)
@@ -64,7 +64,7 @@ class AddFinancialFieldsToMissionExpensesTable extends Migration
             $table->dropIndex(['approved_by']);
 
             $table->dropColumn([
-                'total',
+                // 'total',
                 'currency',
                 'justification',
                 'status',

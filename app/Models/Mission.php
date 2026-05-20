@@ -25,17 +25,41 @@ class Mission extends Model implements PayableDocumentInterface
         'actor_id',
         'document_id',
         'scope',
-            'start_date_planned' ,
-            'end_date_planned' ,
+          /**
+     * ==========================================
+     * 🧭 BASE (départ/retour du siège)
+     * ==========================================
+     */
 
-            'start_date_actual' ,
-            'end_date_actual' ,
+    "departure_date_base_planned",
+    "departure_time_base_planned" ,
 
-            'departure_time_planned',
-            'return_time_planned',
+    "arrival_date_base_planned",
+    "arrival_time_base_planned" ,
 
-            'departure_time_actual',
-            'return_time_actual',
+    "departure_date_base_actual" ,
+    "departure_time_base_actual" ,
+
+    "arrival_date_base_actual" ,
+    "arrival_time_base_actual" ,
+
+    /**
+     * ==========================================
+     * 🏗 SITE (départ/retour intervention)
+     * ==========================================
+     */
+
+    "departure_date_site_planned",
+    "departure_time_site_planned" ,
+
+    "arrival_date_site_planned",
+    "arrival_time_site_planned" ,
+
+    "departure_date_site_actual" ,
+    "departure_time_site_actual" ,
+
+    "arrival_date_site_actual" ,
+    "arrival_time_site_actual" ,
 
       
     ];

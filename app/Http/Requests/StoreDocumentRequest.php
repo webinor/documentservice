@@ -82,15 +82,14 @@ $missionFields = [
 
     // Infos mission
     "destination" => "required|string",
-    "start_date" => "required|date",
-    "end_date" => "required|date|after_or_equal:start_date",
+    "title" => "nullable|string",
 
     // Budget
     "estimated_budget" => "nullable|numeric|min:0",
     "advance_amount" => "nullable|numeric|min:0",
 
     // Mission spéciale
-    "mission_special" => "required|in:YES,NO",
+    "mission_special" => "required|in:1,0",
 
     // Acteur (missionnaire)
     "actor_type" => "required|in:me,collaborator,external",
@@ -98,19 +97,52 @@ $missionFields = [
     'scope' => 'required|in:LOCAL,NATIONAL,INTERNATIONAL',
 
     // Collaborateur interne
-    // "actor_collaborator" => "required_if:actor_type,collaborator|nullable|exists:users,id",
     "actor_collaborator" => "required_if:actor_type,collaborator|nullable",
 
     // Prestataire externe
-    // "actor_external" => "required_if:actor_type,external|nullable|exists:external_actors,id",
     "actor_external" => "required_if:actor_type,external|nullable",
 
-    // Dépenses
-    // "expenses" => "nullable|array",
-    // "expenses.*.category_id" => "required|exists:expense_categories,id",
-    // "expenses.*.montant" => "required|numeric|min:0",
+    /**
+     * ==========================================
+     * 🧭 BASE (départ/retour du siège)
+     * ==========================================
+     */
 
-    // Optionnel : justificatif (si upload direct)
+    "departure_date_base_planned" => "required|date",
+    "departure_time_base_planned" => "required",
+
+    "arrival_date_base_planned" => "required|date",
+    "arrival_time_base_planned" => "required",
+
+    "departure_date_base_actual" => "nullable|date",
+    "departure_time_base_actual" => "nullable",
+
+    "arrival_date_base_actual" => "nullable|date",
+    "arrival_time_base_actual" => "nullable",
+
+    /**
+     * ==========================================
+     * 🏗 SITE (départ/retour intervention)
+     * ==========================================
+     */
+
+    "departure_date_site_planned" => "required|date",
+    "departure_time_site_planned" => "required",
+
+    "arrival_date_site_planned" => "required|date",
+    "arrival_time_site_planned" => "required",
+
+    "departure_date_site_actual" => "nullable|date",
+    "departure_time_site_actual" => "nullable",
+
+    "arrival_date_site_actual" => "nullable|date",
+    "arrival_time_site_actual" => "nullable",
+
+    /**
+     * Dépenses
+     */
+
+    "expenses" => "nullable|string",
     "expenses.*.receipt" => "nullable|file|max:5120",
 ];
 

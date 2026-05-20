@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use Exception;
 
 class DocumentChildHandler
 {
@@ -29,7 +30,12 @@ class DocumentChildHandler
 
             // Mapper les données selon le type
             $type = $documentType->slug ?? null;
-            $data = $this->mapData($type, $validated , $parentModel);
+            $mapData = $this->mapData($type, $validated , $parentModel);
+            $data = $mapData["data"];
+            $relations = $mapData["relations"];
+
+            // throw new Exception(json_encode($data ,JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), 1);
+            
 
             // Parent actuel pour la relation
             $currentParent = $parentModel;
@@ -48,60 +54,89 @@ class DocumentChildHandler
                     throw new \Exception("Relation '{$relationName}' introuvable sur " . get_class($currentParent));
                 }
 
+                // throw new \Exception(json_encode($relations , JSON_UNESCAPED_UNICODE ));
+
+
                 // Crée l'instance de l'enfant
                 $child = new $className();
 
                 // Remplit les attributs uniquement pour le premier enfant (niveau immédiat)
                 if ($index === 0) {
-                    $this->fillModelAttributes($child, $data);
+                    // $this->fillModelAttributes($child, $data);
+                     if (isset($data['data'])) {
+        // 🆕 NOUVEAU FORMAT
+        $this->fillModelAttributes($child, $data);
+    } else {
+        // 🔥 ANCIEN FORMAT
+        $this->OldfillModelAttributes($child, $data);
+    }
                 }
+
+             
 
                 // Sauvegarde via la relation
                 $currentParent->$relationName()->save($child);
+
+               
+
+
+                   if (isset($relations)) {
+
+
+
+    foreach ($relations as $currentRelationName => $relationData) {
+
+    if (!method_exists($child, $currentRelationName)) {
+        throw new \Exception("Relation {$currentRelationName} introuvable sur " . get_class($child));
+    }
+
+    $relationQuery = $child->$currentRelationName();
+
+    $relatedModelClass = get_class($relationQuery->getRelated());
+
+    // =====================================
+    // CAS 1 : UNE SEULE ENTITÉ
+    // =====================================
+    if ( array_is_list($relationData) === false) {
+
+        $relationModel = new $relatedModelClass();
+
+        $relationModel = $this->fillModelAttributesRelation($relationModel, $relationData);
+
+        $relationQuery->save($relationModel);
+    }
+
+    // =====================================
+    // CAS 2 : COLLECTION (hasMany)
+    // =====================================
+    else {
+
+        $models = [];
+
+        foreach ($relationData as $item) {
+
+            $relationModel = new $relatedModelClass();
+
+            $relationModel = $this->fillModelAttributesRelation($relationModel, $item);
+
+            $models[] = $relationModel;
+        }
+
+
+
+        $relationQuery->saveMany($models);
+    }
+}
+}
+        // throw new \Exception(json_encode($child));
+
 
                 // Le nouvel enfant devient le parent pour le prochain niveau
                 $currentParent = $child;
             }
 
-        //           //  throw new \Exception(json_encode($validated));
 
 
-        // $className = $documentType->class_name;        // Exemple: \App\Models\InvoiceProvider
-        // $relationName = $documentType->relation_name;  // Exemple: invoiceProvider
-        // $type = $documentType->slug ?? null;           // Type utilisé pour mapper les données
-
-        // if (!class_exists($className)) {
-        //     throw new \Exception("Classe {$className} introuvable !");
-        // }
-
-        // if (!method_exists($parentModel, $relationName)) {
-        //     throw new \Exception("Relation '{$relationName}' introuvable sur " . get_class($parentModel));
-        // }
-
-        // // Mapper de données selon le type
-        // $data = $this->mapData($type, $validated , $parentModel);
-
-        // // Crée l'instance de l'enfant
-        // $child = new $className();
-
-        // $this->fillModelAttributes($child , $data);
-
-        // /*foreach ($data as $key => $value) {
-        //     if (property_exists($child, $key)) {
-        //         $child->$key = $value;
-        //     }
-        //     else{
-        //         return $key;
-        //     }
-        // }/**/
-
-        // //return $child;
-
-        // //throw new \Exception(json_encode($parentModel));
-
-
-        // // Sauvegarde via la relation
-        // $parentModel->$relationName()->save($child);
     }
 
 
@@ -113,7 +148,7 @@ class DocumentChildHandler
  * @return void
  * @throws \Exception si une clé n'existe pas dans $fillable
  */
-function fillModelAttributes($model, array $data)
+function OldfillModelAttributes($model, array $data)
 {
 
                   //  throw new \Exception(json_encode($data));
@@ -131,6 +166,67 @@ function fillModelAttributes($model, array $data)
             throw new \Exception("La clé '{$key}' n'existe pas dans les champs fillable de " . get_class($model));
         }
     }
+}
+
+/**
+ * Remplit dynamiquement un modèle avec des données en respectant $fillable.
+ *
+ * @param \Illuminate\Database\Eloquent\Model $model
+ * @param array $data
+ * @return void
+ * @throws \Exception
+ */
+function fillModelAttributes($model, array $data)
+{
+    /**
+     * 🔥 SUPPORT NOUVEAU FORMAT
+     * [
+     *   "data" => [...],
+     *   "relations" => [...]
+     * ]
+     */
+    if (array_key_exists('data', $data) && is_array($data['data'])) {
+        $data = $data['data'];
+    }
+
+    /**
+     * 🔥 IGNORER relations si présent (sécurité)
+     */
+    unset($data['relations']);
+
+    foreach ($data as $key => $value) {
+
+        if (!in_array($key, $model->getFillable())) {
+            throw new \Exception(
+                "La clé '{$key}' n'existe pas dans les champs fillable de " . get_class($model)
+            );
+        }
+
+        $casts = $model->getCasts();
+
+        if (isset($casts[$key]) && $casts[$key] === 'array' && is_array($value)) {
+            $model->$key = $value;
+        } else {
+            $model->$key = $value;
+        }
+    }
+}
+
+/**
+ * Remplit un modèle relationnel depuis data["relations"]
+ */
+private function fillModelAttributesRelation($relationModel, array $data)
+{
+    if (!isset($data['data'])) {
+        // throw new \Exception("Format relation invalide : 'data' manquant");
+    }
+
+        // throw new \Exception(json_encode($data));
+
+
+    $this->fillModelAttributes($relationModel, $data);
+
+    return $relationModel;
 }
 
 
@@ -207,56 +303,247 @@ function fillModelAttributes($model, array $data)
                 */
 
              ],
-            'mission' => [
+      'mission' => [
+      
+     'data' => [
+
+    /**
+     * =========================================
+     * INFOS GÉNÉRALES
+     * =========================================
+     */
+
     'destination' => fn($v) => $v['destination'] ?? null,
+    // 'title' => fn($v) => $v['title'] ?? null,
 
-    'start_date' => fn($v) =>
-        isset($v['start_date'])
-            ?  \Carbon\Carbon::createFromFormat('d-m-Y', $v['start_date'])->format('Y-m-d') //Carbon::parse($v['start_date'])->format('Y-m-d')
-            : null,
-
-    'end_date' => fn($v) =>
-        isset($v['end_date'])
-            ? \Carbon\Carbon::createFromFormat('d-m-Y', $v['end_date'])->format('Y-m-d') //Carbon::parse($v['end_date'])->format('Y-m-d')
-            : null,
+    'scope' => fn($v) => $v['scope'] ?? null,
 
     'estimated_budget' => fn($v) => $v['estimated_budget'] ?? 0,
     'advance_amount' => fn($v) => $v['advance_amount'] ?? 0,
 
-    // 'is_special' => fn($v) => ($v['mission_special'] ?? 'NO') === 'YES',
     'is_special' => fn($v) => $v['mission_special'] ?? 0,
 
-    // 🔥 ACTEUR (clé critique)
+    /**
+     * =========================================
+     * ACTOR
+     * =========================================
+     */
+
     'actor_id' => fn($v) => $this->resolveActorId($v),
     'actor_type' => fn($v) => $this->resolveActorType($v),
+
+    /**
+     * =========================================
+     * 🧭 BASE - PLANNED
+     * =========================================
+     */
+
+    'departure_date_base_planned' => fn($v) =>
+        $this->toDate($v['departure_date_base_planned'] ?? null),
+
+    'departure_time_base_planned' => fn($v) =>
+        $v['departure_time_base_planned'] ?? null,
+
+    'arrival_date_base_planned' => fn($v) =>
+        $this->toDate($v['arrival_date_base_planned'] ?? null),
+
+    'arrival_time_base_planned' => fn($v) =>
+        $v['arrival_time_base_planned'] ?? null,
+
+    /**
+     * =========================================
+     * 🧭 BASE - ACTUAL
+     * =========================================
+     */
+
+    'departure_date_base_actual' => fn($v) =>
+        $this->toDate($v['departure_date_base_actual'] ?? null),
+
+    'departure_time_base_actual' => fn($v) =>
+        $v['departure_time_base_actual'] ?? null,
+
+    'arrival_date_base_actual' => fn($v) =>
+        $this->toDate($v['arrival_date_base_actual'] ?? null),
+
+    'arrival_time_base_actual' => fn($v) =>
+        $v['arrival_time_base_actual'] ?? null,
+
+    /**
+     * =========================================
+     * 🏗 SITE - PLANNED
+     * =========================================
+     */
+
+    'departure_date_site_planned' => fn($v) =>
+        $this->toDate($v['departure_date_site_planned'] ?? null),
+
+    'departure_time_site_planned' => fn($v) =>
+        $v['departure_time_site_planned'] ?? null,
+
+    'arrival_date_site_planned' => fn($v) =>
+        $this->toDate($v['arrival_date_site_planned'] ?? null),
+
+    'arrival_time_site_planned' => fn($v) =>
+        $v['arrival_time_site_planned'] ?? null,
+
+    /**
+     * =========================================
+     * 🏗 SITE - ACTUAL
+     * =========================================
+     */
+
+    'departure_date_site_actual' => fn($v) =>
+        $this->toDate($v['departure_date_site_actual'] ?? null),
+
+    'departure_time_site_actual' => fn($v) =>
+        $v['departure_time_site_actual'] ?? null,
+
+    'arrival_date_site_actual' => fn($v) =>
+        $this->toDate($v['arrival_date_site_actual'] ?? null),
+
+    'arrival_time_site_actual' => fn($v) =>
+        $v['arrival_time_site_actual'] ?? null,
+
+    
 ],
+
+        'relations' => [
+
+        'mission_expenses' => function ($v) {
+            // throw new \Exception(json_encode("ouiiii"));
+            if (!isset($v['expenses'])) return [];
+
+
+
+            $expenses = is_string($v['expenses'])
+                ? json_decode($v['expenses'], true)
+                : $v['expenses'];
+
+            return collect($expenses)->map(function ($exp) {
+
+                    $amount = $exp['amount'] ?? 0;
+
+                    // $plannedQty = $exp['planned_quantity'] ?? 1;
+                    // $actualQty  = $exp['actual_quantity'] ?? null;
+                    $Qty  = $exp['actual_quantity'] ?? null;
+
+                    return [
+                        'expense_category_id' => $exp['expense_category_id'] ?? null,
+                        'amount' => $amount,
+                        'type' => $exp['type'] ?? 'PREVISIONNELLE',
+
+                        // 'planned_quantity' => $plannedQty,
+                        // 'actual_quantity' => $actualQty,
+                        'quantity' => $Qty,
+
+                        // ✅ TOTAL ajouté
+                        // 'total' => $amount * ($Qty),
+
+                        'comment' => $exp['comment'] ?? null,
+                    ];
+                })->toArray();
+        }
+
+    ]
+
+      ]
             // Ajoute ici d'autres types si nécessaire
         ];
 
-        if (!$type || !isset($map[$type])) {
-            return []; // Pas de mapping spécifique, on peut renvoyer un tableau vide
-        }
+      if (!$type || !isset($map[$type])) {
+    return [];
+}
 
-        $data = [];
-        foreach ($map[$type] as $field => $callback) {
-            $data[$field] = $callback($validated);
-        }
+/**
+ * 🔥 Data + relations config
+ */
+$dataLooper = $map[$type]['data'] ?? $map[$type];
+$relationLooper = $map[$type]['relations'] ?? [];
 
-            // 2. Champs communs pour tous les types
-    $common = [
-        'document_id' => $parentModel? $parentModel->id : null,
-        //'created_by'  => auth()->id(),
-    ];
+$data = [];
+$relationsData = [];
 
-    return array_merge($data, $common);
+        // throw new \Exception(json_encode($relationLooper));
+
+
+/**
+ * =========================
+ * 📦 MAIN DATA
+ * =========================
+ */
+foreach ($dataLooper as $field => $callback) {
+
+    if (!is_callable($callback)) {
+        throw new \Exception("Callback invalide pour le champ: {$field}");
     }
+
+    $data[$field] = $callback($validated);
+}
+
+/**
+ * =========================
+ * RELATIONS (IMPORTANT FIX)
+ * =========================
+ */
+foreach ($relationLooper as $relation => $callback) {
+
+    if (!is_callable($callback)) {
+        throw new \Exception("Relation callback invalide pour: {$relation}");
+    }
+
+    $relationsData[$relation] = $callback($validated);
+}
+
+/**
+ * =========================
+ * COMMON
+ * =========================
+ */
+$common = [
+    'document_id' => $parentModel? $parentModel->id : null,
+];
+
+/**
+ * =========================
+ * RETURN FINAL STRUCTURE
+ * =========================
+ */
+return [
+    "data" => array_merge($data, $common),
+    "relations" => $relationsData
+];
+   
+    }
+
+
+    private function toDate($value)
+{
+    if (empty($value)) {
+        return null;
+    }
+
+    try {
+        // format frontend: d-m-Y (ex: 02-05-2026)
+        return \Carbon\Carbon::createFromFormat('d-m-Y', $value)
+            ->format('Y-m-d');
+    } catch (\Exception $e) {
+        try {
+            // fallback si déjà au format Y-m-d ou ISO
+            return \Carbon\Carbon::parse($value)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+}
 
 private function resolveActorId($v)
 {
     switch ($v['actor_type'] ?? null) {
 
         case 'me':
-            return auth()->id();
+            return request()->get("user")['id'];
+            // return auth()->id();
+            
 
         case 'collaborator':
             return $v['actor_collaborator'] ?? null;

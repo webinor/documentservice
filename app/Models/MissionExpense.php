@@ -12,16 +12,25 @@ class MissionExpense extends Model
 
 
      protected $fillable = [
-        'mission_id',
-        'expense_category_id',
-        'amount',
-        'expense_date',
-        'description',
-        'receipt_path',
-        'is_validated',
-        'type',
-        'quantity'
+          'mission_id',
+    'expense_category_id',
+    'amount',
+    'total', // ✅ AJOUT
+    'expense_date',
+    'description',
+    'receipt_path',
+    'is_validated',
+    'type',
+    'comment',
+    'quantity',
+    // 'planned_quantity',
+    // 'actual_quantity',
     ];
+
+    public function getTotalAttribute()
+{
+    return $this->amount * ($this->quantity);
+}
 
     /**
      * Get the missions that owns the MissionExpense

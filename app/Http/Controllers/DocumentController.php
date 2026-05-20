@@ -806,7 +806,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             DB::beginTransaction();
 
             // Récupérer les données validées par le FormRequest
-            $validated = $request->validated();
+        // return 
+           $validated = $request->validated();
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
 
@@ -926,9 +927,7 @@ $validated['montant'] = $montantTotal;
                     // autres champs génériques...
                 ]);
 
-                // dd(now() , \Carbon\Carbon::now());
-                // throw new Exception(json_encode([now() , \Carbon\Carbon::now()]), 1);
-                // throw new Exception($document, 1);
+             
                 
 
 
@@ -939,6 +938,7 @@ $validated['montant'] = $montantTotal;
                     $documentType,
                     $validated
                 );
+
 
             
 
@@ -1847,7 +1847,7 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
     // 🚀 CAS ACTOR (MISSION)
     // =========================
     if (in_array($slug, $actorSlugs)) {
-        $userId = $entity->actor ?? null;
+        $userId = $entity->actor_id ?? null;
     }
 
     // fallback sécurité

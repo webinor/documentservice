@@ -198,34 +198,34 @@ $return = Carbon::createFromFormat(
 
     // 🧠 Construction des périodes
     $plannedStart = $this->buildDateTime(
-        $mission->start_date_planned,
-        $mission->departure_time_planned
-    );
+    $mission->departure_date_base_planned,
+    $mission->departure_time_base_planned
+);
 
-    $plannedEnd = $this->buildDateTime(
-        $mission->end_date_planned,
-        $mission->return_time_planned
-    );
+$plannedEnd = $this->buildDateTime(
+    $mission->arrival_date_base_planned,
+    $mission->arrival_time_base_planned
+);
 
-    $actualStart = (
-        $mission->start_date_actual &&
-        $mission->departure_time_actual
+  $actualStart = (
+    $mission->departure_date_base_actual &&
+    $mission->departure_time_base_actual
+)
+    ? $this->buildDateTime(
+        $mission->departure_date_base_actual,
+        $mission->departure_time_base_actual
     )
-        ? $this->buildDateTime(
-            $mission->start_date_actual,
-            $mission->departure_time_actual
-        )
-        : null;
+    : null;
 
-    $actualEnd = (
-        $mission->end_date_actual &&
-        $mission->return_time_actual
+$actualEnd = (
+    $mission->arrival_date_base_actual &&
+    $mission->arrival_time_base_actual
+)
+    ? $this->buildDateTime(
+        $mission->arrival_date_base_actual,
+        $mission->arrival_time_base_actual
     )
-        ? $this->buildDateTime(
-            $mission->end_date_actual,
-            $mission->return_time_actual
-        )
-        : null;
+    : null;
 
     // 🔥 règles groupées
     $rules = DB::table('expense_category_rules')
