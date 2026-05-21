@@ -149,7 +149,7 @@
         </div>
 
         <div class="info">
-            <p>BENEFICIAIRE: <span>{{ $document['taxi_paper']['beneficiary_details']['name'] ?? '..................' }}</span></p>
+            <p>BENEFICIAIRE: <span>{{ $document['taxi_paper']['actor_details']['name'] ?? '..................' }}</span></p>
             <p>DATE ET HEURE : <span>{{ $document->created_at ?? '..................' }}</span></p>
             <p>MOTIF : <span>{{ $document->taxi_paper->reason ?? '..................' }}</span></p>
         </div>

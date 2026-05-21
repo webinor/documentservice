@@ -4,16 +4,19 @@ namespace App\Services;
 
 use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
+use App\Services\Transaction\TransactionTypeLabelService;
 use App\Services\UserServiceClient;
 use Exception;
 
 class NotifyBeneficiaryService
 {
     protected UserServiceClient $userService;
+    protected TransactionTypeLabelService $transactionTypeLabelService;
 
-    public function __construct(UserServiceClient $userService)
+    public function __construct(UserServiceClient $userService , TransactionTypeLabelService $transactionTypeLabelService)
     {
         $this->userService = $userService;
+        $this->transactionTypeLabelService = $transactionTypeLabelService;
     }
 
     // public function execute(int $documentId): array
@@ -66,11 +69,11 @@ class NotifyBeneficiaryService
 
             $recipient = $child->getSettlementActor();
 
-            $amount = $child->getSettlementAmount();
+            $amount = $child->getSettlementAmount($transactionTypeCode);
 
-            $reason = $child->getSettlementReason();
+            $reason = $this->transactionTypeLabelService->getLabel($transactionTypeCode);//  $child->getSettlementReason($transactionTypeCode);
 
-            $direction = $child->getSettlementDirection();
+            $direction = $child->getSettlementDirection($transactionTypeCode);
 
             $details = $child->getSettlementDetails();
 
@@ -102,7 +105,8 @@ class NotifyBeneficiaryService
 
             return [
                 "user" => $eventResponse->json()['user'],
-                "transaction_code" => $eventResponse->json()['transaction_code']
+                "transaction_code" => $eventResponse->json()['transaction_code'],
+                "amount"=>$amount
             ];
     }
 }

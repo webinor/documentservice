@@ -44,7 +44,7 @@ class TaxiPaper extends Model implements PayableDocumentInterface
     return [];
 }
 
-    public function getSettlementReason(): string
+    public function getSettlementReason(string $transaction_type_code): string
     {
         return $this->reason ?? "Reglement Papier Taxi";
     }

@@ -254,7 +254,7 @@ $actualEnd = (
                 $rules->flatten()
             )
         )->keyBy('expense_category_id')
-        : $plannedResult;
+        : 0;//$plannedResult;
 
     /**
      * 🔥 Quantités manuelles saisies
@@ -296,7 +296,9 @@ $actualEnd = (
 
         $expense->final_quantity = $final;
 
-        $expense->final_quantity_manual = $manualQuantity;
+        // $expense->final_quantity_manual = $manualQuantity;
+
+        $expense->final_quantity_manual = $final;
 
         return $expense;
     });

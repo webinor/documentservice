@@ -6,11 +6,11 @@ interface PayableDocumentInterface
 {
     public function getSettlementActor(): int;
 
-    public function getSettlementAmount(): float;
+    public function getSettlementAmount(string $transaction_type_code): float;
 
-    public function getSettlementReason(): string;
+    public function getSettlementReason(string $transaction_type_code): string;
 
-    public function getSettlementDirection(): string;
+    public function getSettlementDirection(string $transaction_type_code): string;
 
     public function getSettlementDetails(): array;
 

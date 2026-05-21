@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
 use App\Services\Mission\MissionAllowanceCalculator;
+use App\Services\Mission\MissionExpenseAmountService;
+use App\Services\Mission\MissionExpenseCalculatorService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -119,14 +121,14 @@ public function allowances()
         return $this->actor_id;
     }
 
-    public function getSettlementAmount(): float
+    public function getSettlementAmount(string $transaction_type_code): float
     {
-        return $this->calculateSettlementAmount();
+        return $this->calculateSettlementAmount( $transaction_type_code);
     }
 
-    public function getSettlementDirection(): string
+    public function getSettlementDirection(string $transaction_type_code): string
 {
-    $balance = $this->calculateSettlementAmount();
+    $balance = $this->calculateSettlementAmount( $transaction_type_code);
 
     if ($balance > 0) {
         return 'OUT';
@@ -197,13 +199,24 @@ public function allowances()
     ];
 }
 
-    public function getSettlementReason(): string
+    public function getSettlementReason(string $transaction_type_code): string
     {
         return "Régularisation mission";
     }
 
-    public function calculateSettlementAmount(): float
+    public function calculateSettlementAmount(string $transaction_type_code): float
 {
+
+    if ($transaction_type_code == "MISSION_EXPENSE_ADVANCE") {
+        
+        $service = new MissionExpenseAmountService(new MissionExpenseCalculatorService());
+
+         $totals = $service->calculateTotals($this);
+
+         return $totals["planned_total"];
+    }
+   
+
     // Total des dépenses réelles
     $totalRealExpenses = $this->mission_expenses()
         ->where('type', 'DECLAREE')

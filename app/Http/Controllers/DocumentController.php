@@ -1840,7 +1840,8 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
     // 👤 CAS BENEFICIARY
     // =========================
     if (in_array($slug, $beneficiarySlugs)) {
-        $userId = $entity->beneficiary ?? null;
+        // $userId = $entity->beneficiary ?? null;
+        $userId = $entity->actor_id ?? null;
     }
 
     // =========================
@@ -1868,7 +1869,8 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
         // Attachement sans persistance DB
         $entityKey = in_array($slug, $actorSlugs)
             ? 'actor_details'
-            : 'beneficiary_details';
+            // : 'beneficiary_details';
+            : 'actor_details';
 
         $entity->{$entityKey} = $userData;
 
@@ -1881,7 +1883,8 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
         // optionnel : normalisation ID
         if ($entityKey === 'beneficiary_details') {
-            $document->beneficiary = $userData['id'] ?? null;
+            // $document->beneficiary = $userData['id'] ?? null;
+            $document->actor = $userData['id'] ?? null;
         } else {
             $document->actor = $userData['id'] ?? null;
         }
