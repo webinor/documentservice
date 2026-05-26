@@ -40,6 +40,38 @@ class Document extends Model
     'amount' => 'decimal:2'
 ];
 
+protected $appends = [
+    'dynamic_amount'
+];
+
+
+public function getDynamicAmountAttribute(): ?float
+{
+    if (!$this->relationLoaded('document_type')) {
+        $this->load('document_type');
+    }
+
+    $relationName = $this->document_type->relation_name;
+
+    if (!$relationName) {
+        return null;
+    }
+
+    if (!$this->relationLoaded($relationName)) {
+        $this->load($relationName);
+    }
+
+    $child = $this->{$relationName};
+
+    if (!$child instanceof \App\Contracts\PayableDocumentInterface) {
+        return null;
+    }
+
+    /**
+     * transaction par défaut
+     */
+    return $child->getSettlementAmount('DEFAULT');
+}
 
     public function payments()
     {

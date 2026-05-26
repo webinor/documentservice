@@ -8,6 +8,7 @@ use App\Models\ExpenseLimit;
 use App\Models\Misc\Document;
 use App\Models\MissionExpense;
 use App\Services\Mission\MissionExpenseCalculatorService;
+use App\Services\Mission\MissionExpenseService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,11 +182,25 @@ $return = Carbon::createFromFormat(
 
     public function getMissionExpenses(
     Document $document,
-    MissionExpenseCalculatorService $service
+    // MissionExpenseCalculatorService $service
+    MissionExpenseService $service
 ) {
-    $document->load('mission.mission_expenses.expense_category');
+
+    // $document->load('mission.mission_expenses.expense_category');
+    $document->load('mission');
 
     $mission = $document->mission;
+
+    return response()->json(
+    array_merge(
+        [
+            'success' => true
+        ],
+        $service->calculate($mission)
+    )
+);
+
+  
 
     if (!$mission) {
         return response()->json([

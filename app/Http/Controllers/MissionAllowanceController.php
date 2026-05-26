@@ -9,6 +9,7 @@ use App\Models\Mission;
 use App\Models\MissionAllowance;
 use App\Models\MissionPolicy;
 use App\Services\Mission\MissionAllowanceCalculator;
+use App\Services\Mission\MissionAllowanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -27,9 +28,31 @@ class MissionAllowanceController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request , Document $document)
+    public function index(Request $request , Document $document , MissionAllowanceService $service)
     {
            
+        $document->load('mission');
+
+    $mission = $document->mission;
+
+    if (!$mission) {
+
+       Log::warning('Mission introuvable', [
+                'document' => $document,
+            ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Mission not found',
+        ], 404);
+    }
+
+    return response()->json(array_merge([
+        'success' => true],
+        $service->calculate($mission)
+    ));
+
+
         $document->load(['mission']);
 
 

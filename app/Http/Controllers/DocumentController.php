@@ -543,6 +543,7 @@ $formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $
                 "id" => $attachment->id,
                 "attachment_number" => $attachment->attachment_number,
                 "attachment_type_id" => $attachment->attachment_type_id,
+                "generation_mode" =>$attachment->attachmentType->generation_mode ?? null,
                 "attachment_type_slug" => $attachment->attachmentType
                     ? $attachment->attachmentType->slug
                     : "--",
@@ -580,21 +581,54 @@ $formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $
         }
 
         // Enrichir les attachments avec le nom
+        // $attachments = $attachments->map(function ($att) use ($users) {
+        //     $userName =
+        //         $users[$att["created_by_id"]]["name"] ??
+        //         "Utilisateur ID: {$att["created_by_id"]}";
+        //     $attachment_number = $att["attachment_number"]
+        //         ? " #" . $att["attachment_number"] . " "
+        //         : " ";
+        //     $by = "par";
+        //     return [
+        //         "id" => $att["id"],
+        //         "name" => "{$att["name"]}$attachment_number{$by} {$userName} le {$att["created_at"]}",
+        //         "url" => $att["url"],
+        //         "slug" => $att["attachment_type_slug"],
+        //     ];
+        // });
+
         $attachments = $attachments->map(function ($att) use ($users) {
-            $userName =
-                $users[$att["created_by_id"]]["name"] ??
-                "Utilisateur ID: {$att["created_by_id"]}";
-            $attachment_number = $att["attachment_number"]
-                ? " #" . $att["attachment_number"] . " "
-                : " ";
-            $by = "par";
-            return [
-                "id" => $att["id"],
-                "name" => "{$att["name"]}$attachment_number{$by} {$userName} le {$att["created_at"]}",
-                "url" => $att["url"],
-                "slug" => $att["attachment_type_slug"],
-            ];
-        });
+
+    $userName =
+        $users[$att["created_by_id"]]["name"] ??
+        "Utilisateur ID: {$att["created_by_id"]}";
+
+    $attachment_number = $att["attachment_number"]
+        ? " #" . $att["attachment_number"] . ""
+        : ",";
+
+    $by = "par";
+
+    $date = $att["created_at"];
+
+    $generationMode = $att["generation_mode"] ?? 'USER';
+
+    $generatedLabel = $generationMode === 'SYSTEM'
+        ? "généré automatiquement le"
+        : "le";
+
+    $authorPart = $generationMode === 'SYSTEM'
+        ? ""
+        : "{$by} {$userName} ";
+
+    return [
+        "id" => $att["id"],
+        "name" =>
+            "{$att["name"]}{$attachment_number}{$authorPart}{$generatedLabel} {$date}",
+        "url" => $att["url"],
+        "slug" => $att["attachment_type_slug"],
+    ];
+});
 
         return response()->json([
             "success" => true,
@@ -1924,7 +1958,7 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
         
 
-         $document->load(
+        $document->load(
             $this->documents_relation[$document->document_type->slug],
             "attachments.file",
             "secondary_attachments"

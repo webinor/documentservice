@@ -18,6 +18,7 @@ use App\Http\Controllers\MissionAllowanceController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
+use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\TestThumbnailController;
 
 // Models
@@ -116,6 +117,11 @@ Route::patch(
     '/{document}/mission',
     [MissionController::class, 'update']
 );
+
+  Route::get(
+        '/{document}/financial-summary',
+        [MissionFinancialSummaryController::class, 'show']
+    );
 
         Route::delete('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'destroy']);
 

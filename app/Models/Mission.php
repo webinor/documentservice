@@ -7,6 +7,7 @@ use App\Models\Misc\Document;
 use App\Services\Mission\MissionAllowanceCalculator;
 use App\Services\Mission\MissionExpenseAmountService;
 use App\Services\Mission\MissionExpenseCalculatorService;
+use App\Services\Transaction\TransactionTypeLabelService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -201,7 +202,8 @@ public function allowances()
 
     public function getSettlementReason(string $transaction_type_code): string
     {
-        return "Régularisation mission";
+         $transactionTypeLabelService = new TransactionTypeLabelService();
+        return $transactionTypeLabelService->getLabel($transaction_type_code);//;// "Régularisation mission";
     }
 
     public function calculateSettlementAmount(string $transaction_type_code): float

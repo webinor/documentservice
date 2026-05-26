@@ -71,7 +71,8 @@ class NotifyBeneficiaryService
 
             $amount = $child->getSettlementAmount($transactionTypeCode);
 
-            $reason = $this->transactionTypeLabelService->getLabel($transactionTypeCode);//  $child->getSettlementReason($transactionTypeCode);
+            // $reason = $this->transactionTypeLabelService->getLabel($transactionTypeCode);//  $child->getSettlementReason($transactionTypeCode);
+            $reason = $child->getSettlementReason($transactionTypeCode);
 
             $direction = $child->getSettlementDirection($transactionTypeCode);
 
