@@ -15,7 +15,9 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
 use App\Services\DocumentChildHandler;
+use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
+use App\Support\DocumentContext;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -1943,7 +1945,7 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
      * @param  \App\Models\Misc\Document  $document
      * @return \Illuminate\Http\Response
      */
-    public function show(Request $request , Document $document)
+    public function show(Request $request , DocumentViewService $documentViewService ,  Document $document)
     {
         // return $document;
         $document->load("document_type");
@@ -1956,6 +1958,14 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
         $document->formatted_amount= $document->amount ? number_format($document->amount, 0, ',', '.') : null;
 
+
+        $workflowStatus = $documentViewService->getWorkflowStatusStatus($document->id);
+
+        // return $workflowStatus['status'];
+
+        DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
+
+        // return $document;
         
 
         $document->load(

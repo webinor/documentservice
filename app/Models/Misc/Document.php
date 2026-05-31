@@ -11,6 +11,9 @@ use App\Models\ItSupplier;
 use App\Models\Mission;
 use App\Models\Payment;
 use App\Models\TaxiPaper;
+use App\Services\DocumentStatusResolver;
+use App\Services\DocumentStatusUIMapper;
+use App\Support\DocumentContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,7 +47,6 @@ protected $appends = [
     'dynamic_amount'
 ];
 
-
 public function getDynamicAmountAttribute(): ?float
 {
     if (!$this->relationLoaded('document_type')) {
@@ -67,10 +69,26 @@ public function getDynamicAmountAttribute(): ?float
         return null;
     }
 
-    /**
-     * transaction par défaut
-     */
-    return $child->getSettlementAmount('DEFAULT');
+    // 🔥 récupération du workflow context
+    $workflow = DocumentContext::getWorkflowStatus($this->id);
+
+
+    // $status = $workflow ?? 'DEFAULT';
+
+    $types = $workflow['transaction_types'];
+
+    
+    $status = (new DocumentStatusResolver())->resolve($types);
+    
+    // dd($status);
+
+$ui = (new DocumentStatusUIMapper())->map($status);
+
+
+
+
+
+    return $child->getSettlementAmount($status);
 }
 
     public function payments()

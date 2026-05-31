@@ -209,6 +209,7 @@ public function allowances()
     public function calculateSettlementAmount(string $transaction_type_code): float
 {
 
+
     if ($transaction_type_code == "MISSION_EXPENSE_ADVANCE") {
         
         $service = new MissionExpenseAmountService(new MissionExpenseCalculatorService());
