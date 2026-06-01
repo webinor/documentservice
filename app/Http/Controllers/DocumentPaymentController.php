@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Misc\Document;
 use App\Models\Payment;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class DocumentPaymentController extends Controller
 {
@@ -43,8 +45,17 @@ class DocumentPaymentController extends Controller
             'is_full_pay' => 'sometimes|boolean',
         ]);
 
+
+        // throw new \Exception(json_encode($request->all()));
+
+
         $paid_amount = floatval($request->input('paid_amount'));
         $isFullPay = (bool) $request->input('is_full_pay', false);
+
+
+        // throw new Exception(json_encode($document->id));
+
+
 
         // Enregistrer le paiement
         $payment = Payment::create([
@@ -54,9 +65,20 @@ class DocumentPaymentController extends Controller
             'user_id' => $request->input('user_id'),
         ]);
 
+        // dd('payment created');
+
+        // throw new \Exception(json_encode($payment));
+
+
+
+
         // Recalculer le montant payé
         $totalPaid = $document->payments()->sum('amount');
         // $document->paid_amount = $totalPaid;
+
+
+        // throw new \Exception(json_encode($totalPaid));
+
 
         // Mettre à jour le statut du document ////////////CECI EST DEJA EFFECTUE PAR PaymentObserver
         if ($totalPaid >= $document->amount || $isFullPay) {
@@ -76,7 +98,7 @@ class DocumentPaymentController extends Controller
             'message' => 'Paiement enregistré avec succès.',
             'document' => $document,
         ]);
-    } catch (\Illuminate\Validation\ValidationException $e) {
+    } catch (ValidationException $e) {
         DB::rollback();
         // Gestion des erreurs de validation
         return response()->json([
@@ -84,13 +106,21 @@ class DocumentPaymentController extends Controller
             'message' => 'Données invalides pour le paiement.',
             'errors' => $e->errors(),
         ], 422);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         DB::rollback();
         // Gestion des autres exceptions
-        return response()->json([
-            'success' => false,
-            'message' => 'Impossible d’enregistrer le paiement : ' . $e->getMessage(),
-        ], 500);
+        // return response()->json([
+        //     'success' => false,
+        //     'message' => 'Impossible d’enregistrer le paiement : ' . $e->getMessage(),
+        // ], 500);
+
+          return response()->json([
+        'success' => false,
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString(),
+    ], 500);
     }
 }
 }

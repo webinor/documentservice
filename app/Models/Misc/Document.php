@@ -75,7 +75,7 @@ public function getDynamicAmountAttribute(): ?float
 
     // $status = $workflow ?? 'DEFAULT';
 
-    $types = $workflow['transaction_types'];
+    $types = $workflow['transaction_types'] ?? [];
 
     
     $status = (new DocumentStatusResolver())->resolve($types);
@@ -106,17 +106,24 @@ $ui = (new DocumentStatusUIMapper())->map($status);
      */
     public function updatePaymentStatus(): void
     {
-        $totalPaid = $this->payments()->where('status', 'completed')->sum('amount');
+        // $totalPaid = $this->payments()->where('status', 'completed')->sum('amount');
 
-        if ($totalPaid == 0) {
-            $this->status = 'En attente de paiement';
-        } elseif ($totalPaid < $this->amount) {
-            $this->status = 'Partiellement payée';
-        } else {
-            $this->status = 'Payée';
-        }
+        // // throw new \Exception(json_encode($totalPaid));
+        
 
-        $this->save();
+        // if ($totalPaid == 0) {
+        //     $this->status = 'En attente de paiement';
+        // } elseif ($totalPaid < $this->amount) {
+        //     $this->status = 'Partiellement payée';
+        // } else {
+        //     $this->status = 'Payée';
+        // }
+
+
+        // // throw new \Exception(json_encode($this->status));
+
+
+        // $this->save();
     }
 
     /**

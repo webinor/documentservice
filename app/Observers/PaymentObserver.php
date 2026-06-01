@@ -14,7 +14,7 @@ class PaymentObserver
      */
     public function created(Payment $payment)
     {
-        $payment->document->updatePaymentStatus();
+        // $payment->document->updatePaymentStatus();
     }
 
     /**
@@ -25,7 +25,7 @@ class PaymentObserver
      */
     public function updated(Payment $payment)
     {
-        $payment->document->updatePaymentStatus();
+        // $payment->document->updatePaymentStatus();
     }
 
     /**
