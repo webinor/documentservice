@@ -35,10 +35,7 @@ class MissionFinancialReportService
 
         $advanceReport   =  $this->advanceService->calculate($mission);
 
-        $regulationReport =
-    $this->regulationService->calculate(
-        $mission
-    );
+        $regulationReport = $this->regulationService->calculate($mission);
 
         $realCost = 
             $expenseReport['total_reel']
@@ -46,7 +43,20 @@ class MissionFinancialReportService
 
         $totalAdvances =$advanceReport['total'];
 
-        $balance = $totalAdvances - $realCost;
+        $totalRefund = $regulationReport['refunds']['total'];
+        $totalSupplement = $regulationReport['supplements']['total'];
+
+        /**
+ * 🔥 impact des régulations :
+ * refund  => réduit la dette (positif pour l’agent)
+ * supplement => augmente la dette (négatif pour l’agent)
+ */
+// $netRegulation = $regulationReport['net_impact'];
+
+/**
+ * 💡 Balance corrigée
+ */
+$balance =  ($totalAdvances  + $totalSupplement - $totalRefund) - $realCost;
 
         return [
             'mission' => [
@@ -66,12 +76,12 @@ class MissionFinancialReportService
                 'real_cost' => $realCost,
                 'total_advances' => $totalAdvances,
 
-                'balance' => $balance,
+                'balance' => (string)$balance,
 
-                'status' =>
-                    $balance >= 0
-                        ? 'SURPLUS'
-                        : 'DEFICIT',
+               'status' =>
+    $balance > 0
+        ? 'SURPLUS'
+        : ($balance < 0 ? 'DEFICIT' : 'EQUILIBREE'),
             ],
         ];
     }
