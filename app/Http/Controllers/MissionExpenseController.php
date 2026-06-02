@@ -35,297 +35,172 @@ class MissionExpenseController extends Controller
         //
     }
 
+    public function calculate(
+        Request $request,
+        MissionExpenseCalculatorService $service
+    ) {
+        $data = $request->validate([
+            "departure_date" => "required|date",
+            "departure_time" => "required",
+            "return_date" => "required|date",
+            "return_time" => "required",
+            "expense_category_ids" => "required|array",
+        ]);
 
-    public function calculate(Request $request, MissionExpenseCalculatorService $service)
-{
+        //     $departure = $this->buildDateTime(
+        //     $data['departure_date'],
+        //     $data['departure_time']
+        // );
 
-     
+        // $return = $this->buildDateTime(
+        //     $data['return_date'],
+        //     $data['return_time']
+        // );
 
-    $data = $request->validate([
-        'departure_date' => 'required|date',
-        'departure_time' => 'required',
-        'return_date' => 'required|date',
-        'return_time' => 'required',
-        'expense_category_ids' => 'required|array'
-    ]);
+        $departure = Carbon::createFromFormat(
+            "d-m-Y H:i",
+            $data["departure_date"] . " " . $data["departure_time"]
+        );
 
+        $return = Carbon::createFromFormat(
+            "d-m-Y H:i",
+            $data["return_date"] . " " . $data["return_time"]
+        );
 
-//     $departure = $this->buildDateTime(
-//     $data['departure_date'],
-//     $data['departure_time']
-// );
-
-// $return = $this->buildDateTime(
-//     $data['return_date'],
-//     $data['return_time']
-// );
-
-   $departure = Carbon::createFromFormat(
-    'd-m-Y H:i',
-    $data['departure_date'] . ' ' . $data['departure_time']
-);
-
-$return = Carbon::createFromFormat(
-    'd-m-Y H:i',
-    $data['return_date'] . ' ' . $data['return_time']
-);
-
-    // return $departure;
+        // return $departure;
 
         // 🔥 récupération rules backend
-    $rules = DB::table('expense_category_rules')
-        ->whereIn(
-            'expense_category_id',
-            $data['expense_category_ids']
-        )
-        ->get();
+        $rules = DB::table("expense_category_rules")
+            ->whereIn("expense_category_id", $data["expense_category_ids"])
+            ->get();
 
+        $result = $service->calculate($departure, $return, $rules);
 
-    $result = $service->calculate($departure, $return, $rules);
+        return response()->json(
+            [
+                "success" => true,
+                "data" => $result,
+            ],
+            200,
+            [],
+            JSON_UNESCAPED_UNICODE
+        );
+    }
 
-    return response()->json([
-        'success' => true,
-        'data' => $result
-    ], 200, [], JSON_UNESCAPED_UNICODE);
-}
-
-     /**
+    /**
      * Retourne les limites par catégorie de dépense
      */
-  public function categoriesLimits(Request $request )
-{
-    try {
+    public function categoriesLimits(Request $request)
+    {
+        try {
+            $employeeCategoryId = $request->employee_category_id;
 
-        $employeeCategoryId = $request->employee_category_id;
+            $limits = ExpenseLimit::query()
+                ->whereHas("expense_category")
+                ->with(["expense_category.rule"])
+                ->where(function ($q) use ($employeeCategoryId) {
+                    $q->where(
+                        "employee_category_id",
+                        $employeeCategoryId
+                    )->orWhereNull("employee_category_id");
+                })
+                ->get()
+                ->groupBy("expense_category_id")
+                ->map(function ($items) use ($employeeCategoryId) {
+                    // priorité au employee_category_id exact
+                    $exact = $items->firstWhere(
+                        "employee_category_id",
+                        $employeeCategoryId
+                    );
 
-        $limits = ExpenseLimit::query()
-            ->whereHas('expense_category')
-            ->with(['expense_category.rule'])
-            ->where(function ($q) use ($employeeCategoryId) {
+                    if ($exact) {
+                        return $exact;
+                    }
 
-                $q->where('employee_category_id', $employeeCategoryId)
-                  ->orWhereNull('employee_category_id');
+                    // fallback sur null
+                    return $items->firstWhere("employee_category_id", null);
+                })
+                ->values();
 
-            })
-            ->get()
-            ->groupBy('expense_category_id')
-            ->map(function ($items) use ($employeeCategoryId) {
-
-                // priorité au employee_category_id exact
-                $exact = $items->firstWhere(
-                    'employee_category_id',
-                    $employeeCategoryId
-                );
-
-                if ($exact) {
-                    return $exact;
-                }
-
-                // fallback sur null
-                return $items->firstWhere(
-                    'employee_category_id',
-                    null
-                );
-
-            })
-            ->values();
-
-        return response()->json([
-            'success' => true,
-            'data' => $limits
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-
-    } catch (\Exception $e) {
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Impossible de récupérer les limites des catégories',
-            'error' => $e->getMessage()
-        ], 500, [], JSON_UNESCAPED_UNICODE);
+            return response()->json(
+                [
+                    "success" => true,
+                    "data" => $limits,
+                ],
+                200,
+                [],
+                JSON_UNESCAPED_UNICODE
+            );
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" =>
+                        "Impossible de récupérer les limites des catégories",
+                    "error" => $e->getMessage(),
+                ],
+                500,
+                [],
+                JSON_UNESCAPED_UNICODE
+            );
+        }
     }
-}
 
     private function buildDateTime($date, $time)
-{
-    if (!$date || !$time) {
-        return null;
+    {
+        if (!$date || !$time) {
+            return null;
+        }
+
+        return Carbon::createFromFormat("Y-m-d H:i:s", $date . " " . $time);
     }
 
-    return Carbon::createFromFormat('Y-m-d H:i:s', $date . ' ' . $time);
-}
-
-     public function getMissionExpenses_old(Document $document)
+    public function getMissionExpenses_old(Document $document)
     {
-
-         $document->load('mission.mission_expenses.expense_category');
+        $document->load("mission.mission_expenses.expense_category");
 
         // $document = Document::with('mission')->findOrFail($docId);
 
         $mission = $document->mission;
 
         if (!$mission) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mission introuvable pour ce document'
-            ], 404);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Mission introuvable pour ce document",
+                ],
+                404
+            );
         }
 
         $expenses = $mission->mission_expenses;
 
         return response()->json([
-            'success' => true,
-            'mission_id' => $mission->id,
-            'expenses' => $expenses
+            "success" => true,
+            "mission_id" => $mission->id,
+            "expenses" => $expenses,
         ]);
     }
 
-
     public function getMissionExpenses(
-    Document $document,
-    // MissionExpenseCalculatorService $service
-    MissionExpenseService $service
-) {
-
-    // $document->load('mission.mission_expenses.expense_category');
-    $document->load('mission');
-
-    $mission = $document->mission;
-
-    return response()->json(
-    array_merge(
-        [
-            'success' => true
-        ],
-        $service->calculate($mission)
-    )
-);
-
-  
-
-    if (!$mission) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Mission introuvable pour ce document'
-        ], 404);
-    }
-
-    $expenses = $mission->mission_expenses;
-
-    // 🧠 Construction des périodes
-    $plannedStart = $this->buildDateTime(
-    $mission->departure_date_base_planned,
-    $mission->departure_time_base_planned
-);
-
-$plannedEnd = $this->buildDateTime(
-    $mission->arrival_date_base_planned,
-    $mission->arrival_time_base_planned
-);
-
-  $actualStart = (
-    $mission->departure_date_base_actual &&
-    $mission->departure_time_base_actual
-)
-    ? $this->buildDateTime(
-        $mission->departure_date_base_actual,
-        $mission->departure_time_base_actual
-    )
-    : null;
-
-$actualEnd = (
-    $mission->arrival_date_base_actual &&
-    $mission->arrival_time_base_actual
-)
-    ? $this->buildDateTime(
-        $mission->arrival_date_base_actual,
-        $mission->arrival_time_base_actual
-    )
-    : null;
-
-    // 🔥 règles groupées
-    $rules = DB::table('expense_category_rules')
-        ->whereIn(
-            'expense_category_id',
-            $expenses->pluck('expense_category_id')
-        )
-        ->get()
-        ->groupBy('expense_category_id');
-
-    // 🔥 Calcul quantités prévues
-    $plannedResult = collect(
-        $service->calculate(
-            $plannedStart,
-            $plannedEnd,
-            $rules->flatten()
-        )
-    )->keyBy('expense_category_id');
-
-    // 🔥 Calcul quantités réelles
-    $actualResult = ($actualStart && $actualEnd)
-        ? collect(
-            $service->calculate(
-                $actualStart,
-                $actualEnd,
-                $rules->flatten()
-            )
-        )->keyBy('expense_category_id')
-        : 0;//$plannedResult;
-
-    /**
-     * 🔥 Quantités manuelles saisies
-     * On prend les dépenses DECLAREE
-     */
-    // $manualDeclaredQuantities = $expenses
-    //     ->where('type', 'DECLAREE')
-    //     ->keyBy('expense_category_id');
-
-        $manualDeclaredQuantities = $expenses
-    ->where('type', 'DECLAREE')
-    ->groupBy('expense_category_id');
-
-    // 🔁 Enrichissement
-    $expenses = $expenses->map(function ($expense) use (
-        $plannedResult,
-        $actualResult,
-        $manualDeclaredQuantities
+        Document $document,
+        // MissionExpenseCalculatorService $service
+        MissionExpenseService $service
     ) {
+        // $document->load('mission.mission_expenses.expense_category');
+        $document->load("mission");
 
-        $categoryId = $expense->expense_category_id;
+        $mission = $document->mission;
 
-        $planned = $plannedResult[$categoryId]['quantity'] ?? 0;
-
-        $final = $actualResult[$categoryId]['quantity'] ?? $planned;
-
-        /**
-         * 🔥 Quantité manuelle déclarée
-         */
-        // $manualQuantity =
-        //     $manualDeclaredQuantities[$categoryId]->quantity
-        //     ?? null;
-
-            $manualQuantity = collect(
-    $manualDeclaredQuantities[$categoryId] ?? []
-)->sum('quantity');
-
-        $expense->planned_quantity = $planned;
-
-        $expense->final_quantity = $final;
-
-        // $expense->final_quantity_manual = $manualQuantity;
-
-        $expense->final_quantity_manual = $final;
-
-        return $expense;
-    });
-
-    return response()->json([
-        'success' => true,
-        'mission_id' => $mission->id,
-        'expenses' => $expenses
-    ]);
-}
-
-    
+        return response()->json(
+            array_merge(
+                [
+                    "success" => true,
+                ],
+                $service->calculate($mission)
+            )
+        );
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -333,13 +208,13 @@ $actualEnd = (
      * @param  \App\Http\Requests\StoreMissionExpenseRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreMissionExpenseRequest $request , Document $document)
-    {
+    public function store(
+        StoreMissionExpenseRequest $request,
+        Document $document
+    ) {
+        $document->load(["mission"]);
+        $validated = $request->validated();
 
-         $document->load(['mission']);
-         $validated = $request->validated();
-     
-    
         // $validated = $request->validate([
         //     'mission_id' => ['required', 'exists:missions,id'],
         //     'expense_category_id' => ['nullable', 'exists:expense_categories,id'],
@@ -349,19 +224,21 @@ $actualEnd = (
         // ]);
 
         $expense = MissionExpense::create([
-            'mission_id' => $document->mission->id,
-            'type' => $validated["type"]
+            "mission_id" => $document->mission->id,
+            "type" => $validated["type"],
             // 'expense_category_id' => $validated['expense_category_id'] ?? null,
             // 'amount' => $validated['amount'] ?? 0,
             // 'expense_date' => $validated['expense_date'] ?? now(),
             // 'description' => $validated['description'] ?? null,
         ]);
 
-        return response()->json([
-            'message' => 'Expense created successfully',
-            'data' => $expense,
-        ], 201);
-    
+        return response()->json(
+            [
+                "message" => "Expense created successfully",
+                "data" => $expense,
+            ],
+            201
+        );
     }
 
     /**
@@ -393,24 +270,26 @@ $actualEnd = (
      * @param  \App\Models\MissionExpense  $missionExpense
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateMissionExpenseRequest $request, Document $document, MissionExpense $missionExpense)
-    {
-  
-    // return   
-    $validated = $request->validated();
+    public function update(
+        UpdateMissionExpenseRequest $request,
+        Document $document,
+        MissionExpense $missionExpense
+    ) {
+        // return
+        $validated = $request->validated();
 
-    if (isset($validated["actual_quantity"])) {
-       $validated["quantity"] = $validated["actual_quantity"];
-       unset($validated['actual_quantity']);
+        if (isset($validated["actual_quantity"])) {
+            $validated["quantity"] = $validated["actual_quantity"];
+            unset($validated["actual_quantity"]);
+        }
+
+        $missionExpense->update($validated);
+
+        return response()->json([
+            "message" => "Expense updated successfully",
+            "data" => $missionExpense->fresh(),
+        ]);
     }
-
-    $missionExpense->update($validated);
-
-    return response()->json([
-        'message' => 'Expense updated successfully',
-        'data' => $missionExpense->fresh(),
-    ]);
-}
 
     /**
      * Remove the specified resource from storage.
@@ -422,10 +301,10 @@ $actualEnd = (
     {
         // return $document;
         // return $missionExpense;
-         $missionExpense->delete();
+        $missionExpense->delete();
 
-    return response()->json([
-        'message' => 'Expense deleted successfully'
-    ]);
+        return response()->json([
+            "message" => "Expense deleted successfully",
+        ]);
     }
 }

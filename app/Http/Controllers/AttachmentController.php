@@ -45,8 +45,8 @@ class AttachmentController extends Controller
     public function store(StoreAttachmentRequest $request)
     {
         // Validation
-    //  return  
-      $validated = $request->validated();
+        //  return
+        $validated = $request->validated();
 
         $user = $request->get("user");
 
@@ -56,9 +56,11 @@ class AttachmentController extends Controller
             // Vérifier que le document existe
             $document = Document::findOrFail($validated["documentId"]);
 
-            $existing_attachment = isset($validated["attachment_number"]) ? Attachment::whereAttachmentNumber(
-                $validated["attachment_number"]
-            )->first() : null;
+            $existing_attachment = isset($validated["attachment_number"])
+                ? Attachment::whereAttachmentNumber(
+                    $validated["attachment_number"]
+                )->first()
+                : null;
 
             if (
                 $existing_attachment &&

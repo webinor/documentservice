@@ -36,60 +36,52 @@ class Document extends Model
         "status",
         "date_due",
         "prestataire_name",
-        "amount"
+        "amount",
     ];
 
     protected $casts = [
-    'amount' => 'decimal:2'
-];
+        "amount" => "decimal:2",
+    ];
 
-protected $appends = [
-    'dynamic_amount'
-];
+    protected $appends = ["dynamic_amount"];
 
-public function getDynamicAmountAttribute(): ?float
-{
-    if (!$this->relationLoaded('document_type')) {
-        $this->load('document_type');
+    public function getDynamicAmountAttribute(): ?float
+    {
+        if (!$this->relationLoaded("document_type")) {
+            $this->load("document_type");
+        }
+
+        $relationName = $this->document_type->relation_name;
+
+        if (!$relationName) {
+            return null;
+        }
+
+        if (!$this->relationLoaded($relationName)) {
+            $this->load($relationName);
+        }
+
+        $child = $this->{$relationName};
+
+        if (!$child instanceof \App\Contracts\PayableDocumentInterface) {
+            return null;
+        }
+
+        // 🔥 récupération du workflow context
+        $workflow = DocumentContext::getWorkflowStatus($this->id);
+
+        // $status = $workflow ?? 'DEFAULT';
+
+        $types = $workflow["transaction_types"] ?? [];
+
+        $status = (new DocumentStatusResolver())->resolve($types);
+
+        // dd($status);
+
+        $ui = (new DocumentStatusUIMapper())->map($status);
+
+        return $child->getSettlementAmount($status);
     }
-
-    $relationName = $this->document_type->relation_name;
-
-    if (!$relationName) {
-        return null;
-    }
-
-    if (!$this->relationLoaded($relationName)) {
-        $this->load($relationName);
-    }
-
-    $child = $this->{$relationName};
-
-    if (!$child instanceof \App\Contracts\PayableDocumentInterface) {
-        return null;
-    }
-
-    // 🔥 récupération du workflow context
-    $workflow = DocumentContext::getWorkflowStatus($this->id);
-
-
-    // $status = $workflow ?? 'DEFAULT';
-
-    $types = $workflow['transaction_types'] ?? [];
-
-    
-    $status = (new DocumentStatusResolver())->resolve($types);
-    
-    // dd($status);
-
-$ui = (new DocumentStatusUIMapper())->map($status);
-
-
-
-
-
-    return $child->getSettlementAmount($status);
-}
 
     public function payments()
     {
@@ -97,9 +89,9 @@ $ui = (new DocumentStatusUIMapper())->map($status);
     }
 
     public function mission()
-{
-    return $this->hasOne(Mission::class);
-}
+    {
+        return $this->hasOne(Mission::class);
+    }
 
     /**
      * Met à jour le statut du document en fonction des paiements
@@ -109,7 +101,6 @@ $ui = (new DocumentStatusUIMapper())->map($status);
         // $totalPaid = $this->payments()->where('status', 'completed')->sum('amount');
 
         // // throw new \Exception(json_encode($totalPaid));
-        
 
         // if ($totalPaid == 0) {
         //     $this->status = 'En attente de paiement';
@@ -119,9 +110,7 @@ $ui = (new DocumentStatusUIMapper())->map($status);
         //     $this->status = 'Payée';
         // }
 
-
         // // throw new \Exception(json_encode($this->status));
-
 
         // $this->save();
     }
@@ -144,7 +133,6 @@ $ui = (new DocumentStatusUIMapper())->map($status);
         return $this->belongsTo(DocumentType::class);
     }
 
-
     public function document_status(): BelongsTo
     {
         return $this->belongsTo(DocumentStatus::class);
@@ -166,23 +154,21 @@ $ui = (new DocumentStatusUIMapper())->map($status);
     }
 
     /**
- * Get the it_supplier associated with the InvoiceProvider
- *
- * @return \Illuminate\Database\Eloquent\Relations\HasOne
- */
-public function it_supplier(): HasOne
-{
-    return $this->hasOne(ItSupplier::class);
-}
+     * Get the it_supplier associated with the InvoiceProvider
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function it_supplier(): HasOne
+    {
+        return $this->hasOne(ItSupplier::class);
+    }
 
-   
-
-       public function fee_note(): HasOne
+    public function fee_note(): HasOne
     {
         return $this->hasOne(FeeNote::class);
     }
 
-          public function absence_request(): HasOne
+    public function absence_request(): HasOne
     {
         return $this->hasOne(AbsenceRequest::class);
     }

@@ -32,103 +32,109 @@ class DocumentTypeController extends Controller
     }
 
     /**
- * Display a listing of the resource.
- *
- * Permet de récupérer les types de documents avec filtres optionnels :
- * - id : récupérer un document spécifique
- * - ids : récupérer plusieurs documents
- * - reception_mode : filtrer par mode de réception
- *
- * @param Request $request
- * @return \Illuminate\Http\JsonResponse
- */
-public function index(Request $request)
-{
-    try {
+     * Display a listing of the resource.
+     *
+     * Permet de récupérer les types de documents avec filtres optionnels :
+     * - id : récupérer un document spécifique
+     * - ids : récupérer plusieurs documents
+     * - reception_mode : filtrer par mode de réception
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(Request $request)
+    {
+        try {
+            $query = DocumentType::orderBy("name")->with(
+                "department_document_types"
+            );
 
-        $query = DocumentType::orderBy('name')
-            ->with('department_document_types');
+            // Filtre par reception_mode
+            if ($request->filled("reception_mode")) {
+                $query->where("reception_mode", $request->reception_mode);
+            }
 
-        // Filtre par reception_mode
-        if ($request->filled('reception_mode')) {
-            $query->where('reception_mode', $request->reception_mode);
+            // Si plusieurs IDs sont fournis
+            if (
+                $request->has("ids") &&
+                is_array($request->ids) &&
+                count($request->ids)
+            ) {
+                $query->whereIn("id", $request->ids);
+            }
+
+            // Si un seul ID est fourni
+            elseif ($request->has("id") && is_numeric($request->id)) {
+                $query->where("id", $request->id);
+            }
+
+            $documentTypes = $query->get();
+
+            Log::info("Récupération des types de documents OK", [
+                "count" => $documentTypes->count(),
+                "filters" => $request->all(),
+            ]);
+
+            return response()->json([
+                "success" => true,
+                "data" => $documentTypes,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Erreur récupération types de documents", [
+                "message" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" =>
+                        "Erreur lors de la récupération des types de documents",
+                ],
+                500
+            );
         }
-
-        // Si plusieurs IDs sont fournis
-        if ($request->has('ids') && is_array($request->ids) && count($request->ids)) {
-            $query->whereIn('id', $request->ids);
-        }
-
-        // Si un seul ID est fourni
-        elseif ($request->has('id') && is_numeric($request->id)) {
-            $query->where('id', $request->id);
-        }
-
-        $documentTypes = $query->get();
-
-        Log::info("Récupération des types de documents OK", [
-            'count' => $documentTypes->count(),
-            'filters' => $request->all()
-        ]);
-
-        return response()->json([
-            "success" => true,
-            "data" => $documentTypes
-        ]);
-
-    } catch (\Exception $e) {
-
-        Log::error("Erreur récupération types de documents", [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-
-        return response()->json([
-            "success" => false,
-            "message" => "Erreur lors de la récupération des types de documents"
-        ], 500);
     }
-}
-//     /**
-//      * Display a listing of the resource.
-//      *
-//      * @return \Illuminate\Http\Response
-//      */
-//     public function index(Request $request)
-//     {
+    //     /**
+    //      * Display a listing of the resource.
+    //      *
+    //      * @return \Illuminate\Http\Response
+    //      */
+    //     public function index(Request $request)
+    //     {
 
-//         try {
+    //         try {
 
-//      $query = DocumentType::orderBy('name')
-//         ->with('department_document_types');
+    //      $query = DocumentType::orderBy('name')
+    //         ->with('department_document_types');
 
-//     // Si plusieurs IDs sont fournis
-//     if ($request->has('ids') && is_array($request->ids) && count($request->ids)) {
-//         $query->whereIn('id', $request->ids);
-//     }
-//     // Si un seul ID est fourni
-//     elseif ($request->has('id') && is_numeric($request->id)) {
-//         $query->where('id', $request->id);
-//     }
+    //     // Si plusieurs IDs sont fournis
+    //     if ($request->has('ids') && is_array($request->ids) && count($request->ids)) {
+    //         $query->whereIn('id', $request->ids);
+    //     }
+    //     // Si un seul ID est fourni
+    //     elseif ($request->has('id') && is_numeric($request->id)) {
+    //         $query->where('id', $request->id);
+    //     }
 
-//     $documentTypes = $query->get();
+    //     $documentTypes = $query->get();
 
-//     Log::info("Récupération des types de documents OK", [
-//         'count' => $documentTypes->count(),
-//         'documentTypes' => $documentTypes
-//     ]);
+    //     Log::info("Récupération des types de documents OK", [
+    //         'count' => $documentTypes->count(),
+    //         'documentTypes' => $documentTypes
+    //     ]);
 
-//     return response()->json(["success" => true, "data" => $documentTypes]);
+    //     return response()->json(["success" => true, "data" => $documentTypes]);
 
-// } catch (\Exception $e) {
+    // } catch (\Exception $e) {
 
-//     Log::error("Erreur récupération types de documents", [
-//         'message' => $e->getMessage(),
-//         'trace' => $e->getTraceAsString(),
-//     ]);
-// }
-        
-//     }
+    //     Log::error("Erreur récupération types de documents", [
+    //         'message' => $e->getMessage(),
+    //         'trace' => $e->getTraceAsString(),
+    //     ]);
+    // }
+
+    //     }
 
     public function getRolesByDocumentType($documentTypeCode)
     {
@@ -221,24 +227,27 @@ public function index(Request $request)
         }
     }
 
-        public function getDocumentTypesByRelationName(Request $request)
+    public function getDocumentTypesByRelationName(Request $request)
     {
         try {
+            $relations = $request->query("relations"); // &userId=1015
 
-        $relations = $request->query("relations"); // &userId=1015
-
-
-           $documentTypes = DocumentType::where(function ($query) use ($relations) {
-    foreach ($relations as $relation) {
-        $query->orWhere('relation_name', 'like', "%$relation%");
-    }
-})->get();
+            $documentTypes = DocumentType::where(function ($query) use (
+                $relations
+            ) {
+                foreach ($relations as $relation) {
+                    $query->orWhere("relation_name", "like", "%$relation%");
+                }
+            })->get();
 
             if (!$documentTypes) {
                 return response()->json(["success" => true, "data" => []]);
             }
 
-            return response()->json(["success" => true, "data" => $documentTypes]);
+            return response()->json([
+                "success" => true,
+                "data" => $documentTypes,
+            ]);
 
             $department_documentTypes = DepartmentDocumentType::whereDocumentTypeId(
                 $documentType->id
@@ -446,67 +455,70 @@ public function index(Request $request)
      * @param  \App\Http\Requests\StoreDocumentTypeRequest  $request
      * @return \Illuminate\Http\Response
      */
-public function store(StoreDocumentTypeRequest $request)
-{
-    $validated = $request->validated();
+    public function store(StoreDocumentTypeRequest $request)
+    {
+        $validated = $request->validated();
 
-    try {
-        DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-        // Création du document type
-        $documentType = DocumentType::create([
-            "code" => Str::random(10),
-            "name" => $validated["name"],
-            "slug" => Str::slug($validated["name"]),
-            "class_name"=>Str::slug($validated["name"]),
-            "relation_name"=>Str::slug($validated["name"]),
-            "return_policy",
-            "reception_mode" => $validated["recipientMode"],
-        ]);
+            // Création du document type
+            $documentType = DocumentType::create([
+                "code" => Str::random(10),
+                "name" => $validated["name"],
+                "slug" => Str::slug($validated["name"]),
+                "class_name" => Str::slug($validated["name"]),
+                "relation_name" => Str::slug($validated["name"]),
+                "return_policy",
+                "reception_mode" => $validated["recipientMode"],
+            ]);
 
-        // Gestion des departmentIds (table pivot)
-        if (isset($validated["departmentIds"])) {
-            // Supprimer les anciens liens
-            DB::table("department_document_types")
-                ->where("document_type_id", $documentType->id)
-                ->delete();
+            // Gestion des departmentIds (table pivot)
+            if (isset($validated["departmentIds"])) {
+                // Supprimer les anciens liens
+                DB::table("department_document_types")
+                    ->where("document_type_id", $documentType->id)
+                    ->delete();
 
-            // Insérer les nouveaux liens
-            foreach ($validated["departmentIds"] as $deptId) {
-                DB::table("department_document_types")->insert([
-                    "code" => Str::random(10),
-                    "document_type_id" => $documentType->id,
-                    "department_id" => $deptId,
-                    "created_at" => now(),
-                    "updated_at" => now(),
-                ]);
+                // Insérer les nouveaux liens
+                foreach ($validated["departmentIds"] as $deptId) {
+                    DB::table("department_document_types")->insert([
+                        "code" => Str::random(10),
+                        "document_type_id" => $documentType->id,
+                        "department_id" => $deptId,
+                        "created_at" => now(),
+                        "updated_at" => now(),
+                    ]);
+                }
             }
+
+            // DB::commit(); // valider la transaction
+
+            return response()->json([
+                "success" => true,
+                "message" => "Type de document mis à jour avec succès",
+                "data" => [
+                    "id" => $documentType->id,
+                    "name" => $documentType->name,
+                    "recipientMode" => $documentType->reception_mode,
+                    "departmentIds" => $documentType->getDepartmentIds(),
+                ],
+                "updated" => $documentType->load("department_document_types"),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack(); // annuler la transaction en cas d'erreur
+
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" =>
+                        "Erreur lors de la création du type de document",
+                    "error" => $e->getMessage(),
+                ],
+                500
+            );
         }
-
-        // DB::commit(); // valider la transaction
-
-        return response()->json([
-            "success" => true,
-            "message" => "Type de document mis à jour avec succès",
-            "data" => [
-                "id" => $documentType->id,
-                "name" => $documentType->name,
-                "recipientMode" => $documentType->reception_mode,
-                "departmentIds" => $documentType->getDepartmentIds(),
-            ],
-            "updated" => $documentType->load("department_document_types"),
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack(); // annuler la transaction en cas d'erreur
-
-        return response()->json([
-            "success" => false,
-            "message" => "Erreur lors de la création du type de document",
-            "error" => $e->getMessage(),
-        ], 500);
     }
-}
 
     /**
      * Display the specified resource.

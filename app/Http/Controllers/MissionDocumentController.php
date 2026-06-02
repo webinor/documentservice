@@ -15,199 +15,186 @@ use Illuminate\Support\Str;
 
 class MissionDocumentController extends Controller
 {
-
     protected MissionDocumentService $missionDocumentService;
 
-    public function __construct(MissionDocumentService $missionDocumentService) {
+    public function __construct(MissionDocumentService $missionDocumentService)
+    {
         $this->missionDocumentService = $missionDocumentService;
     }
 
     private function handleMissionDocument(
-    Document $document,
-    array $user_connected,
-    string $attachment_slug,
-    ?\Illuminate\Http\UploadedFile $uploadedFile = null,
-    ?array $generatedFile = null
-) {
+        Document $document,
+        array $user_connected,
+        string $attachment_slug,
+        ?\Illuminate\Http\UploadedFile $uploadedFile = null,
+        ?array $generatedFile = null
+    ) {
+        /**
+         * ---------------------------------------------------------
+         * Cas 1 : fichier uploadé depuis request
+         * ---------------------------------------------------------
+         */
 
-    /**
-     * ---------------------------------------------------------
-     * Cas 1 : fichier uploadé depuis request
-     * ---------------------------------------------------------
-     */
+        if ($uploadedFile) {
+            $fileName =
+                Str::random(20) .
+                "_" .
+                time() .
+                "." .
+                $uploadedFile->extension();
 
-    if ($uploadedFile) {
+            $type = $uploadedFile->getClientMimeType();
 
-        $fileName = Str::random(20) . "_" . time() . "." .
-            $uploadedFile->extension();
+            $size = $uploadedFile->getSize();
 
-        $type = $uploadedFile->getClientMimeType();
+            $uploadedFile->move(
+                storage_path("app/public/documents_attachments"),
+                $fileName
+            );
+        }
+        /**
+         * ---------------------------------------------------------
+         * Cas 2 : fichier généré automatiquement
+         * ---------------------------------------------------------
+         */ elseif ($generatedFile) {
+            $extension = pathinfo(
+                $generatedFile["filename"],
+                PATHINFO_EXTENSION
+            );
 
-        $size = $uploadedFile->getSize();
+            $fileName = Str::random(20) . "_" . time() . "." . $extension;
 
-        $uploadedFile->move(
-            storage_path("app/public/documents_attachments"),
-            $fileName
-        );
+            $destination = storage_path(
+                "app/public/documents_attachments/" . $fileName
+            );
+
+            copy($generatedFile["path"], $destination);
+
+            $type = $generatedFile["mime"];
+
+            $size = $generatedFile["size"];
+        } else {
+            throw new \Exception("Aucun fichier fourni.");
+        }
+
+        /**
+         * ---------------------------------------------------------
+         * Création attachment
+         * ---------------------------------------------------------
+         */
+
+        $attachment = new Attachment();
+
+        $attachment->document_id = $document->id;
+        $attachment->is_main = false;
+        $attachment->source = "UPLOAD";
+        $attachment->created_by = $user_connected["id"];
+
+        $attachment->attachment_type_id = AttachmentType::whereSlug(
+            $attachment_slug
+        )->first()->id;
+
+        $attachment->save();
+
+        /**
+         * ---------------------------------------------------------
+         * Création file
+         * ---------------------------------------------------------
+         */
+
+        $fileModel = new File();
+
+        $fileModel->path = $fileName;
+        $fileModel->type = $type;
+        $fileModel->size = $size;
+
+        $attachment->file()->save($fileModel);
+
+        // GeneratePdfThumbnail::dispatch($attachment);
+
+        return $attachment;
     }
 
-    /**
-     * ---------------------------------------------------------
-     * Cas 2 : fichier généré automatiquement
-     * ---------------------------------------------------------
-     */
-
-    elseif ($generatedFile) {
-
-        $extension = pathinfo(
-            $generatedFile['filename'],
-            PATHINFO_EXTENSION
-        );
-
-        $fileName = Str::random(20) . "_" . time() . "." . $extension;
-
-        $destination = storage_path(
-            "app/public/documents_attachments/" . $fileName
-        );
-
-        copy(
-            $generatedFile['path'],
-            $destination
-        );
-
-        $type = $generatedFile['mime'];
-
-        $size = $generatedFile['size'];
-    }
-
-    else {
-
-        throw new \Exception("Aucun fichier fourni.");
-    }
-
-    /**
-     * ---------------------------------------------------------
-     * Création attachment
-     * ---------------------------------------------------------
-     */
-
-    $attachment = new Attachment();
-
-    $attachment->document_id = $document->id;
-    $attachment->is_main = false;
-    $attachment->source = "UPLOAD";
-    $attachment->created_by = $user_connected["id"];
-
-    $attachment->attachment_type_id = AttachmentType::whereSlug(
-    $attachment_slug
-    )->first()->id;
-
-    $attachment->save();
-
-    /**
-     * ---------------------------------------------------------
-     * Création file
-     * ---------------------------------------------------------
-     */
-
-    $fileModel = new File();
-
-    $fileModel->path = $fileName;
-    $fileModel->type = $type;
-    $fileModel->size = $size;
-
-    $attachment->file()->save($fileModel);
-
-    // GeneratePdfThumbnail::dispatch($attachment);
-
-    return $attachment;
-}
-
-      public function generate(Request $request )
+    public function generate(Request $request)
     {
-
-    //   return
-        $document_id = $request->get("document_id",0);
-        $document = Document::with('mission')->find($document_id);
+        //   return
+        $document_id = $request->get("document_id", 0);
+        $document = Document::with("mission")->find($document_id);
         $user_connected = $request->get("user"); // récupéré du user-service
 
-            //  app(MissionDocumentService::class)
-            // ->generateAll($document->mission);
-
+        //  app(MissionDocumentService::class)
+        // ->generateAll($document->mission);
 
         //      return response()->json([
         //     "document" => $document,
-            
+
         // ]);
 
         // 🔥 génération documents
-        $missionLetter = $this->missionDocumentService->generateMissionLetter($document->mission);
-        $missionOrder = $this->missionDocumentService->generateMissionOrder($document->mission);
-        $missionSheet = $this->missionDocumentService->generateRegularizationSheet($document->mission);
+        $missionLetter = $this->missionDocumentService->generateMissionLetter(
+            $document->mission
+        );
+        $missionOrder = $this->missionDocumentService->generateMissionOrder(
+            $document->mission
+        );
+        $missionSheet = $this->missionDocumentService->generateRegularizationSheet(
+            $document->mission
+        );
 
-$letter_attachment = $this->handleMissionDocument(
-    $document,
-    $user_connected,
-    'lettre-de-mission',
-    null,
-    $missionLetter
-);
+        $letter_attachment = $this->handleMissionDocument(
+            $document,
+            $user_connected,
+            "lettre-de-mission",
+            null,
+            $missionLetter
+        );
 
-$order_attachment = $this->handleMissionDocument(
-    $document,
-    $user_connected,
-    'ordre-de-mission',
-    null,
-    $missionOrder
-);
+        $order_attachment = $this->handleMissionDocument(
+            $document,
+            $user_connected,
+            "ordre-de-mission",
+            null,
+            $missionOrder
+        );
 
-$letter_attachment = $this->handleMissionDocument(
-    $document,
-    $user_connected,
-    'feuille-de-mission',
-    null,
-    $missionSheet
-);
+        $letter_attachment = $this->handleMissionDocument(
+            $document,
+            $user_connected,
+            "feuille-de-mission",
+            null,
+            $missionSheet
+        );
 
-         return response()->json([
+        return response()->json([
             "success" => true,
-            'message' => 'Documents générés avec succès',
+            "message" => "Documents générés avec succès",
             "documents" => [
                 "letter" => $missionLetter,
                 "order" => $missionOrder,
                 "sheet" => $missionSheet,
-            ]
+            ],
         ]);
 
         return response()->json([
-        'message' => 'Documents générés avec succès',
-        'document_id' => $document_id,
-        'document' => $document,
-    ]);
-
-     
-
+            "message" => "Documents générés avec succès",
+            "document_id" => $document_id,
+            "document" => $document,
+        ]);
     }
     /**
      * Générer Lettre de Mission
      */
     public function generateMissionLetter(Mission $mission)
     {
-        $pdf = Pdf::loadView(
-            'pdf.mission-letter',
-            compact('mission')
-        );
+        $pdf = Pdf::loadView("pdf.mission-letter", compact("mission"));
 
-        $filename = 'mission-letter-' . $mission->id . '.pdf';
+        $filename = "mission-letter-" . $mission->id . ".pdf";
 
-        Storage::put(
-            'missions/' . $filename,
-            $pdf->output()
-        );
+        Storage::put("missions/" . $filename, $pdf->output());
 
         return response()->json([
-            'success' => true,
-            'url' => asset('storage/missions/' . $filename),
+            "success" => true,
+            "url" => asset("storage/missions/" . $filename),
         ]);
     }
 
@@ -216,21 +203,15 @@ $letter_attachment = $this->handleMissionDocument(
      */
     public function generateMissionOrder(Mission $mission)
     {
-        $pdf = Pdf::loadView(
-            'pdf.mission-order',
-            compact('mission')
-        );
+        $pdf = Pdf::loadView("pdf.mission-order", compact("mission"));
 
-        $filename = 'mission-order-' . $mission->id . '.pdf';
+        $filename = "mission-order-" . $mission->id . ".pdf";
 
-        Storage::put(
-            'missions/' . $filename,
-            $pdf->output()
-        );
+        Storage::put("missions/" . $filename, $pdf->output());
 
         return response()->json([
-            'success' => true,
-            'url' => asset('storage/missions/' . $filename),
+            "success" => true,
+            "url" => asset("storage/missions/" . $filename),
         ]);
     }
 
@@ -239,21 +220,15 @@ $letter_attachment = $this->handleMissionDocument(
      */
     public function generateRegularizationSheet(Mission $mission)
     {
-        $pdf = Pdf::loadView(
-            'pdf.regularization-sheet',
-            compact('mission')
-        );
+        $pdf = Pdf::loadView("pdf.regularization-sheet", compact("mission"));
 
-        $filename = 'regularization-sheet-' . $mission->id . '.pdf';
+        $filename = "regularization-sheet-" . $mission->id . ".pdf";
 
-        Storage::put(
-            'missions/' . $filename,
-            $pdf->output()
-        );
+        Storage::put("missions/" . $filename, $pdf->output());
 
         return response()->json([
-            'success' => true,
-            'url' => asset('storage/missions/' . $filename),
+            "success" => true,
+            "url" => asset("storage/missions/" . $filename),
         ]);
     }
 }

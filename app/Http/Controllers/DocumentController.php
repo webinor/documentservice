@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DocumentsExport;
-use App\Models\Misc\Document;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
@@ -12,50 +11,47 @@ use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
 use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
+use App\Models\Misc\Document;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
 use App\Support\DocumentContext;
+use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
-use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-
 
 // 1. Champ ajouté dans form ✔
 // 2. Ajouté dans mapData ✔
 // 3. Ajouté en migration ✔
 // 4. Ajouté dans $fillable ✔
 
-
 class DocumentController extends Controller
 {
+    private DocumentChildHandler $childHandler;
+    private NotifyBeneficiaryService $notifyBeneficiaryService;
+    private $documents_relation = [
+        "facture-fournisseur-medical" => "invoice_provider.ledger_code",
+        "facture-fournisseur-informatique" => "invoice_provider",
+        "facture-note-honoraire" => "invoice_provider",
+        "papier-taxi" => "taxi_paper",
+        "note-de-frais" => "fee_note",
+        "demande-d-absence" => "absence_request",
+        "mission" => "mission.mission_expenses",
+    ];
 
-
-
-
-     private DocumentChildHandler $childHandler;
-     private NotifyBeneficiaryService $notifyBeneficiaryService;
-     private $documents_relation = [
-            "facture-fournisseur-medical" => "invoice_provider.ledger_code",
-            "facture-fournisseur-informatique" => "invoice_provider",
-            "facture-note-honoraire" => "invoice_provider",
-            "papier-taxi" => "taxi_paper",
-            "note-de-frais" => "fee_note",
-            "demande-d-absence"=>"absence_request",
-            "mission"=>"mission.mission_expenses"
-        ]; 
-
-    public function __construct(DocumentChildHandler $childHandler , NotifyBeneficiaryService $notifyBeneficiaryService)
-    {
+    public function __construct(
+        DocumentChildHandler $childHandler,
+        NotifyBeneficiaryService $notifyBeneficiaryService
+    ) {
         $this->childHandler = $childHandler;
         $this->notifyBeneficiaryService = $notifyBeneficiaryService;
     }
@@ -67,41 +63,45 @@ class DocumentController extends Controller
     public function index()
     {
         return response()->json([
-                'success' => true,
-                'data' => "ok"
-            ]);
+            "success" => true,
+            "data" => "ok",
+        ]);
     }
 
     public function notifyBeneficiary(Request $request)
-{
-    $request->validate([
-        'document' => 'required|integer|exists:documents,id',
-        'transactionTypeCode' => 'required|string',
-    ]);
+    {
+        $request->validate([
+            "document" => "required|integer|exists:documents,id",
+            "transactionTypeCode" => "required|string",
+        ]);
 
-    try {
-        $result = $this->notifyBeneficiaryService
-            ->execute($request->input('document'),
-        $request->input('transactionTypeCode'));
+        try {
+            $result = $this->notifyBeneficiaryService->execute(
+                $request->input("document"),
+                $request->input("transactionTypeCode")
+            );
 
-                return response()->json(
-            array_merge([
-                'success' => true,
-                'message' => 'OTP envoyé avec succès.',
-            ], $result)
-        );
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 400);
+            return response()->json(
+                array_merge(
+                    [
+                        "success" => true,
+                        "message" => "OTP envoyé avec succès.",
+                    ],
+                    $result
+                )
+            );
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => $e->getMessage(),
+                ],
+                400
+            );
+        }
     }
-}
 
-
-
-/**
+    /**
      * Retourne les documents par status
      */
     public function getByStatus(Request $request)
@@ -109,27 +109,29 @@ class DocumentController extends Controller
         $statusId = $request->status_id;
 
         if (!$statusId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'status_id is required'
-            ], 422);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "status_id is required",
+                ],
+                422
+            );
         }
 
         // $status = DocumentStatus::find($statusId);
 
         $documents = Document::query()
-        ->with(['document_type','document_status'])
-            ->where('document_status_id', $statusId)
+            ->with(["document_type", "document_status"])
+            ->where("document_status_id", $statusId)
             // ->where('status', $status->code)
             ->get()
             ->map(function ($document) {
-
                 return [
-                    'id' => $document->id,
+                    "id" => $document->id,
 
-                    'type' => optional($document->document_type)->name,
+                    "type" => optional($document->document_type)->name,
 
-                    'status' => optional($document->document_status)->code,
+                    "status" => optional($document->document_status)->code,
 
                     /*
                     |--------------------------------------------------------------------------
@@ -138,117 +140,108 @@ class DocumentController extends Controller
                     | utilisé par le Reminder Service
                     */
 
-                    'status_updated_at' => $document->status_updated_at,
+                    "status_updated_at" => $document->status_updated_at,
 
-                    'created_at' => $document->created_at,
+                    "created_at" => $document->created_at,
                 ];
             });
 
         return response()->json($documents);
     }
 
+    /**
+     * Formate récursivement un tableau ou une collection
+     *
+     * @param array|object $data Le tableau ou objet à parcourir
+     * @param array $formatMap Tableau associatif clé => fonction de formatage
+     *                        Ex : ['amount' => fn($v)=>number_format($v,0,',','.'), 'created_at' => fn($v)=>Carbon::parse($v)->format('d-m-Y')]
+     * @return array Le tableau formaté
+     */
+    function formatRecursive($data, array $formatMap = [])
+    {
+        // Transformer l'objet en tableau
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
 
+        $result = [];
 
-/**
- * Formate récursivement un tableau ou une collection
- *
- * @param array|object $data Le tableau ou objet à parcourir
- * @param array $formatMap Tableau associatif clé => fonction de formatage
- *                        Ex : ['amount' => fn($v)=>number_format($v,0,',','.'), 'created_at' => fn($v)=>Carbon::parse($v)->format('d-m-Y')]
- * @return array Le tableau formaté
- */
-function formatRecursive($data, array $formatMap = [])
-{
-    // Transformer l'objet en tableau
-    if (is_object($data)) {
-        $data = (array) $data;
-    }
-
-    $result = [];
-
-    foreach ($data as $key => $value) {
-
-        // Si la valeur est un objet ou tableau, on appelle récursivement
-        if (is_array($value) || is_object($value)) {
-            $result[$key] = $this->formatRecursive($value, $formatMap);
-        } else {
-            // Appliquer la fonction de format si définie pour cette clé
-            if (isset($formatMap[$key]) && is_callable($formatMap[$key])) {
-                $result[$key] = $formatMap[$key]($value);
+        foreach ($data as $key => $value) {
+            // Si la valeur est un objet ou tableau, on appelle récursivement
+            if (is_array($value) || is_object($value)) {
+                $result[$key] = $this->formatRecursive($value, $formatMap);
             } else {
-                $result[$key] = $value;
+                // Appliquer la fonction de format si définie pour cette clé
+                if (isset($formatMap[$key]) && is_callable($formatMap[$key])) {
+                    $result[$key] = $formatMap[$key]($value);
+                } else {
+                    $result[$key] = $value;
+                }
             }
         }
+
+        return $result;
     }
 
-    return $result;
-}
-
-public function exportInvoices(Request $request)
+    public function exportInvoices(Request $request)
     {
-
-
-
-
-        
-
         $documents = $this->getFilteredDocuments($request);
 
         $formatRules = [
-    'amount' => fn($v) => number_format($v, 0, ',', ' '),   // 500000 → 500.000
-    'created_at' => fn($v) => Carbon::parse($v)->format('d-m-Y H:i'),
-    'date_due' => fn($v) =>  ucfirst(
-    Carbon::parse($v)
-        ->locale('fr')
-        ->translatedFormat('d F Y')
-),
-];
+            "amount" => fn($v) => number_format($v, 0, ",", " "), // 500000 → 500.000
+            "created_at" => fn($v) => Carbon::parse($v)->format("d-m-Y H:i"),
+            "date_due" => fn($v) => ucfirst(
+                Carbon::parse($v)
+                    ->locale("fr")
+                    ->translatedFormat("d F Y")
+            ),
+        ];
 
-$formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $formatRules));
+        $formattedDocuments = $documents->map(
+            fn($doc) => $this->formatRecursive($doc, $formatRules)
+        );
         $columnMap = [
-    'title' => 'Titre',
-    'document_type_name' => 'Type de facture',
-    'prestataire_name' => 'Fournisseur / Prestataire',
-    'amount' => 'Montant ( FCFA )',
-    'status' => 'Statut',
-    'date_due' => 'Echeance',
-    'created_at' => 'Créé le',
-];
+            "title" => "Titre",
+            "document_type_name" => "Type de facture",
+            "prestataire_name" => "Fournisseur / Prestataire",
+            "amount" => "Montant ( FCFA )",
+            "status" => "Statut",
+            "date_due" => "Echeance",
+            "created_at" => "Créé le",
+        ];
 
         // dd($formattedDocuments);
         // throw new Exception($formattedDocuments->count(), 1);
-        
 
-    return Excel::download(
-    new DocumentsExport($formattedDocuments, $columnMap),
-        "documents.xlsx",
-    \Maatwebsite\Excel\Excel::XLSX
-    );
+        return Excel::download(
+            new DocumentsExport($formattedDocuments, $columnMap),
+            "documents.xlsx",
+            \Maatwebsite\Excel\Excel::XLSX
+        );
     }
 
-     /**
+    /**
      * Télécharge le document au format PDF
      */
-    public function download_document(Request $request , Document $document)
+    public function download_document(Request $request, Document $document)
     {
-//         $logoPath = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
+        //         $logoPath = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
 
-// if (file_exists($logoPath)) {
-//     $logoUrl = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
-// } else {
-//     $logoUrl = asset('assets/img/default-logo.png'); // fallback
-// }
-// return $logoUrl;
+        // if (file_exists($logoPath)) {
+        //     $logoUrl = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
+        // } else {
+        //     $logoUrl = asset('assets/img/default-logo.png'); // fallback
+        // }
+        // return $logoUrl;
         // Vérifier si l'utilisateur peut accéder au document
         //$this->authorize('view', $document);
 
         //return $document;
-       //return new Exception(json_encode($document));
+        //return new Exception(json_encode($document));
 
-       $document->load('document_type');
+        $document->load("document_type");
 
-       $document = $this->enrichDocument($document , $request->bearerToken());
-
+        $document = $this->enrichDocument($document, $request->bearerToken());
 
         // Chercher le template selon le type de document
         $template = $document->document_type->slug ?? null;
@@ -257,19 +250,19 @@ $formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $
             abort(404, "Template $template introuvable");
         }
 
-        $signatureDonneur = asset('assets/img/signaturearol.jpg') ;
-        $signatureBeneficiaire = asset('assets/img/benef.jpg') ;
+        $signatureDonneur = asset("assets/img/signaturearol.jpg");
+        $signatureBeneficiaire = asset("assets/img/benef.jpg");
         // Générer le PDF depuis le template Blade
         $pdf = Pdf::loadView("templates.$template", [
-            'document' => $document,
-            'signatureDonneur'=>$signatureDonneur,
-            'signatureBeneficiaire'=>$signatureBeneficiaire
+            "document" => $document,
+            "signatureDonneur" => $signatureDonneur,
+            "signatureBeneficiaire" => $signatureBeneficiaire,
         ]);
 
         //new Exception(json_encode($template));
 
         // Nom du fichier pour le téléchargement
-        $fileName = $template . '-' . $document->id . '.pdf';
+        $fileName = $template . "-" . $document->id . ".pdf";
 
         // Retourner le PDF en téléchargement
         return $pdf->download($fileName);
@@ -430,8 +423,9 @@ $formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $
                 )
                 : null,
 
-                
-            "download_url" => secure_url("api/documents/".$document->id."/download"),
+            "download_url" => secure_url(
+                "api/documents/" . $document->id . "/download"
+            ),
             // "download_url" => route("documents.download", [
             //     "id" => $document->id,
             // ],true),
@@ -545,7 +539,8 @@ $formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $
                 "id" => $attachment->id,
                 "attachment_number" => $attachment->attachment_number,
                 "attachment_type_id" => $attachment->attachment_type_id,
-                "generation_mode" =>$attachment->attachmentType->generation_mode ?? null,
+                "generation_mode" =>
+                    $attachment->attachmentType->generation_mode ?? null,
                 "attachment_type_slug" => $attachment->attachmentType
                     ? $attachment->attachmentType->slug
                     : "--",
@@ -600,37 +595,35 @@ $formattedDocuments = $documents->map(fn($doc) => $this->formatRecursive($doc, $
         // });
 
         $attachments = $attachments->map(function ($att) use ($users) {
+            $userName =
+                $users[$att["created_by_id"]]["name"] ??
+                "Utilisateur ID: {$att["created_by_id"]}";
 
-    $userName =
-        $users[$att["created_by_id"]]["name"] ??
-        "Utilisateur ID: {$att["created_by_id"]}";
+            $attachment_number = $att["attachment_number"]
+                ? " #" . $att["attachment_number"] . ""
+                : ",";
 
-    $attachment_number = $att["attachment_number"]
-        ? " #" . $att["attachment_number"] . ""
-        : ",";
+            $by = "par";
 
-    $by = "par";
+            $date = $att["created_at"];
 
-    $date = $att["created_at"];
+            $generationMode = $att["generation_mode"] ?? "USER";
 
-    $generationMode = $att["generation_mode"] ?? 'USER';
+            $generatedLabel =
+                $generationMode === "SYSTEM"
+                    ? "généré automatiquement le"
+                    : "le";
 
-    $generatedLabel = $generationMode === 'SYSTEM'
-        ? "généré automatiquement le"
-        : "le";
+            $authorPart =
+                $generationMode === "SYSTEM" ? "" : "{$by} {$userName} ";
 
-    $authorPart = $generationMode === 'SYSTEM'
-        ? ""
-        : "{$by} {$userName} ";
-
-    return [
-        "id" => $att["id"],
-        "name" =>
-            "{$att["name"]}{$attachment_number}{$authorPart}{$generatedLabel} {$date}",
-        "url" => $att["url"],
-        "slug" => $att["attachment_type_slug"],
-    ];
-});
+            return [
+                "id" => $att["id"],
+                "name" => "{$att["name"]}{$attachment_number}{$authorPart}{$generatedLabel} {$date}",
+                "url" => $att["url"],
+                "slug" => $att["attachment_type_slug"],
+            ];
+        });
 
         return response()->json([
             "success" => true,
@@ -815,7 +808,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         );
 
         // Récupérer juste les IDs
-        $userIds = collect($users_to_notify)->pluck("id")->toArray();
+        $userIds = collect($users_to_notify)
+            ->pluck("id")
+            ->toArray();
 
         // Notifier en une seule requête
         return Http::withToken($request->bearerToken())->post(
@@ -838,12 +833,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
     public function store(StoreDocumentRequest $request)
     {
         try {
-
             DB::beginTransaction();
 
             // Récupérer les données validées par le FormRequest
-        // return 
-           $validated = $request->validated();
+            // return
+            $validated = $request->validated();
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
 
@@ -851,7 +845,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
             //on recupere le workflow
 
-            if ($documentType->reception_mode == "AUTO_BY_ROLE") {//non lié a un workflow
+            if ($documentType->reception_mode == "AUTO_BY_ROLE") {
+                //non lié a un workflow
                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
                 // Créer le document
                 $document = Document::create([
@@ -890,12 +885,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     [
                         "success" => true,
                         "message" =>
-                        "Document créé avec succès et sans workflow",
+                            "Document créé avec succès et sans workflow",
                         "document" => $document,
                     ],
                     201
                 );
-            } else {//lié a un workflow
+            } else {
+                //lié a un workflow
                 // 🔹 Appel au microservice workflow
                 $workflowServiceUrl = config(
                     "services.workflow_service.base_url"
@@ -915,32 +911,31 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     $workflowResponse->json();
                 }
 
-                if (isset($validated['prestataire']) && $validated['prestataire']) {
-                    
-                        $supplier = getSupplierInfo($validated['prestataire']);
+                if (
+                    isset($validated["prestataire"]) &&
+                    $validated["prestataire"]
+                ) {
+                    $supplier = getSupplierInfo($validated["prestataire"]);
 
-                        if ($supplier) {
-                            $validated['dueDate'] = isset($supplier['dueDate']) ? now()->addDays($supplier['dueDate']) :null;
-                            $validated['provider_name'] = $supplier['name'] ?? null;
-                        }
+                    if ($supplier) {
+                        $validated["dueDate"] = isset($supplier["dueDate"])
+                            ? now()->addDays($supplier["dueDate"])
+                            : null;
+                        $validated["provider_name"] = $supplier["name"] ?? null;
+                    }
                 }
 
-
-           
-                if (isset($validated['trajets'])) {
-                    
+                if (isset($validated["trajets"])) {
                     // Calcul du montant total
-$montantTotal = collect($validated['trajets'])
-    ->sum('montant');
+                    $montantTotal = collect($validated["trajets"])->sum(
+                        "montant"
+                    );
 
-// Injecter dans les données du document
-$validated['montant'] = $montantTotal;
-
+                    // Injecter dans les données du document
+                    $validated["montant"] = $montantTotal;
                 }
 
                 // return $validated;
-
-
 
                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
                 // Créer le document
@@ -948,12 +943,13 @@ $validated['montant'] = $montantTotal;
                     "title" => $validated["titre"],
                     "document_type_id" => $validated["document_type_id"],
 
-                    "status" => $this->get_initial_status($validated["document_type_id"]),
-                    "date_due" => $validated['dueDate'] ?? null,
-                    "amount" => $validated['montant'] ?? null,
-                    "prestataire_name" => $validated['provider_name'] ?? null,
+                    "status" => $this->get_initial_status(
+                        $validated["document_type_id"]
+                    ),
+                    "date_due" => $validated["dueDate"] ?? null,
+                    "amount" => $validated["montant"] ?? null,
+                    "prestataire_name" => $validated["provider_name"] ?? null,
 
-                    
                     "department_id" => $validated["departement"] ?? null, // ✅ optionnel,
                     "workflow_id" => $workflowId,
                     "created_by" => $user_connected["id"], // si tu veux stocker l’utilisateur connecté
@@ -963,10 +959,6 @@ $validated['montant'] = $montantTotal;
                     // autres champs génériques...
                 ]);
 
-             
-                
-
-
                 $documentType = $document->document_type()->first(); // Objet avec class_name, relation_name et type
 
                 $this->childHandler->handle(
@@ -974,9 +966,6 @@ $validated['montant'] = $montantTotal;
                     $documentType,
                     $validated
                 );
-
-
-            
 
                 // Si on veut gérer des fichiers uploadés
                 if ($request->hasFile("facture")) {
@@ -987,7 +976,7 @@ $validated['montant'] = $montantTotal;
                         $user_connected,
                         "facture",
                         "facture-originale"
-                    );   
+                    );
                 }
 
                 //Si la reference de l'engagement correspond a un document dans le systeme, on associe directement a la facture
@@ -997,8 +986,6 @@ $validated['montant'] = $montantTotal;
                         $document,
                         $user_connected
                     );
-
-                   
                 }
 
                 // 3️⃣ Création de l’instance de workflow
@@ -1021,9 +1008,9 @@ $validated['montant'] = $montantTotal;
 
                     DB::commit();
 
-                 //   return ["ok"];
-                // return 
-                   $instanceResponse = Http::withToken($request->bearerToken())
+                    //   return ["ok"];
+                    // return
+                    $instanceResponse = Http::withToken($request->bearerToken())
                         ->acceptJson()
                         ->post(
                             $workflowServiceUrl . "/workflow-instances",
@@ -1035,22 +1022,22 @@ $validated['montant'] = $montantTotal;
                         $document->delete(); // supprime le doc créé
                         return response()->json(
                             [
-                                "message" =>"Échec de l’initialisation du workflow. Document supprimé.",
+                                "message" =>
+                                    "Échec de l’initialisation du workflow. Document supprimé.",
                                 "backend-message" => $instanceResponse->json(),
                             ],
                             500
                         );
                     }
 
-
-                // return 
-                   $workflowInstance = $instanceResponse->json();
+                    // return
+                    $workflowInstance = $instanceResponse->json();
 
                     return response()->json(
                         [
                             "success" => true,
                             "message" =>
-                            "Document créé avec succès et workflow démarré",
+                                "Document créé avec succès et workflow démarré",
                             "document" => $document,
                             "workflow_instance" => $workflowInstance,
                         ],
@@ -1062,7 +1049,7 @@ $validated['montant'] = $montantTotal;
                     return response()->json(
                         [
                             "message" =>
-                            "Document créé avec succès et sans workflow",
+                                "Document créé avec succès et sans workflow",
                             "document" => $document,
                         ],
                         201
@@ -1074,8 +1061,6 @@ $validated['montant'] = $montantTotal;
             throw $th;
         }
     }
-
-  
 
     private function createDocument(
         array $validated,
@@ -1107,27 +1092,24 @@ $validated['montant'] = $montantTotal;
         return $document;
     }
 
-    private function get_initial_status($document_type_id){
-
+    private function get_initial_status($document_type_id)
+    {
         $documentType = DocumentType::findOrFail($document_type_id);
         $slug = $documentType->slug;
 
         switch ($slug) {
-            case 'facture-fournisseur-medical':
-            case 'facture-fournisseur-informatique':
-            case 'facture-note-honoraire':
-            case 'papier-taxi':
-            case 'note-de-frais':
-                return "Non payé(e)" ;
+            case "facture-fournisseur-medical":
+            case "facture-fournisseur-informatique":
+            case "facture-note-honoraire":
+            case "papier-taxi":
+            case "note-de-frais":
+                return "Non payé(e)";
                 break;
-            
-            
-            
+
             default:
                 return "Aucun statut";
                 break;
         }
-
     }
 
     private function processWorkflow(
@@ -1251,7 +1233,8 @@ $validated['montant'] = $montantTotal;
         Document $document,
         array $user_connected,
         $request
-    ) {}
+    ) {
+    }
 
     private function processManualWorkflow(
         array $validated,
@@ -1265,22 +1248,17 @@ $validated['montant'] = $montantTotal;
     }
 
     private function getFilteredDocuments(Request $request)
-{
-
-    
+    {
         $DOC_CONFIG = config("document_types");
-        
+
         $ids = $request->input("ids", []);
         $userId = $request->input("userId", null);
-        $documentTypes = $request->input("documentTypes", ['invoice_provider']);
+        $documentTypes = $request->input("documentTypes", ["invoice_provider"]);
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
         // $filters = $request->query('filters', $request->input('filters', []));
 
         // throw new Exception(json_encode($filters), 1);
         // throw new Exception($filters, 1);
-
-
-      
 
         $query = Document::query();
 
@@ -1294,19 +1272,18 @@ $validated['montant'] = $montantTotal;
         //     $query->whereCreatedBy($userId);
         // }
         if (!empty($userId)) {
-    
             $query->where(function ($q) use ($userId, $documentTypes) {
+                // created_by (champ direct)
+                $q->where("created_by", $userId);
 
-        // created_by (champ direct)
-        $q->where('created_by', $userId);
-
-        // requester (relation dynamique)
-        $q->orWhereHas($documentTypes[0]/*->slug */, function ($qr) use ($userId) {
-            $qr->where('beneficiary', $userId);
-        });
-
-    });
-}
+                // requester (relation dynamique)
+                $q->orWhereHas($documentTypes[0] /*->slug */, function (
+                    $qr
+                ) use ($userId) {
+                    $qr->where("beneficiary", $userId);
+                });
+            });
+        }
 
         // Filtre par relations / types de document
         if (!empty($documentTypes)) {
@@ -1333,12 +1310,9 @@ $validated['montant'] = $montantTotal;
 
         //   supplier_type
 
-          if (!empty($filters["status"])) {
-    
-        $query->whereStatus($filters["status"]);
-
-}
-
+        if (!empty($filters["status"])) {
+            $query->whereStatus($filters["status"]);
+        }
 
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["document_type_id"])) {
@@ -1350,12 +1324,9 @@ $validated['montant'] = $montantTotal;
             });
         }
 
-                // Filtre par montant dans InvoiceProvider
+        // Filtre par montant dans InvoiceProvider
         if (!empty($filters["amount"])) {
-
             // throw new Exception($filters["amount"], 1);
-            
-
 
             $query->whereHas("invoice_provider", function ($q) use ($filters) {
                 switch ($filters["amount"]) {
@@ -1372,12 +1343,12 @@ $validated['montant'] = $montantTotal;
             });
         }
 
-        
-
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["fournisseur_id"])) {
             $fournisseurId = $filters["fournisseur_id"];
-            $query->whereHas("invoice_provider", function ($q) use ($fournisseurId) {
+            $query->whereHas("invoice_provider", function ($q) use (
+                $fournisseurId
+            ) {
                 $q->where("id", $fournisseurId); // ou le champ correct dans InvoiceProvider
             });
         }
@@ -1409,167 +1380,159 @@ $validated['montant'] = $montantTotal;
         // Charger les relations
         $query->with(array_merge(["document_type"], $documentTypes));
 
-         
         $documents = $query->get();
 
         // throw new Exception(json_encode($documents), 1);
 
-
-        $documentsEnrich = $documents->map(function ($doc) use ($documentTypes , $DOC_CONFIG) {
-
+        $documentsEnrich = $documents->map(function ($doc) use (
+            $documentTypes,
+            $DOC_CONFIG
+        ) {
             // Détecter quel type de document est réellement présent
-    $activeRelation = null;
-    foreach ($documentTypes as $relation) {
-        if ($doc->relationLoaded($relation) && $doc->$relation) {
-            $activeRelation = $relation;
-            break;
-        }
-    }
-      
-
-
-    // Base commune à tous les documents
-    $base = [
-        "id" => $doc->id,
-        "code" => $doc->code,
-        "title" => $doc->title,
-        "date_due" => $doc->date_due,
-        "document_type_name" => $doc->document_type->name,
-        "document_type_id" => $doc->document_type_id,
-        "type" => $doc->document_type->name,
-        "status" => $doc->status,
-        "created_at" => $doc->created_at,
-        "created_by" => $doc->created_by,
-    ];
-
-  
-
-    // Si aucun type trouvé → retourner juste la base
-    if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
-        return $base;
-    }
-
-    $fields = $DOC_CONFIG[$activeRelation]["fields"];
-    $relationObj = $doc->$activeRelation;
-
-
-    // Injecter dynamiquement les champs configurés
-    foreach ($fields as $responseKey => $modelField) {//prestataire
-        $value = $relationObj->$modelField ?? null;
-
-
-      if (array_key_exists($modelField , $base)) {
-        
-        // throw new Exception(json_encode($modelField), 1);
-        continue;
-
-      
-      }
-
-    $userKeys = ['demandeur', 'validateur', 'beneficiaire', 'actor_type'];
-    $providerKeys = ['prestataire']; // Liste des clés à enrichir
-
-if (in_array($responseKey, $userKeys) && $value) {
-
-    // 👉 récupération standardisée
-    $type = $value;// $filters['actor_type'] ?? null;
-    $id   = $relationObj->actor_id ?? null;
-    // throw new Exception("-- $id --", 1);
-    
-
-    if ($id && $type) {
-
-
-        // $missions_with_expenses = $relationObj->load('missions_expenses');
-       $relationObj->load('mission_expenses');
-
-        $mission = $relationObj->toArray();
-
-        $base["mission"] = $mission;
-
-        // $doc->load("mission.missions_expenses");
-
-        $baseUrl = null;
-
-        if ($type === 'INTERNAL') {
-            $baseUrl = config('services.user_service.base_url');
-
-        } elseif ($type === 'EXTERNAL') {
-            $baseUrl = config('services.external_actor_service.base_url');
-        }
-
-        if ($baseUrl) {
-            $response = Http::acceptJson()
-                ->get($baseUrl . "/{$id}");
-
-            if ($response->successful()) {
-                $value = $response->json()['user'] ?? $response->json();
+            $activeRelation = null;
+            foreach ($documentTypes as $relation) {
+                if ($doc->relationLoaded($relation) && $doc->$relation) {
+                    $activeRelation = $relation;
+                    break;
+                }
             }
-        }
-    }
-}
 
-    if (in_array($responseKey, $providerKeys) && $value) {
-        // Appel au microservice User pour récupérer les infos
-        $response = Http:://withToken(config('services.user_service.token'))
-            acceptJson()
-            ->get(config('services.supplier_service.base_url') . "/{$value}");
+            // Base commune à tous les documents
+            $base = [
+                "id" => $doc->id,
+                "code" => $doc->code,
+                "title" => $doc->title,
+                "date_due" => $doc->date_due,
+                "document_type_name" => $doc->document_type->name,
+                "document_type_id" => $doc->document_type_id,
+                "type" => $doc->document_type->name,
+                "status" => $doc->status,
+                "created_at" => $doc->created_at,
+                "created_by" => $doc->created_by,
+            ];
 
-    //new Exception(json_encode($response));
+            // Si aucun type trouvé → retourner juste la base
+            if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
+                return $base;
+            }
 
-        if ($response->successful()) {
-            $value = $response->json()['data']; // ou filtrer certaines infos, ex: ['id','name','email']
-        }
-        else{
-   
-            // new Exception(json_encode($response));
+            $fields = $DOC_CONFIG[$activeRelation]["fields"];
+            $relationObj = $doc->$activeRelation;
 
-        }
-    }
+            // Injecter dynamiquement les champs configurés
+            foreach ($fields as $responseKey => $modelField) {
+                //prestataire
+                $value = $relationObj->$modelField ?? null;
 
-    //new Exception(json_encode($value));
+                if (array_key_exists($modelField, $base)) {
+                    // throw new Exception(json_encode($modelField), 1);
+                    continue;
+                }
 
+                $userKeys = [
+                    "demandeur",
+                    "validateur",
+                    "beneficiaire",
+                    "actor_type",
+                ];
+                $providerKeys = ["prestataire"]; // Liste des clés à enrichir
 
-        $base[$responseKey == "actor_type" ? "actor" : $responseKey ] = $value;
+                if (in_array($responseKey, $userKeys) && $value) {
+                    // 👉 récupération standardisée
+                    $type = $value; // $filters['actor_type'] ?? null;
+                    $id = $relationObj->actor_id ?? null;
+                    // throw new Exception("-- $id --", 1);
 
-    // $base[$responseKey] = $responseKey === 'amount'
-    // ? number_format($value, 0, ',', '.')
-    // : $value;
+                    if ($id && $type) {
+                        // $missions_with_expenses = $relationObj->load('missions_expenses');
+                        $relationObj->load("mission_expenses");
 
-    }
-        
+                        $mission = $relationObj->toArray();
 
-    return $base;
+                        $base["mission"] = $mission;
 
+                        // $doc->load("mission.missions_expenses");
+
+                        $baseUrl = null;
+
+                        if ($type === "INTERNAL") {
+                            $baseUrl = config("services.user_service.base_url");
+                        } elseif ($type === "EXTERNAL") {
+                            $baseUrl = config(
+                                "services.external_actor_service.base_url"
+                            );
+                        }
+
+                        if ($baseUrl) {
+                            $response = Http::acceptJson()->get(
+                                $baseUrl . "/{$id}"
+                            );
+
+                            if ($response->successful()) {
+                                $value =
+                                    $response->json()["user"] ??
+                                    $response->json();
+                            }
+                        }
+                    }
+                }
+
+                if (in_array($responseKey, $providerKeys) && $value) {
+                    // Appel au microservice User pour récupérer les infos
+                    $response = Http::acceptJson() //withToken(config('services.user_service.token'))
+                        ->get(
+                            config("services.supplier_service.base_url") .
+                                "/{$value}"
+                        );
+
+                    //new Exception(json_encode($response));
+
+                    if ($response->successful()) {
+                        $value = $response->json()["data"]; // ou filtrer certaines infos, ex: ['id','name','email']
+                    } else {
+                        // new Exception(json_encode($response));
+                    }
+                }
+
+                //new Exception(json_encode($value));
+
+                $base[
+                    $responseKey == "actor_type" ? "actor" : $responseKey
+                ] = $value;
+
+                // $base[$responseKey] = $responseKey === 'amount'
+                // ? number_format($value, 0, ',', '.')
+                // : $value;
+            }
+
+            return $base;
         });
         // throw new Exception(json_encode($documentsEnrich), 1);
 
+        return $documentsEnrich;
+    }
 
-    return $documentsEnrich;
-}
-
-  
-        public function getDocumentsByIds(Request $request)
+    public function getDocumentsByIds(Request $request)
     {
+        $formatRules = [
+            "amount" => fn($v) => number_format($v, 0, ",", "."), // 500000 → 500.000
+            "created_at" => fn($v) => \Carbon\Carbon::parse($v)->format(
+                "d-m-Y H:i"
+            ),
+        ];
 
-          $formatRules = [
-    'amount' => fn($v) => number_format($v, 0, ',', '.'),   // 500000 → 500.000
-    'created_at' => fn($v) => \Carbon\Carbon::parse($v)->format('d-m-Y H:i'),
-];
-
-$formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $this->formatRecursive($doc, $formatRules));
-
+        $formattedDocuments = $this->getFilteredDocuments($request)->map(
+            fn($doc) => $this->formatRecursive($doc, $formatRules)
+        );
 
         return response()->json($formattedDocuments);
 
         $DOC_CONFIG = config("document_types");
-        
+
         $ids = $request->input("ids", []);
         $userId = $request->input("userId", null);
         $documentTypes = $request->input("documentTypes", []);
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
-
-      
 
         $query = Document::query();
 
@@ -1583,19 +1546,18 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
         //     $query->whereCreatedBy($userId);
         // }
         if (!empty($userId)) {
-    
             $query->where(function ($q) use ($userId, $documentTypes) {
+                // created_by (champ direct)
+                $q->where("created_by", $userId);
 
-        // created_by (champ direct)
-        $q->where('created_by', $userId);
-
-        // requester (relation dynamique)
-        $q->orWhereHas($documentTypes[0]/*->slug */, function ($qr) use ($userId) {
-            $qr->where('beneficiary', $userId);
-        });
-
-    });
-}
+                // requester (relation dynamique)
+                $q->orWhereHas($documentTypes[0] /*->slug */, function (
+                    $qr
+                ) use ($userId) {
+                    $qr->where("beneficiary", $userId);
+                });
+            });
+        }
 
         // Filtre par relations / types de document
         if (!empty($documentTypes)) {
@@ -1622,7 +1584,6 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
         //   supplier_type
 
-
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["document_type_id"])) {
             $document_type_id = $filters["document_type_id"];
@@ -1633,7 +1594,7 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
             });
         }
 
-                // Filtre par montant dans InvoiceProvider
+        // Filtre par montant dans InvoiceProvider
         if (!empty($filters["amount"])) {
             $query->whereHas("invoice_provider", function ($q) use ($filters) {
                 switch ($filters["amount"]) {
@@ -1653,7 +1614,9 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["fournisseur_id"])) {
             $fournisseurId = $filters["fournisseur_id"];
-            $query->whereHas("invoice_provider", function ($q) use ($fournisseurId) {
+            $query->whereHas("invoice_provider", function ($q) use (
+                $fournisseurId
+            ) {
                 $q->where("id", $fournisseurId); // ou le champ correct dans InvoiceProvider
             });
         }
@@ -1687,91 +1650,91 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
 
         // return $documents = $query->get();
 
-        $documents = $query->get()->map(function ($doc) use ($documentTypes , $DOC_CONFIG) {
+        $documents = $query
+            ->get()
+            ->map(function ($doc) use ($documentTypes, $DOC_CONFIG) {
+                // Détecter quel type de document est réellement présent
+                $activeRelation = null;
+                foreach ($documentTypes as $relation) {
+                    if ($doc->relationLoaded($relation) && $doc->$relation) {
+                        $activeRelation = $relation;
+                        break;
+                    }
+                }
 
-            // Détecter quel type de document est réellement présent
-    $activeRelation = null;
-    foreach ($documentTypes as $relation) {
-        if ($doc->relationLoaded($relation) && $doc->$relation) {
-            $activeRelation = $relation;
-            break;
-        }
-    }
+                // Base commune à tous les documents
+                $base = [
+                    "id" => $doc->id,
+                    "title" => $doc->title,
+                    "document_type_name" => $doc->document_type->name,
+                    "document_type_id" => $doc->document_type_id,
+                    "type" => $doc->document_type->name,
+                    "status" => $doc->status,
+                    "created_at" => $doc->created_at,
+                    "created_by" => $doc->created_by,
+                ];
 
-    // Base commune à tous les documents
-    $base = [
-        "id" => $doc->id,
-        "title" => $doc->title,
-        "document_type_name" => $doc->document_type->name,
-        "document_type_id" => $doc->document_type_id,
-        "type" => $doc->document_type->name,
-        "status" => $doc->status,
-        "created_at" => $doc->created_at,
-        "created_by" => $doc->created_by,
-    ];
+                // Si aucun type trouvé → retourner juste la base
+                if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
+                    return $base;
+                }
 
-    // Si aucun type trouvé → retourner juste la base
-    if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
-        return $base;
-    }
+                $fields = $DOC_CONFIG[$activeRelation]["fields"];
+                $relationObj = $doc->$activeRelation;
 
-    $fields = $DOC_CONFIG[$activeRelation]["fields"];
-    $relationObj = $doc->$activeRelation;
+                // Injecter dynamiquement les champs configurés
+                foreach ($fields as $responseKey => $modelField) {
+                    //prestataire
+                    $value = $relationObj->$modelField ?? null;
 
-    // Injecter dynamiquement les champs configurés
-    foreach ($fields as $responseKey => $modelField) {//prestataire
-        $value = $relationObj->$modelField ?? null;
+                    // Si la clé est susceptible de contenir un ID utilisateur
+                    $userKeys = ["demandeur", "validateur", "beneficiaire"]; // Liste des clés à enrichir
+                    $providerKeys = ["prestataire"]; // Liste des clés à enrichir
+                    if (in_array($responseKey, $userKeys) && $value) {
+                        // Appel au microservice User pour récupérer les infos
+                        $response = Http::acceptJson() //withToken(config('services.user_service.token'))
+                            ->get(
+                                config("services.user_service.base_url") .
+                                    "/{$value}"
+                            );
 
-          // Si la clé est susceptible de contenir un ID utilisateur
-    $userKeys = ['demandeur', 'validateur', 'beneficiaire']; // Liste des clés à enrichir
-    $providerKeys = ['prestataire']; // Liste des clés à enrichir
-    if (in_array($responseKey, $userKeys) && $value) {
-        // Appel au microservice User pour récupérer les infos
-        $response = Http:://withToken(config('services.user_service.token'))
-            acceptJson()
-            ->get(config('services.user_service.base_url') . "/{$value}");
+                        //new Exception(json_encode($response));
 
-    //new Exception(json_encode($response));
+                        if ($response->successful()) {
+                            $value = $response->json()["user"]; // ou filtrer certaines infos, ex: ['id','name','email']
+                        } else {
+                            // new Exception(json_encode($response));
+                        }
+                    }
 
-        if ($response->successful()) {
-            $value = $response->json()['user']; // ou filtrer certaines infos, ex: ['id','name','email']
-        }
-        else{
-   
-            // new Exception(json_encode($response));
+                    if (in_array($responseKey, $providerKeys) && $value) {
+                        // Appel au microservice User pour récupérer les infos
+                        $response = Http::acceptJson() //withToken(config('services.user_service.token'))
+                            ->get(
+                                config("services.supplier_service.base_url") .
+                                    "/{$value}"
+                            );
 
-        }
-    }
+                        //new Exception(json_encode($response));
 
-    if (in_array($responseKey, $providerKeys) && $value) {
-        // Appel au microservice User pour récupérer les infos
-        $response = Http:://withToken(config('services.user_service.token'))
-            acceptJson()
-            ->get(config('services.supplier_service.base_url') . "/{$value}");
+                        if ($response->successful()) {
+                            $value = $response->json()["data"]; // ou filtrer certaines infos, ex: ['id','name','email']
+                        } else {
+                            // new Exception(json_encode($response));
+                        }
+                    }
 
-    //new Exception(json_encode($response));
+                    //new Exception(json_encode($value));
 
-        if ($response->successful()) {
-            $value = $response->json()['data']; // ou filtrer certaines infos, ex: ['id','name','email']
-        }
-        else{
-   
-            // new Exception(json_encode($response));
+                    $base[$responseKey] =
+                        $responseKey === "amount"
+                            ? number_format($value, 0, ",", ".")
+                            : $value;
+                }
 
-        }
-    }
+                return $base;
 
-    //new Exception(json_encode($value));
-
-    $base[$responseKey] = $responseKey === 'amount'
-    ? number_format($value, 0, ',', '.')
-    : $value;
-    }
-
-    return $base;
-
-
-            /*return [
+                /*return [
                 "id" => $doc->id,
                 "title" => $doc->title,
                 "document_type_name" => $doc->document_type->name,
@@ -1783,10 +1746,9 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
                 "created_by" => $doc->created_by,
                 "acteur_principal" => $doc->invoice_provider->provider ?? null, // ou autre champ clé
             ];*/
-        });
+            });
 
         return response()->json($documents);
-
     }
 
     // public function enrichDocument($document , $token){
@@ -1836,108 +1798,100 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
     // }
 
     public function enrichDocument($document, $token)
-{
-    $slug = $document->document_type->slug ?? null;
+    {
+        $slug = $document->document_type->slug ?? null;
 
-    $beneficiarySlugs = [
-        "papier-taxi",
-        "note-de-frais",
-        "demande-d-absence"
-    ];
+        $beneficiarySlugs = [
+            "papier-taxi",
+            "note-de-frais",
+            "demande-d-absence",
+        ];
 
-    $actorSlugs = [
-        "mission"
-    ];
+        $actorSlugs = ["mission"];
 
-    $relation = $this->documents_relation[$slug] ?? null;
-    $main_relation = null;
-    $secondary_relation = null;
-    // Charger la relation dynamique
-    if ($relation) {
+        $relation = $this->documents_relation[$slug] ?? null;
+        $main_relation = null;
+        $secondary_relation = null;
+        // Charger la relation dynamique
+        if ($relation) {
+            $relations = explode(".", $relation);
+            $main_relation = $relations[0];
+            $secondary_relation = $relations[1] ?? null;
+            $document->load($relation);
+        }
 
-        $relations = explode('.', $relation);
-        $main_relation = $relations[0] ;
-        $secondary_relation = $relations[1] ?? null;
-        $document->load($relation);
-    }
+        // Récupérer l'entité liée
+        $entity = $main_relation ? $document->$main_relation : null;
 
-    // Récupérer l'entité liée
-    $entity = $main_relation ? $document->$main_relation : null;
+        if (!$entity) {
+            return $document;
+        }
 
-    if (!$entity) {
+        $userServiceUrl = config("services.user_service.base_url");
+
+        $userId = null;
+
+        // =========================
+        // 👤 CAS BENEFICIARY
+        // =========================
+        if (in_array($slug, $beneficiarySlugs)) {
+            // $userId = $entity->beneficiary ?? null;
+            $userId = $entity->actor_id ?? null;
+        }
+
+        // =========================
+        // 🚀 CAS ACTOR (MISSION)
+        // =========================
+        if (in_array($slug, $actorSlugs)) {
+            $userId = $entity->actor_id ?? null;
+        }
+
+        // fallback sécurité
+        $userId = $userId > 0 ? $userId : 1;
+
+        // =========================
+        // 🔹 APPEL USER SERVICE
+        // =========================
+        $userResponse = Http::withToken($token)
+            ->acceptJson()
+            ->timeout(5)
+            ->get("$userServiceUrl/{$userId}");
+
+        if ($userResponse->ok()) {
+            $userData = $userResponse->json("user");
+
+            // Attachement sans persistance DB
+            $entityKey = in_array($slug, $actorSlugs)
+                ? "actor_details"
+                : // : 'beneficiary_details';
+                "actor_details";
+
+            $entity->{$entityKey} = $userData;
+
+            if ($secondary_relation) {
+                $entity->load("mission_expenses.expense_category");
+            }
+
+            // optionnel : normalisation ID
+            if ($entityKey === "beneficiary_details") {
+                // $document->beneficiary = $userData['id'] ?? null;
+                $document->actor = $userData["id"] ?? null;
+            } else {
+                $document->actor = $userData["id"] ?? null;
+            }
+
+            $document->setRelation($main_relation, $entity);
+        } else {
+            // log silencieux (important en prod)
+            Log::warning("User service failed", [
+                "slug" => $slug,
+                "status" => $userResponse->status(),
+                "body" => $userResponse->body(),
+            ]);
+        }
+
         return $document;
     }
-
-    $userServiceUrl = config("services.user_service.base_url");
-
-    $userId = null;
-
-    // =========================
-    // 👤 CAS BENEFICIARY
-    // =========================
-    if (in_array($slug, $beneficiarySlugs)) {
-        // $userId = $entity->beneficiary ?? null;
-        $userId = $entity->actor_id ?? null;
-    }
-
-    // =========================
-    // 🚀 CAS ACTOR (MISSION)
-    // =========================
-    if (in_array($slug, $actorSlugs)) {
-        $userId = $entity->actor_id ?? null;
-    }
-
-    // fallback sécurité
-    $userId = $userId > 0 ? $userId : 1;
-
-    // =========================
-    // 🔹 APPEL USER SERVICE
-    // =========================
-    $userResponse = Http::withToken($token)
-        ->acceptJson()
-        ->timeout(5)
-        ->get("$userServiceUrl/{$userId}");
-
-    if ($userResponse->ok()) {
-
-        $userData = $userResponse->json("user");
-
-        // Attachement sans persistance DB
-        $entityKey = in_array($slug, $actorSlugs)
-            ? 'actor_details'
-            // : 'beneficiary_details';
-            : 'actor_details';
-
-        $entity->{$entityKey} = $userData;
-
-
-        if ($secondary_relation) {
-             $entity->load("mission_expenses.expense_category") ;
-        }
-       
-
-
-        // optionnel : normalisation ID
-        if ($entityKey === 'beneficiary_details') {
-            // $document->beneficiary = $userData['id'] ?? null;
-            $document->actor = $userData['id'] ?? null;
-        } else {
-            $document->actor = $userData['id'] ?? null;
-        }
-
-        $document->setRelation($main_relation, $entity);
-        
-    } else {
-        // log silencieux (important en prod)
-        Log::warning("User service failed", [
-            'slug' => $slug,
-            'status' => $userResponse->status(),
-            'body' => $userResponse->body(),
-        ]);
-    }
-
-    return $document;
-}
 
     /**
      * Display the specified resource.
@@ -1945,28 +1899,31 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
      * @param  \App\Models\Misc\Document  $document
      * @return \Illuminate\Http\Response
      */
-    public function show(Request $request , DocumentViewService $documentViewService ,  Document $document)
-    {
+    public function show(
+        Request $request,
+        DocumentViewService $documentViewService,
+        Document $document
+    ) {
         // return $document;
         $document->load("document_type");
 
-        $totalPaid = $document->payments()->sum('amount');
+        $totalPaid = $document->payments()->sum("amount");
 
+        $document->paid_amount = $totalPaid;
 
-        $document->paid_amount=$totalPaid;
+        $document->formatted_amount = $document->amount
+            ? number_format($document->amount, 0, ",", ".")
+            : null;
 
-
-        $document->formatted_amount= $document->amount ? number_format($document->amount, 0, ',', '.') : null;
-
-
-        $workflowStatus = $documentViewService->getWorkflowStatusStatus($document->id);
+        $workflowStatus = $documentViewService->getWorkflowStatusStatus(
+            $document->id
+        );
 
         // return $workflowStatus['status'];
 
         DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
 
         // return $document;
-        
 
         $document->load(
             $this->documents_relation[$document->document_type->slug],
@@ -1974,9 +1931,8 @@ $formattedDocuments = $this->getFilteredDocuments($request)->map(fn($doc) => $th
             "secondary_attachments"
         );
 
-
-           // ######## DYNAMIQUE : enrichir beneficiary ########
-        $document =  $this->enrichDocument($document , $request->bearerToken());
+        // ######## DYNAMIQUE : enrichir beneficiary ########
+        $document = $this->enrichDocument($document, $request->bearerToken());
 
         return $document;
     }

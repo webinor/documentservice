@@ -100,6 +100,18 @@ public function allowances()
     return $this->hasMany(MissionAllowance::class);
 }
 
+public function advances()
+{
+    return $this->hasMany(MissionAdvance::class);
+}
+
+public function regulations()
+{
+    return $this->hasMany(MissionRegulation::class);
+}
+
+
+
         public function getStartDatAttribute($value)
 {
     if (!$value ) {

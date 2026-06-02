@@ -15,11 +15,13 @@ class AttachmentTypeCategoryController extends Controller
      */
     public function index()
     {
-        $attachmentTypeCategories = AttachmentTypeCategory::orderBy('name')->get();
+        $attachmentTypeCategories = AttachmentTypeCategory::orderBy(
+            "name"
+        )->get();
 
-          return response()->json([
-            'success' => true,
-            'data' => $attachmentTypeCategories
+        return response()->json([
+            "success" => true,
+            "data" => $attachmentTypeCategories,
         ]);
     }
 
@@ -73,8 +75,10 @@ class AttachmentTypeCategoryController extends Controller
      * @param  \App\Models\AttachmentTypeCategory  $attachmentTypeCategory
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateAttachmentTypeCategoryRequest $request, AttachmentTypeCategory $attachmentTypeCategory)
-    {
+    public function update(
+        UpdateAttachmentTypeCategoryRequest $request,
+        AttachmentTypeCategory $attachmentTypeCategory
+    ) {
         //
     }
 

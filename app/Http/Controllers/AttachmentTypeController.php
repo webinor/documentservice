@@ -16,31 +16,29 @@ class AttachmentTypeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-     /**
+    /**
      * Récupère tous les types de pièces jointes
      */
-    public function index(Request $request , $category)
+    public function index(Request $request, $category)
     {
-        $attachmentTypes = AttachmentType::whereHas("attachmentTypeCategory",function($query) use ($category){
-
-
-            if (is_numeric($category)) {
-                $query->whereId($category);
-            } else {
-                $query->whereSlug($category);
+        $attachmentTypes = AttachmentType::whereHas(
+            "attachmentTypeCategory",
+            function ($query) use ($category) {
+                if (is_numeric($category)) {
+                    $query->whereId($category);
+                } else {
+                    $query->whereSlug($category);
+                }
             }
-            
-           
-
-        })->orderBy('name')->get();
+        )
+            ->orderBy("name")
+            ->get();
 
         return response()->json([
-            'success' => true,
-            'data' => $attachmentTypes
+            "success" => true,
+            "data" => $attachmentTypes,
         ]);
     }
-
-    
 
     /**
      * Retourne les types d’attachment avec leur catégorie
@@ -60,79 +58,82 @@ class AttachmentTypeController extends Controller
     {
         try {
             // $ids = $request->query('ids', []);
-            $ids_string = $request->query('ids'); // string "11,12,13"
-            $ids = explode(',', $ids_string);
+            $ids_string = $request->query("ids"); // string "11,12,13"
+            $ids = explode(",", $ids_string);
 
             if (!is_array($ids) || count($ids) === 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Paramètre ids manquant ou invalide'
-                ], 400);
+                return response()->json(
+                    [
+                        "success" => false,
+                        "message" => "Paramètre ids manquant ou invalide",
+                    ],
+                    400
+                );
             }
 
-            $attachmentTypes = AttachmentType::whereIn('id', $ids)
-                ->with(['attachmentTypeCategory'])
-                ->select('id', 'name', 'slug', 'attachment_type_category_id')
+            $attachmentTypes = AttachmentType::whereIn("id", $ids)
+                ->with(["attachmentTypeCategory"])
+                ->select("id", "name", "slug", "attachment_type_category_id")
                 ->get();
 
             return response()->json([
-                'success' => true,
-                'data' => $attachmentTypes
+                "success" => true,
+                "data" => $attachmentTypes,
             ]);
-
         } catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur serveur',
-                'error' => $th->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Erreur serveur",
+                    "error" => $th->getMessage(),
+                ],
+                500
+            );
         }
     }
 
-
-     /**
+    /**
      * Retourne les attachment_types requis non encore associés au document
      */
     public function missingForDocument(Request $request, $documentId)
     {
         // IDs envoyés depuis le WorkflowService
-        $requiredIds = $request->input('attachment_type_required', []);
+        $requiredIds = $request->input("attachment_type_required", []);
 
         if (empty($requiredIds)) {
             return response()->json([]);
         }
 
         // IDs des attachment_types déjà associés au document
-        $existingIds = Attachment::where('document_id', $documentId)
-            ->pluck('attachment_type_id')
+        $existingIds = Attachment::where("document_id", $documentId)
+            ->pluck("attachment_type_id")
             ->toArray();
 
         // IDs requis qui ne sont pas encore associés
         $missingIds = array_diff($requiredIds, $existingIds);
 
         // Récupérer les informations détaillées pour ces attachment_types
-       $missingAttachmentTypes = AttachmentType::whereIn('id', $missingIds)
-       ->with("attachmentTypeCategory")
-    ->get()
-    ->map(function ($type) {
-        return [
-            'id' => $type->id,
-            'name' => $type->name,
-            'slug' => $type->slug,
-            'slug' => $type->slug,
-            'attachment_number_required'=> $type->attachment_number_required,
-            'category_id'=> $type->attachmentTypeCategory->id,
-            'category_name'=> $type->attachmentTypeCategory->name,
-        ];
-    });
+        $missingAttachmentTypes = AttachmentType::whereIn("id", $missingIds)
+            ->with("attachmentTypeCategory")
+            ->get()
+            ->map(function ($type) {
+                return [
+                    "id" => $type->id,
+                    "name" => $type->name,
+                    "slug" => $type->slug,
+                    "slug" => $type->slug,
+                    "attachment_number_required" =>
+                        $type->attachment_number_required,
+                    "category_id" => $type->attachmentTypeCategory->id,
+                    "category_name" => $type->attachmentTypeCategory->name,
+                ];
+            });
         return response()->json($missingAttachmentTypes);
         /*  return response()->json([
             "success" => true,
             "data" => ["missingAttachmentTypes" => $missingAttachmentTypes],
         ]);*/
     }
-
-
 
     /**
      * Show the form for creating a new resource.
@@ -152,7 +153,6 @@ class AttachmentTypeController extends Controller
      */
     public function store(StoreAttachmentTypeRequest $request)
     {
-        
     }
 
     /**
@@ -163,13 +163,16 @@ class AttachmentTypeController extends Controller
      */
     public function show(AttachmentType $attachmentType)
     {
-       // return $attachmentType;
-       // $attachmentType = AttachmentType::find($id);
+        // return $attachmentType;
+        // $attachmentType = AttachmentType::find($id);
 
         if (!$attachmentType) {
-            return response()->json([
-                'message' => 'Attachment type not found'
-            ], 404);
+            return response()->json(
+                [
+                    "message" => "Attachment type not found",
+                ],
+                404
+            );
         }
 
         return response()->json($attachmentType);
@@ -193,8 +196,10 @@ class AttachmentTypeController extends Controller
      * @param  \App\Models\Misc\AttachmentType  $attachmentType
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateAttachmentTypeRequest $request, AttachmentType $attachmentType)
-    {
+    public function update(
+        UpdateAttachmentTypeRequest $request,
+        AttachmentType $attachmentType
+    ) {
         //
     }
 

@@ -2,7 +2,6 @@
 
 namespace App\Services\Mission;
 
-
 use App\Models\Misc\Document;
 use Illuminate\Support\Facades\Http;
 use Exception;
@@ -17,18 +16,13 @@ class MissionFinancialSummaryService
         /**
          * Document principal
          */
-        $document = Document::with('document_type')
-            ->findOrFail($documentId);
+        $document = Document::with("document_type")->findOrFail($documentId);
 
         /**
          * Vérification type mission
          */
-        if (
-            $document->document_type->slug !== 'mission'
-        ) {
-            throw new Exception(
-                'Document is not a mission.'
-            );
+        if ($document->document_type->slug !== "mission") {
+            throw new Exception("Document is not a mission.");
         }
 
         /**
@@ -36,24 +30,21 @@ class MissionFinancialSummaryService
          */
         $mission = $document->mission;
 
-        $expenses =
-    app(MissionExpenseService::class)
-        ->calculate($mission);
+        $expenses = app(MissionExpenseService::class)->calculate($mission);
 
         /**
          * ============================
          * 1️⃣ Budget prévu
          * ============================
          */
-        $totalPrevu =
-            (float) $expenses['total_prevu'];
+        $totalPrevu = (float) $expenses["total_prevu"];
 
         /**
          * ============================
          * 2️⃣ Dépenses réelles
          * ============================
          */
-        $totalReel =$expenses['total_reel'];
+        $totalReel = $expenses["total_reel"];
 
         /**
          * ============================
@@ -61,10 +52,9 @@ class MissionFinancialSummaryService
          * ============================
          */
 
-        $allowances =
-    app(MissionAllowanceService::class)->calculate($mission);
+        $allowances = app(MissionAllowanceService::class)->calculate($mission);
 
-$totalAllowances = $allowances['total_final'];
+        $totalAllowances = $allowances["total_final"];
         // $totalAllowances =0;//  $this->fetchAllowances($documentId);
 
         /**
@@ -72,7 +62,11 @@ $totalAllowances = $allowances['total_final'];
          * 4️⃣ Avances déjà reçues
          * ============================
          */
-        $totalAdvance = $totalPrevu;//  $this->fetchAdvances($documentId);
+        $totalAdvance =app(MissionAdvanceService::class)->calculate($mission)['total'];//  $totalPrevu; //  $this->fetchAdvances($documentId);
+
+
+        $regulation = app(MissionRegulationService::class)->calculate($mission);
+        $totalRegulation = $regulation['total'];
 
         /**
          * ============================
@@ -85,37 +79,33 @@ $totalAllowances = $allowances['total_final'];
          * négatif :
          * agent doit rembourser société
          */
-        $finalBalance =
-            ($totalReel + $totalAllowances)
-            - $totalAdvance;
+        $finalBalance = $totalReel + $totalAllowances - $totalAdvance   + $regulation['net_impact']; ;
 
-//         $totalOut =
-//     $totalReel
-//     + max(0, $totalAllowances);
+        //         $totalOut =
+        //     $totalReel
+        //     + max(0, $totalAllowances);
 
-// $totalIn =
-//     $totalAdvance
-//     + max(0, -$totalAllowances);
+        // $totalIn =
+        //     $totalAdvance
+        //     + max(0, -$totalAllowances);
 
-// $finalBalance = $totalOut - $totalIn;
+        // $finalBalance = $totalOut - $totalIn;
 
         /**
          * ============================
          * 6️⃣ Statut métier
          * ============================
          */
-        $settlementStatus =
-            $this->resolveSettlementStatus(
-                $finalBalance
-            );
+        $settlementStatus = $this->resolveSettlementStatus($finalBalance);
 
         return [
-            'total_prevu' => $totalPrevu,
-            'total_reel' => $totalReel,
-            'total_allowances' => $totalAllowances,
-            'total_advance' => $totalAdvance,
-            'final_balance' => $finalBalance,
-            'settlement_status' => $settlementStatus,
+            "total_prevu" => $totalPrevu,
+            "total_reel" => $totalReel,
+            "total_allowances" => $totalAllowances,
+            "total_advance" => $totalAdvance,
+            "total_regulation" => $totalRegulation,
+            "final_balance" => $finalBalance,
+            "settlement_status" => $settlementStatus,
         ];
     }
 
@@ -124,24 +114,19 @@ $totalAllowances = $allowances['total_final'];
      * Dépenses réelles
      * ===================================
      */
-    protected function fetchRealExpenses(
-        int $documentId
-    ): float {
-
+    protected function fetchRealExpenses(int $documentId): float
+    {
         $url =
-            config('services.finance_service.base_url')
-            . "/missions/{$documentId}/real-expenses";
+            config("services.finance_service.base_url") .
+            "/missions/{$documentId}/real-expenses";
 
-        $response = Http::withHeaders(
-            $this->gatewayHeaders()
-        )->get($url);
+        $response = Http::withHeaders($this->gatewayHeaders())->get($url);
 
         if (!$response->successful()) {
             return 0;
         }
 
-        return (float)
-            ($response->json()['amount'] ?? 0);
+        return (float) ($response->json()["amount"] ?? 0);
     }
 
     /**
@@ -149,24 +134,19 @@ $totalAllowances = $allowances['total_final'];
      * Indemnités
      * ===================================
      */
-    protected function fetchAllowances(
-        int $documentId
-    ): float {
-
+    protected function fetchAllowances(int $documentId): float
+    {
         $url =
-            config('services.finance_service.base_url')
-            . "/missions/{$documentId}/allowances";
+            config("services.finance_service.base_url") .
+            "/missions/{$documentId}/allowances";
 
-        $response = Http::withHeaders(
-            $this->gatewayHeaders()
-        )->get($url);
+        $response = Http::withHeaders($this->gatewayHeaders())->get($url);
 
         if (!$response->successful()) {
             return 0;
         }
 
-        return (float)
-            ($response->json()['amount'] ?? 0);
+        return (float) ($response->json()["amount"] ?? 0);
     }
 
     /**
@@ -174,24 +154,19 @@ $totalAllowances = $allowances['total_final'];
      * Avances
      * ===================================
      */
-    protected function fetchAdvances(
-        int $documentId
-    ): float {
-
+    protected function fetchAdvances(int $documentId): float
+    {
         $url =
-            config('services.finance_service.base_url')
-            . "/missions/{$documentId}/advances";
+            config("services.finance_service.base_url") .
+            "/missions/{$documentId}/advances";
 
-        $response = Http::withHeaders(
-            $this->gatewayHeaders()
-        )->get($url);
+        $response = Http::withHeaders($this->gatewayHeaders())->get($url);
 
         if (!$response->successful()) {
             return 0;
         }
 
-        return (float)
-            ($response->json()['amount'] ?? 0);
+        return (float) ($response->json()["amount"] ?? 0);
     }
 
     /**
@@ -199,19 +174,17 @@ $totalAllowances = $allowances['total_final'];
      * Résolution du statut
      * ===================================
      */
-    protected function resolveSettlementStatus(
-        float $balance
-    ): string {
-
+    protected function resolveSettlementStatus(float $balance): string
+    {
         if ($balance == 0) {
-            return 'REGULARIZED';
+            return "REGULARIZED";
         }
 
         if ($balance > 0) {
-            return 'COMPANY_OWES_AGENT';
+            return "COMPANY_OWES_AGENT";
         }
 
-        return 'AGENT_OWES_COMPANY';
+        return "AGENT_OWES_COMPANY";
     }
 
     /**
@@ -222,10 +195,9 @@ $totalAllowances = $allowances['total_final'];
     protected function gatewayHeaders(): array
     {
         return [
-            'Authorization' =>
-                'Bearer ' . request()->bearerToken(),
+            "Authorization" => "Bearer " . request()->bearerToken(),
 
-            'Accept' => 'application/json',
+            "Accept" => "application/json",
         ];
     }
 }

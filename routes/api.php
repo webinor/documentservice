@@ -1,11 +1,6 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
-// Controllers
 use App\Http\Controllers\AttachmentController;
-
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DocumentController;
@@ -18,11 +13,11 @@ use App\Http\Controllers\MissionAllowanceController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
+use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\TestThumbnailController;
-
-// Models
 use App\Models\Misc\Document;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,8 +25,7 @@ use App\Models\Misc\Document;
 |--------------------------------------------------------------------------
 */
 
-
-Route::get('/documents/by-status', [DocumentController::class, 'getByStatus']);
+Route::get("/documents/by-status", [DocumentController::class, "getByStatus"]);
 
 Route::middleware("jwt.check")
     ->prefix("documents")
@@ -59,8 +53,10 @@ Route::middleware("jwt.check")
             );
         });
 
-
-         Route::post('/mission-expenses/calculate',[MissionExpenseController::class, 'calculate']);
+        Route::post("/mission-expenses/calculate", [
+            MissionExpenseController::class,
+            "calculate",
+        ]);
 
         /**
          * 📌 FolderController
@@ -90,71 +86,95 @@ Route::middleware("jwt.check")
             Route::get("/{id}/details", "getDetails")->name(
                 "documents.details"
             );
-            Route::post('/notify-beneficiary', [DocumentController::class, 'notifyBeneficiary']);
+            Route::post("/notify-beneficiary", [
+                DocumentController::class,
+                "notifyBeneficiary",
+            ]);
 
-            Route::post("/export-invoices","exportInvoices");
-            
+            Route::post("/export-invoices", "exportInvoices");
         });
-        
+
         Route::controller(DocumentPaymentController::class)->group(function () {
             Route::get("/{document}/payment-status", "paymentStatus");
-            Route::post('/{document}/register-payment', 'registerPayment');
-            
+            Route::post("/{document}/register-payment", "registerPayment");
         });
 
+        Route::get("/expense-categories", [
+            ExpenseCategoryController::class,
+            "index",
+        ]);
 
-        Route::get('/expense-categories', [ExpenseCategoryController::class, 'index']);
+        Route::post("/{document}/mission-expenses", [
+            MissionExpenseController::class,
+            "store",
+        ]);
 
-        Route::post('/{document}/mission-expenses', [MissionExpenseController::class, 'store']);
+        Route::get("{document}/mission-expenses", [
+            MissionExpenseController::class,
+            "getMissionExpenses",
+        ]);
 
-        Route::get(
-    '{document}/mission-expenses',
-    [MissionExpenseController::class, 'getMissionExpenses']
-);
+        Route::patch("/{document}/mission", [
+            MissionController::class,
+            "update",
+        ]);
 
-
-Route::patch(
-    '/{document}/mission',
-    [MissionController::class, 'update']
-);
-
-  Route::get(
-        '/{document}/financial-summary',
-        [MissionFinancialSummaryController::class, 'show']
-    );
-
-        Route::delete('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'destroy']);
-
-        
-
-        Route::put('/{document}/mission-expenses/{missionExpense}',[MissionExpenseController::class, 'update']);
-
-        Route::prefix('missions')->group(function () {
-
-        Route::post('/generate', [MissionDocumentController::class, 'generate']);
+        Route::get("/{document}/financial-summary", [
+            MissionFinancialSummaryController::class,
+            "show",
+        ]);
 
         Route::get(
-            '/{mission}/generate-mission-letter',
-            [MissionDocumentController::class, 'generateMissionLetter']
-        );
-
-    Route::get(
-        '/{mission}/generate-mission-order',
-        [MissionDocumentController::class, 'generateMissionOrder']
-    );
-
-    Route::get(
-        '/{mission}/generate-regularization-sheet',
-        [MissionDocumentController::class, 'generateRegularizationSheet']
-    );
-
-});
-
-
-            Route::get('/{document}/mission-allowances',[MissionAllowanceController::class, 'index']
+    '/{document}/financial-report',
+    [MissionFinancialReportController::class, 'show']
 );
 
-Route::get('mission-expenses/categories-limits', [MissionExpenseController::class, 'categoriesLimits']);
+Route::get(
+    '/{document}/financial-report/export',
+    [MissionFinancialReportController::class, 'export']
+);
+
+        Route::delete("/{document}/mission-expenses/{missionExpense}", [
+            MissionExpenseController::class,
+            "destroy",
+        ]);
+
+        Route::put("/{document}/mission-expenses/{missionExpense}", [
+            MissionExpenseController::class,
+            "update",
+        ]);
+
+        Route::prefix("missions")->group(function () {
+            Route::post("/generate", [
+                MissionDocumentController::class,
+                "generate",
+            ]);
+
+            Route::get("/{mission}/generate-mission-letter", [
+                MissionDocumentController::class,
+                "generateMissionLetter",
+            ]);
+
+            Route::get("/{mission}/generate-mission-order", [
+                MissionDocumentController::class,
+                "generateMissionOrder",
+            ]);
+
+            Route::get("/{mission}/generate-regularization-sheet", [
+                MissionDocumentController::class,
+                "generateRegularizationSheet",
+            ]);
+        });
+
+        Route::get("/{document}/mission-allowances", [
+            MissionAllowanceController::class,
+            "index",
+        ]);
+
+        Route::get("mission-expenses/categories-limits", [
+            MissionExpenseController::class,
+            "categoriesLimits",
+        ]);
 
         /**
          * 📌 AttachmentTypeController

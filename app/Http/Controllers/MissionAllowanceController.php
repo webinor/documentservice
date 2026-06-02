@@ -16,10 +16,11 @@ use Illuminate\Support\Facades\Log;
 
 class MissionAllowanceController extends Controller
 {
-
     protected MissionAllowanceCalculator $mission_allowance_calculator;
 
-    public function __construct(MissionAllowanceCalculator $mission_allowance_calculator) {
+    public function __construct(
+        MissionAllowanceCalculator $mission_allowance_calculator
+    ) {
         $this->mission_allowance_calculator = $mission_allowance_calculator;
     }
 
@@ -28,159 +29,156 @@ class MissionAllowanceController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request , Document $document , MissionAllowanceService $service)
-    {
-           
-        $document->load('mission');
+    public function index(
+        Request $request,
+        Document $document,
+        MissionAllowanceService $service
+    ) {
+        $document->load("mission");
 
-    $mission = $document->mission;
+        $mission = $document->mission;
 
-    if (!$mission) {
-
-       Log::warning('Mission introuvable', [
-                'document' => $document,
+        if (!$mission) {
+            Log::warning("Mission introuvable", [
+                "document" => $document,
             ]);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Mission not found',
-        ], 404);
-    }
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Mission not found",
+                ],
+                404
+            );
+        }
 
-    return response()->json(array_merge([
-        'success' => true],
-        $service->calculate($mission)
-    ));
+        return response()->json(
+            array_merge(
+                [
+                    "success" => true,
+                ],
+                $service->calculate($mission)
+            )
+        );
 
+        $document->load(["mission"]);
 
-        $document->load(['mission']);
+        $missionId = $document->mission->id;
 
-
-        $missionId =  $document -> mission->id;
-
-        Log::info('Consultation des indemnités mission', [
-            'mission_id' => $missionId,
-            'viewer_id' => auth()->id(),
-            'ip' => request()->ip(),
+        Log::info("Consultation des indemnités mission", [
+            "mission_id" => $missionId,
+            "viewer_id" => auth()->id(),
+            "ip" => request()->ip(),
         ]);
 
         $mission = Mission::find($missionId);
 
         if (!$mission) {
-
-            Log::warning('Mission introuvable', [
-                'mission_id' => $missionId,
+            Log::warning("Mission introuvable", [
+                "mission_id" => $missionId,
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Mission not found',
-            ], 404);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Mission not found",
+                ],
+                404
+            );
         }
 
-        $allowances = $mission->allowances()
-            ->with('allowanceType')
-            ->orderBy('id', 'desc')
+        $allowances = $mission
+            ->allowances()
+            ->with("allowanceType")
+            ->orderBy("id", "desc")
             ->get();
 
-        $total = $allowances->sum('total');
+        $total = $allowances->sum("total");
 
-        Log::info('Indemnités récupérées', [
-            'mission_id' => $missionId,
-            'count' => $allowances->count(),
-            'total' => $total,
+        Log::info("Indemnités récupérées", [
+            "mission_id" => $missionId,
+            "count" => $allowances->count(),
+            "total" => $total,
         ]);
 
         return response()->json([
+            "success" => true,
 
-            'success' => true,
+            "mission_id" => $mission->id,
 
-            'mission_id' => $mission->id,
+            "total_allowances" => $total,
 
-            'total_allowances' => $total,
-
-            'allowances' => $allowances->map(function ($item) {
-
+            "allowances" => $allowances->map(function ($item) {
                 return [
+                    "id" => $item->id,
 
-                    'id' => $item->id,
+                    "allowance_type_id" => $item->allowance_type_id,
 
-                    'allowance_type_id' => $item->allowance_type_id,
+                    "name" => optional($item->allowanceType)->name,
 
-                    'name' => optional($item->allowanceType)->name,
+                    "code" => optional($item->allowanceType)->code,
 
-                    'code' => optional($item->allowanceType)->code,
+                    "quantity" => $item->quantity,
 
-                    'quantity' => $item->quantity,
+                    "unit_amount" => (float) $item->unit_amount,
 
-                    'unit_amount' => (float) $item->unit_amount,
+                    "total" => (float) $item->total,
 
-                    'total' => (float) $item->total,
+                    "currency" => $item->currency,
 
-                    'currency' => $item->currency,
+                    "status" => $item->status,
 
-                    'status' => $item->status,
+                    "calculation_stage" => $item->calculation_stage,
 
-                    'calculation_stage' => $item->calculation_stage,
+                    "approved_at" => $item->approved_at,
 
-                    'approved_at' => $item->approved_at,
+                    "paid_at" => $item->paid_at,
 
-                    'paid_at' => $item->paid_at,
-
-                    'created_at' => $item->created_at,
+                    "created_at" => $item->created_at,
                 ];
             }),
-
         ]);
-    
-       
-
     }
 
-
-    public function calculate(Request $request , Document $document)
+    public function calculate(Request $request, Document $document)
     {
-
-     $token = $request->bearerToken() ;
+        $token = $request->bearerToken();
         $userServiceUrl = config("services.user_service.base_url");
 
-        
-        $document->load(['mission']);
+        $document->load(["mission"]);
 
-        $userData=[];
+        $userData = [];
 
-        $mission =  $document -> mission;
+        $mission = $document->mission;
 
         $userResponse = Http::withToken($token)
-        ->acceptJson()
-        ->timeout(5)
-        ->get("$userServiceUrl/employees/{$mission -> actor_id}");
+            ->acceptJson()
+            ->timeout(5)
+            ->get("$userServiceUrl/employees/{$mission->actor_id}");
 
         if ($userResponse->ok()) {
+            $userData = $userResponse["employee"];
 
-        $userData = $userResponse["employee"];
+            // Attachement sans persistance DB
+        } else {
+            // log silencieux (important en prod)
+            Log::warning("User service failed", [
+                "status" => $userResponse->status(),
+                "body" => $userResponse->body(),
+            ]);
+        }
 
-        // Attachement sans persistance DB
-    
+        $policies = MissionPolicy::where("is_active", true)->get();
 
-        
-    } else {
-        // log silencieux (important en prod)
-        Log::warning("User service failed", [
-            'status' => $userResponse->status(),
-            'body' => $userResponse->body(),
-        ]);
-    }
-
-        $policies = MissionPolicy::where('is_active', true)->get();
-
-        $allowances = $this -> mission_allowance_calculator -> calculate( $mission , $userData );
+        $allowances = $this->mission_allowance_calculator->calculate(
+            $mission,
+            $userData
+        );
 
         return response()->json([
-            'success' => true,
-            'allowances' => $allowances
+            "success" => true,
+            "allowances" => $allowances,
         ]);
-
     }
 
     /**
@@ -233,8 +231,10 @@ class MissionAllowanceController extends Controller
      * @param  \App\Models\MissionAllowance  $missionAllowance
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateMissionAllowanceRequest $request, MissionAllowance $missionAllowance)
-    {
+    public function update(
+        UpdateMissionAllowanceRequest $request,
+        MissionAllowance $missionAllowance
+    ) {
         //
     }
 

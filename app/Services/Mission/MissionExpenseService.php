@@ -189,6 +189,32 @@ class MissionExpenseService
             return $expense;
         });
 
+
+        $expensesByCategory = $expenses
+    ->groupBy('expense_category_id')
+    ->map(function ($items) {
+
+        return [
+            'category_id' => $items->first()->expense_category_id,
+
+            'category_name' =>
+                $items->first()
+                    ->expense_category
+                    ?$items->first()
+                    ->expense_category->name:"N/D",
+
+            'planned_total' =>
+                $items->sum('planned_total'),
+
+            'actual_total' =>
+                $items->sum('final_total'),
+
+            'variance' =>
+                $items->sum('final_total') - $items->sum('planned_total'),
+        ];
+    })
+    ->values();
+
         /**
          * ===============================
          * Totaux globaux
@@ -200,11 +226,20 @@ class MissionExpenseService
         $totalReel =
             $expenses->sum('final_total');
 
+            $variance = $totalReel - $totalPrevu;
+
+        $variancePercentage = $totalPrevu > 0
+            ? ($variance / $totalPrevu) * 100
+            : 0;
+
         return [
             'mission_id' => $mission->id,
             'expenses' => $expenses,
             'total_prevu' => $totalPrevu,
             'total_reel' => $totalReel,
+            'variance' => $variance,
+            'variance_percentage' => round($variancePercentage, 2),
+            'expenses_by_category' => $expensesByCategory,
         ];
     }
 
