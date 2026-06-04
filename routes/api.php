@@ -15,6 +15,7 @@ use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
+use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TestThumbnailController;
 use App\Models\Misc\Document;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get("/documents/by-status", [DocumentController::class, "getByStatus"]);
+Route::post('documents/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
+
 
 Route::middleware("jwt.check")
     ->prefix("documents")
@@ -92,7 +95,11 @@ Route::middleware("jwt.check")
             ]);
 
             Route::post("/export-invoices", "exportInvoices");
+
+            
         });
+
+        // Route::post('/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
 
         Route::controller(DocumentPaymentController::class)->group(function () {
             Route::get("/{document}/payment-status", "paymentStatus");

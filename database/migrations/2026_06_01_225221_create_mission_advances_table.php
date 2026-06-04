@@ -19,12 +19,14 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->unsignedInteger('transaction_id')
+              $table->string('transaction_code')
     ->nullable();
 
             $table->decimal('amount', 15, 2);
 
-            $table->date('payment_date');
+
+            $table->dateTime('paid_at')->nullable();
+
 
             $table->string('reference')->nullable();
 

@@ -14,6 +14,11 @@ interface PayableDocumentInterface
 
     public function getSettlementDetails(): array;
 
+    public function createSettlementRecord(
+        string $transactionTypeCode,
+        string $transactionCode
+    ): void;
+
 
 
 }

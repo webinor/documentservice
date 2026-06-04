@@ -191,6 +191,7 @@ class Document extends Model
         return $this->hasMany(Attachment::class);
     }
 
+   
     /**
      * Get the secondary_attachments associated with the Document
      *

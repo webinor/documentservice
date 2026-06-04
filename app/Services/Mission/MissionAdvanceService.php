@@ -3,13 +3,14 @@
 namespace App\Services\Mission;
 
 use App\Models\Mission;
+use App\Models\MissionAdvance;
 
 class MissionAdvanceService
 {
     public function calculate(Mission $mission): array
     {
         $advances = $mission->advances()
-            ->orderBy('payment_date', 'desc')
+            ->orderBy('paid_at', 'desc')
             ->get();
 
         /**
@@ -20,7 +21,7 @@ class MissionAdvanceService
             return [
                 'id' => $item->id,
                 'amount' => (float) $item->amount,
-                'payment_date' => $item->payment_date,
+                'paid_at' => $item->paid_at,
                 'reference' => $item->reference,
                 'comment' => $item->comment,
                 'status' => $item->status,
@@ -76,4 +77,15 @@ class MissionAdvanceService
             ],
         ];
     }
+
+    public function markAsPaid(array $payload)
+{
+    $advance = MissionAdvance::where('transaction_code', $payload['transaction_code'])->firstOrFail();
+
+    $advance->update([
+        'status' => 'paid',
+        'paid_at' => now(),
+    ]);
+}
+
 }

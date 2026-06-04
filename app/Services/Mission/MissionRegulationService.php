@@ -3,6 +3,7 @@
 namespace App\Services\Mission;
 
 use App\Models\Mission;
+use App\Models\MissionRegulation;
 
 class MissionRegulationService
 {
@@ -145,4 +146,14 @@ class MissionRegulationService
             ],
         ];
     }
+
+    public function markAsPaid(array $payload)
+{
+    $regulation = MissionRegulation::where('transaction_code', $payload['transaction_code'])->firstOrFail();
+
+    $regulation->update([
+        'status' => 'paid',
+        'paid_at' => now(),
+    ]);
+}
 }

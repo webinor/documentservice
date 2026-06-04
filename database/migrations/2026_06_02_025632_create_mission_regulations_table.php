@@ -16,7 +16,7 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-             $table->unsignedInteger('transaction_id')
+             $table->string('transaction_code')
     ->nullable();
 
             /**
@@ -28,6 +28,9 @@ return new class extends Migration
                 'refund',
                 'supplement'
             ]);
+
+            $table->dateTime('paid_at')->nullable();
+
 
             /**
              * montant de la régularisation

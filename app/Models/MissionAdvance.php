@@ -12,8 +12,8 @@ class MissionAdvance extends Model
      protected $fillable = [
         'mission_id',
         'amount',
-        'payment_date',
-        'reference',
+        'paid_at',
+        'transaction_code',
         'comment',
         'status',
         'created_by',
@@ -23,7 +23,7 @@ class MissionAdvance extends Model
     ];
 
     protected $casts = [
-        'payment_date' => 'date',
+        'paid_at' => 'date',
         'validated_at' => 'datetime',
         'amount' => 'decimal:2'
     ];
