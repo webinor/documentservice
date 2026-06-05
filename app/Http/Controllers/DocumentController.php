@@ -45,7 +45,10 @@ class DocumentController extends Controller
         "papier-taxi" => "taxi_paper",
         "note-de-frais" => "fee_note",
         "demande-d-absence" => "absence_request",
-        "mission" => "mission.mission_expenses",
+        "mission" => "mission.mission_expenses.expense_category",
+        "demande-achat" => "purchase_request.purchase_request_items",
+
+        "purchase-settlement" => "purchase_settlement.purchase_settlement_items",
     ];
 
     public function __construct(
@@ -890,7 +893,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     ],
                     201
                 );
-            } else {
+            } 
+            else {
                 //lié a un workflow
                 // 🔹 Appel au microservice workflow
                 $workflowServiceUrl = config(
@@ -1008,8 +1012,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                     DB::commit();
 
-                    //   return ["ok"];
-                    // return
+                    
                     $instanceResponse = Http::withToken($request->bearerToken())
                         ->acceptJson()
                         ->post(
@@ -1024,11 +1027,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             [
                                 "message" =>
                                     "Échec de l’initialisation du workflow. Document supprimé.",
-                                "backend-message" => $instanceResponse->json(),
+                                "backend-message" => $instanceResponse->body(),
                             ],
                             500
                         );
                     }
+
+                    
 
                     // return
                     $workflowInstance = $instanceResponse->json();
@@ -1036,8 +1041,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     return response()->json(
                         [
                             "success" => true,
-                            "message" =>
-                                "Document créé avec succès et workflow démarré",
+                            "message" =>"Document créé avec succès et workflow démarré",
                             "document" => $document,
                             "workflow_instance" => $workflowInstance,
                         ],
@@ -1527,289 +1531,25 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         return response()->json($formattedDocuments);
 
-        $DOC_CONFIG = config("document_types");
-
-        $ids = $request->input("ids", []);
-        $userId = $request->input("userId", null);
-        $documentTypes = $request->input("documentTypes", []);
-        $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
-
-        $query = Document::query();
-
-        // Filtre par IDs
-        if (!empty($ids)) {
-            $query->whereIn("id", $ids);
-        }
-
-        // Filtre par IDs
-        // if (!empty($userId)) {
-        //     $query->whereCreatedBy($userId);
-        // }
-        if (!empty($userId)) {
-            $query->where(function ($q) use ($userId, $documentTypes) {
-                // created_by (champ direct)
-                $q->where("created_by", $userId);
-
-                // requester (relation dynamique)
-                $q->orWhereHas($documentTypes[0] /*->slug */, function (
-                    $qr
-                ) use ($userId) {
-                    $qr->where("beneficiary", $userId);
-                });
-            });
-        }
-
-        // Filtre par relations / types de document
-        if (!empty($documentTypes)) {
-            $query->where(function ($q) use ($documentTypes) {
-                foreach ($documentTypes as $relation) {
-                    $q->whereHas($relation);
-                }
-            });
-        }
-
-        // // Filtre par statut
-        // if (!empty($filters["status"])) {
-        //     $statuses = is_array($filters["status"])
-        //         ? $filters["status"]
-        //         : explode(",", $filters["status"]);
-        //     $query->whereIn("status", $statuses);
-        // }
-
-        // Filtre par type de prestataire
-        if (!empty($filters["supplier_type"])) {
-            //$statuses = is_array($filters['status']) ? $filters['status'] : explode(',', $filters['status']);
-            $query->whereHas("invoice_provider." . $filters["supplier_type"]);
-        }
-
-        //   supplier_type
-
-        // Filtre par fournisseur (via InvoiceProvider)
-        if (!empty($filters["document_type_id"])) {
-            $document_type_id = $filters["document_type_id"];
-            $query->whereHas("document_type", function ($q) use (
-                $document_type_id
-            ) {
-                $q->whereId($document_type_id); // ou le champ correct dans DocumentType
-            });
-        }
-
-        // Filtre par montant dans InvoiceProvider
-        if (!empty($filters["amount"])) {
-            $query->whereHas("invoice_provider", function ($q) use ($filters) {
-                switch ($filters["amount"]) {
-                    case "lt_100k":
-                        $q->where("amount", "<", 100000);
-                        break;
-                    case "100k_500k":
-                        $q->whereBetween("amount", [100000, 500000]);
-                        break;
-                    case "gt_500k":
-                        $q->where("amount", ">", 500000);
-                        break;
-                }
-            });
-        }
-
-        // Filtre par fournisseur (via InvoiceProvider)
-        if (!empty($filters["fournisseur_id"])) {
-            $fournisseurId = $filters["fournisseur_id"];
-            $query->whereHas("invoice_provider", function ($q) use (
-                $fournisseurId
-            ) {
-                $q->where("id", $fournisseurId); // ou le champ correct dans InvoiceProvider
-            });
-        }
-
-        if (!empty($filters["date_start"])) {
-            $filters["date_start"] = Carbon::parse(
-                $filters["date_start"]
-            )->format("Y-m-d");
-        }
-        if (!empty($filters["date_end"])) {
-            $filters["date_end"] = Carbon::parse($filters["date_end"])->format(
-                "Y-m-d"
-            );
-        }
-
-        // Filtre par date
-        if (!empty($filters["date_start"]) && !empty($filters["date_end"])) {
-            $query->whereBetween("created_at", [
-                $filters["date_start"],
-                $filters["date_end"],
-            ]);
-        } elseif (!empty($filters["date_start"])) {
-            //  return ["ok"];
-            $query->whereDate("created_at", ">=", $filters["date_start"]);
-        } elseif (!empty($filters["date_end"])) {
-            $query->whereDate("created_at", "<=", $filters["date_end"]);
-        }
-
-        // Charger les relations
-        $query->with(array_merge(["document_type"], $documentTypes));
-
-        // return $documents = $query->get();
-
-        $documents = $query
-            ->get()
-            ->map(function ($doc) use ($documentTypes, $DOC_CONFIG) {
-                // Détecter quel type de document est réellement présent
-                $activeRelation = null;
-                foreach ($documentTypes as $relation) {
-                    if ($doc->relationLoaded($relation) && $doc->$relation) {
-                        $activeRelation = $relation;
-                        break;
-                    }
-                }
-
-                // Base commune à tous les documents
-                $base = [
-                    "id" => $doc->id,
-                    "title" => $doc->title,
-                    "document_type_name" => $doc->document_type->name,
-                    "document_type_id" => $doc->document_type_id,
-                    "type" => $doc->document_type->name,
-                    "status" => $doc->status,
-                    "created_at" => $doc->created_at,
-                    "created_by" => $doc->created_by,
-                ];
-
-                // Si aucun type trouvé → retourner juste la base
-                if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
-                    return $base;
-                }
-
-                $fields = $DOC_CONFIG[$activeRelation]["fields"];
-                $relationObj = $doc->$activeRelation;
-
-                // Injecter dynamiquement les champs configurés
-                foreach ($fields as $responseKey => $modelField) {
-                    //prestataire
-                    $value = $relationObj->$modelField ?? null;
-
-                    // Si la clé est susceptible de contenir un ID utilisateur
-                    $userKeys = ["demandeur", "validateur", "beneficiaire"]; // Liste des clés à enrichir
-                    $providerKeys = ["prestataire"]; // Liste des clés à enrichir
-                    if (in_array($responseKey, $userKeys) && $value) {
-                        // Appel au microservice User pour récupérer les infos
-                        $response = Http::acceptJson() //withToken(config('services.user_service.token'))
-                            ->get(
-                                config("services.user_service.base_url") .
-                                    "/{$value}"
-                            );
-
-                        //new Exception(json_encode($response));
-
-                        if ($response->successful()) {
-                            $value = $response->json()["user"]; // ou filtrer certaines infos, ex: ['id','name','email']
-                        } else {
-                            // new Exception(json_encode($response));
-                        }
-                    }
-
-                    if (in_array($responseKey, $providerKeys) && $value) {
-                        // Appel au microservice User pour récupérer les infos
-                        $response = Http::acceptJson() //withToken(config('services.user_service.token'))
-                            ->get(
-                                config("services.supplier_service.base_url") .
-                                    "/{$value}"
-                            );
-
-                        //new Exception(json_encode($response));
-
-                        if ($response->successful()) {
-                            $value = $response->json()["data"]; // ou filtrer certaines infos, ex: ['id','name','email']
-                        } else {
-                            // new Exception(json_encode($response));
-                        }
-                    }
-
-                    //new Exception(json_encode($value));
-
-                    $base[$responseKey] =
-                        $responseKey === "amount"
-                            ? number_format($value, 0, ",", ".")
-                            : $value;
-                }
-
-                return $base;
-
-                /*return [
-                "id" => $doc->id,
-                "title" => $doc->title,
-                "document_type_name" => $doc->document_type->name,
-                "document_type_id" => $doc->document_type_id,
-                "type" => $doc->document_type->name,
-                "status" => $doc->status,
-                "amount" => $doc->invoice_provider->amount,
-                "created_at" => $doc->created_at,
-                "created_by" => $doc->created_by,
-                "acteur_principal" => $doc->invoice_provider->provider ?? null, // ou autre champ clé
-            ];*/
-            });
-
-        return response()->json($documents);
     }
-
-    // public function enrichDocument($document , $token){
-
-    //     if (in_array($document->document_type->slug ,["papier-taxi" , "note-de-frais" , "demande-d-absence" ,"mission" ])) {
-
-    //             $slug = $document->document_type->slug;
-    // $relation = $this->documents_relation[$slug] ?? null;
-    //      // Charger la relation dynamique
-    // if ($relation) {
-    //     $document->load($relation);
-    // }
-
-    // // Récupérer l'entité
-    //   $entity = $relation ? $document->$relation : null;
-
-    //      // 🔹 Appel au microservice user
-    //             $userServiceUrl = config(
-    //                 "services.user_service.base_url"
-    //             ); // ex: http://user-service/api
-    //             $userResponse = Http::withToken($token)
-    //                 ->acceptJson()
-    //                 ->get(
-    //                     "$userServiceUrl/".($entity->beneficiary > 0 ? $entity->beneficiary : 1)
-    //                 );
-
-    //             //dd($userResponse);
-
-    //             $userData = null;
-    //             if ($userResponse->ok()) {
-    //                 $userData = $userResponse->json("user"); // récupère l'id du user
-
-    //             // On attache les infos sans toucher à la DB
-    //             $entity->beneficiary_details = $userData;
-    //             $document->beneficiary = $userData['id'];
-
-    //             //$document->relation = $entity;
-    //             $document->setRelation($relation, $entity);
-
-    //             } else {
-    //                 $userResponse->json();
-    //             }
-
-    //         }
-
-    //         return $document;
-    // }
 
     public function enrichDocument($document, $token)
     {
         $slug = $document->document_type->slug ?? null;
 
         $beneficiarySlugs = [
-            "papier-taxi",
-            "note-de-frais",
-            "demande-d-absence",
+            "papier-taxi" => "",
+            "note-de-frais" => "",
+            "demande-d-absence" => "",
         ];
 
-        $actorSlugs = ["mission"];
+        $actorSlugs = ["mission" => "actor_id"
+        ,"demande-achat" => "requested_by"
+        ];
 
         $relation = $this->documents_relation[$slug] ?? null;
+
+
         $main_relation = null;
         $secondary_relation = null;
         // Charger la relation dynamique
@@ -1817,6 +1557,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $relations = explode(".", $relation);
             $main_relation = $relations[0];
             $secondary_relation = $relations[1] ?? null;
+            $third_relation = $relations[2] ?? null;
             $document->load($relation);
         }
 
@@ -1827,6 +1568,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             return $document;
         }
 
+
+
         $userServiceUrl = config("services.user_service.base_url");
 
         $userId = null;
@@ -1834,17 +1577,19 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // =========================
         // 👤 CAS BENEFICIARY
         // =========================
-        if (in_array($slug, $beneficiarySlugs)) {
+        if (array_key_exists($slug, $beneficiarySlugs)) {
             // $userId = $entity->beneficiary ?? null;
-            $userId = $entity->actor_id ?? null;
+            $userId = $entity->{$beneficiarySlugs[$slug]} ?? null;
         }
 
         // =========================
         // 🚀 CAS ACTOR (MISSION)
         // =========================
-        if (in_array($slug, $actorSlugs)) {
-            $userId = $entity->actor_id ?? null;
+        if (array_key_exists($slug, $actorSlugs)) {
+            $userId = $entity->{$actorSlugs[$slug]} ?? null;
         }
+
+
 
         // fallback sécurité
         $userId = $userId > 0 ? $userId : 1;
@@ -1860,6 +1605,10 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         if ($userResponse->ok()) {
             $userData = $userResponse->json("user");
 
+
+        
+
+
             // Attachement sans persistance DB
             $entityKey = in_array($slug, $actorSlugs)
                 ? "actor_details"
@@ -1868,9 +1617,16 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
             $entity->{$entityKey} = $userData;
 
-            if ($secondary_relation) {
-                $entity->load("mission_expenses.expense_category");
-            }
+            if ($secondary_relation && $third_relation) {
+
+    $entity->load(
+        "{$secondary_relation}.{$third_relation}"
+    );
+
+} elseif ($secondary_relation) {
+
+    $entity->load($secondary_relation);
+}
 
             // optionnel : normalisation ID
             if ($entityKey === "beneficiary_details") {
@@ -1924,6 +1680,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
 
         // return $document;
+
+        // throw new Exception(json_encode($this->documents_relation[$document->document_type->slug]), 1);
+        
 
         $document->load(
             $this->documents_relation[$document->document_type->slug],

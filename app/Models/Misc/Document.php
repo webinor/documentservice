@@ -10,6 +10,7 @@ use App\Models\Folder;
 use App\Models\ItSupplier;
 use App\Models\Mission;
 use App\Models\Payment;
+use App\Models\PurchaseRequest;
 use App\Models\TaxiPaper;
 use App\Services\DocumentStatusResolver;
 use App\Services\DocumentStatusUIMapper;
@@ -166,6 +167,16 @@ class Document extends Model
     public function fee_note(): HasOne
     {
         return $this->hasOne(FeeNote::class);
+    }
+
+    /**
+     * Get the purchase_request associated with the Document
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function purchase_request(): HasOne
+    {
+        return $this->hasOne(PurchaseRequest::class);
     }
 
     public function absence_request(): HasOne

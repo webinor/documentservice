@@ -24,145 +24,174 @@ class StoreDocumentRequest extends FormRequest
      */
     public function rules()
     {
-       
         $type = DocumentType::findOrFail($this->document_type_id);
 
         // 🔥 Mapping dynamique : chaque type a ses règles
         $baseRules = [
-    "titre" => "required|string",
-    "document_type_id" => "required|exists:document_types,id",
-    "departement" => "nullable",
+            "titre" => "required|string",
+            "document_type_id" => "required|exists:document_types,id",
+            "departement" => "nullable",
+        ];
 
-];
+        $invoiceFields = [
+            "prestataire" => "required|string",
+            "reference_fournisseur" => "required|string",
+            "dateDepot" => "required|date|before:now",
+            "montant" => "required|numeric",
+        ];
 
-$invoiceFields = [
-    "prestataire" => "required|string",
-    "reference_fournisseur" => "required|string",
-    "dateDepot" => "required|date|before:now",
-    "montant" => "required|numeric",
-];
+        $taxiFields = [
+            "motif" => "required|string",
+            "trajets" => "required|array|min:1",
+            "trajets.*.trajet" => "required|string",
+            "trajets.*.montant" => "required|numeric",
+            "beneficiaire" => "required|numeric",
+            //"montant" => "required|numeric",
+        ];
 
-$taxiFields = [
-    "motif" => "required|string",
-    "trajets" => "required|array|min:1",
-    "trajets.*.trajet" => "required|string",
-    "trajets.*.montant" => "required|numeric",
-    "beneficiaire" => "required|numeric",
-    //"montant" => "required|numeric",
+        $feeNoteFields = [
+            "motif" => "required|string",
+            "montant" => "required|numeric",
+            "beneficiaire" => "required|numeric",
+        ];
 
-];
+        $absenceRequestFields = [
+            "motif" => "required|string",
+            "beneficiaire" => "required|numeric",
 
-$feeNoteFields = [
-    "motif" => "required|string",
-    "montant" => "required|numeric",
-    "beneficiaire" => "required|numeric",
-];
+            "dateDepart" => "required|date",
+            "heureDepart" => [
+                "required",
+                "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/",
+            ],
 
-$absenceRequestFields = [
+            "dateRetour" => "required|date",
+            "heureRetour" => [
+                "required",
+                "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/",
+            ],
+        ];
 
-    "motif"        => "required|string",
-    "beneficiaire" => "required|numeric",
+        $missionFields = [
+            // Infos mission
+            "destination" => "required|string",
+            "title" => "nullable|string",
 
-    "dateDepart"   => "required|date",
-    "heureDepart"  => [
-        "required",
-        "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/"
-    ],
+            // Budget
+            "estimated_budget" => "nullable|numeric|min:0",
+            "advance_amount" => "nullable|numeric|min:0",
 
-    "dateRetour"   => "required|date",
-    "heureRetour"  => [
-        "required",
-        "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/"
-    ],
+            // Mission spéciale
+            "mission_special" => "required|in:1,0",
 
+            // Acteur (missionnaire)
+            "actor_type" => "required|in:me,collaborator,external",
 
-];
+            "scope" => "required|in:LOCAL,NATIONAL,INTERNATIONAL",
 
-$missionFields = [
+            // Collaborateur interne
+            "actor_collaborator" =>
+                "required_if:actor_type,collaborator|nullable",
 
-    // Infos mission
-    "destination" => "required|string",
-    "title" => "nullable|string",
+            // Prestataire externe
+            "actor_external" => "required_if:actor_type,external|nullable",
 
-    // Budget
-    "estimated_budget" => "nullable|numeric|min:0",
-    "advance_amount" => "nullable|numeric|min:0",
+            /**
+             * ==========================================
+             * 🧭 BASE (départ/retour du siège)
+             * ==========================================
+             */
 
-    // Mission spéciale
-    "mission_special" => "required|in:1,0",
+            "departure_date_base_planned" => "required|date",
+            "departure_time_base_planned" => "required",
 
-    // Acteur (missionnaire)
-    "actor_type" => "required|in:me,collaborator,external",
+            "arrival_date_base_planned" => "required|date",
+            "arrival_time_base_planned" => "required",
 
-    'scope' => 'required|in:LOCAL,NATIONAL,INTERNATIONAL',
+            "departure_date_base_actual" => "nullable|date",
+            "departure_time_base_actual" => "nullable",
 
-    // Collaborateur interne
-    "actor_collaborator" => "required_if:actor_type,collaborator|nullable",
+            "arrival_date_base_actual" => "nullable|date",
+            "arrival_time_base_actual" => "nullable",
 
-    // Prestataire externe
-    "actor_external" => "required_if:actor_type,external|nullable",
+            /**
+             * ==========================================
+             * 🏗 SITE (départ/retour intervention)
+             * ==========================================
+             */
 
-    /**
-     * ==========================================
-     * 🧭 BASE (départ/retour du siège)
-     * ==========================================
-     */
+            "departure_date_site_planned" => "required|date",
+            "departure_time_site_planned" => "required",
 
-    "departure_date_base_planned" => "required|date",
-    "departure_time_base_planned" => "required",
+            "arrival_date_site_planned" => "required|date",
+            "arrival_time_site_planned" => "required",
 
-    "arrival_date_base_planned" => "required|date",
-    "arrival_time_base_planned" => "required",
+            "departure_date_site_actual" => "nullable|date",
+            "departure_time_site_actual" => "nullable",
 
-    "departure_date_base_actual" => "nullable|date",
-    "departure_time_base_actual" => "nullable",
+            "arrival_date_site_actual" => "nullable|date",
+            "arrival_time_site_actual" => "nullable",
 
-    "arrival_date_base_actual" => "nullable|date",
-    "arrival_time_base_actual" => "nullable",
+            /**
+             * Dépenses
+             */
 
-    /**
-     * ==========================================
-     * 🏗 SITE (départ/retour intervention)
-     * ==========================================
-     */
+            "expenses" => "nullable|string",
+            "expenses.*.receipt" => "nullable|file|max:5120",
+        ];
 
-    "departure_date_site_planned" => "required|date",
-    "departure_time_site_planned" => "required",
+        $purchaseRequestFields = [
+            /**
+             * Informations générales
+             */
+            "title" => "required|string|max:255",
 
-    "arrival_date_site_planned" => "required|date",
-    "arrival_time_site_planned" => "required",
+            "description" => "required|string",
 
-    "departure_date_site_actual" => "nullable|date",
-    "departure_time_site_actual" => "nullable",
+            "destination_service_id" => "required|integer",
 
-    "arrival_date_site_actual" => "nullable|date",
-    "arrival_time_site_actual" => "nullable",
+            "priority" => "required|in:LOW,MEDIUM,HIGH,CRITICAL",
 
-    /**
-     * Dépenses
-     */
+            "category" => "required|in:IT_EQUIPMENT,SOFTWARE,OFFICE_SUPPLY,FURNITURE,VEHICLE,TELECOM,SERVICE,OTHER",
 
-    "expenses" => "nullable|string",
-    "expenses.*.receipt" => "nullable|file|max:5120",
-];
+            /**
+             * Articles demandés
+             */
+            "items" => "required|array|min:1",
 
+            "items.*.designation" => "required|string|max:255",
 
+            "items.*.quantity" => "required|integer|min:1",
 
-$rulesByType = [
-    'facture-fournisseur-medical' => [$baseRules, $invoiceFields],
-    'facture-fournisseur-informatique' => [$baseRules, $invoiceFields],
-    'facture-note-honoraire' => [$baseRules, $invoiceFields],
-    'CREDIT_NOTE' => [$baseRules, $invoiceFields], // ✔️ mêmes champs !
-    'papier-taxi' => [$baseRules, $taxiFields],
-    'note-de-frais' => [$baseRules, $feeNoteFields],
-    'demande-d-absence' => [$baseRules, $absenceRequestFields],
+            "items.*.specification" => "nullable|string",
 
-       // 🔥 AJOUT ICI
-    'mission' => [$baseRules, $missionFields],
-];
+            /**
+             * Optionnel mais fortement recommandé
+             */
+            "items.*.estimated_unit_price" => "nullable|numeric|min:0",
 
+            /**
+             * Pièces jointes
+             */
+            "attachments" => "nullable|array",
 
-       
+            "attachments.*" => "file|max:10240",
+
+            "estimated_amount" => 'nullable|numeric|min:0',
+        ];
+
+        $rulesByType = [
+            "facture-fournisseur-medical" => [$baseRules, $invoiceFields],
+            "facture-fournisseur-informatique" => [$baseRules, $invoiceFields],
+            "facture-note-honoraire" => [$baseRules, $invoiceFields],
+            "CREDIT_NOTE" => [$baseRules, $invoiceFields], // ✔️ mêmes champs !
+            "papier-taxi" => [$baseRules, $taxiFields],
+            "note-de-frais" => [$baseRules, $feeNoteFields],
+            "demande-d-absence" => [$baseRules, $absenceRequestFields],
+            // 🔥 AJOUT ICI
+            "mission" => [$baseRules, $missionFields],
+            "demande-achat" => [$baseRules, $purchaseRequestFields],
+        ];
 
         //$type = DocumentType::whereId($this->document_type_id)->first(); // depuis l'URL ou formulaire
 
@@ -183,26 +212,10 @@ $rulesByType = [
                 "courrier" => "required|file|max:10240", // fichiers
             ];
         } elseif ($type->reception_mode == "WORKFLOW_DRIVEN") {
+            $selected = $rulesByType[$type->slug] ?? [$baseRules];
 
-
-         $selected = $rulesByType[$type->slug] ?? [$baseRules];
-
-// Fusionne proprement les règles
-return array_merge(...$selected);
-
-
-        /*    return [
-                "titre" => "required",
-                "prestataire" => "required",
-                "reference_fournisseur" => "required",
-                "reference_engagement" => "nullable",
-                "dateDepot" => "required|before:now",
-                "montant" => "required",
-                "linkedDocument" => "nullable|exists:documents,reference",
-                "document_type_id" => "required|exists:document_types,id",
-                "departement" => "nullable",
-                "facture" => "required|file|max:10240", // fichiers
-            ];*/
+            // Fusionne proprement les règles
+            return array_merge(...$selected);
         }
     }
 }

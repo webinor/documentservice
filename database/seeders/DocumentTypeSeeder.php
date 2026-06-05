@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Misc\AttachmentType;
 use App\Models\DepartmentDocumentType;
 use App\Models\Mission;
+use App\Models\Purchase;
+use App\Models\PurchaseRequest;
 use Database\Seeders\AttachmentTypeSeeder;
 use Database\Seeders\LedgerCodeTypeSeeder;
 use Illuminate\Database\Eloquent\Factories\Sequence;
@@ -61,7 +63,18 @@ $documentTypesConfig = [
                 'name' => 'Mission',
                 'class_name'    => Mission::class,
                 'relation_name' => 'mission',
-                // 'slug' => Str::slug('Mission'),
+                'return_policy' => 'ROLE',
+                'reception_mode' => 'WORKFLOW_DRIVEN',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+
+              [
+                'code' => 'PURCHASE_REQUEST',
+                'name' => 'Achat',
+                'class_name'    => PurchaseRequest::class,
+                'relation_name' => 'purchase_request',
                 'return_policy' => 'ROLE',
                 'reception_mode' => 'WORKFLOW_DRIVEN',
                 'created_at' => now(),
@@ -71,50 +84,40 @@ $documentTypesConfig = [
 ];
 
 // Génération de la sequence dynamiquement
-$sequence = array_map(fn ($config) => fn () => [
-    'code'           => $config['code'] ?? Str::random(10),
-    'name'           => $config['name'],
-    'class_name'     => $config['class_name']     ?? null,
-    'relation_name'  => $config['relation_name']  ?? null,
-    'reception_mode' => $config['reception_mode'],
-    'slug'           => Str::slug($config['name']),
-], $documentTypesConfig);
+// $sequence = array_map(fn ($config) => fn () => [
+//     'code'           => $config['code'] ?? Str::random(10),
+//     'name'           => $config['name'],
+//     'class_name'     => $config['class_name']     ?? null,
+//     'relation_name'  => $config['relation_name']  ?? null,
+//     'reception_mode' => $config['reception_mode'],
+//     'slug'           => Str::slug($config['name']),
+// ], $documentTypesConfig);
           
             
-          DocumentType::factory()
-    ->count(count($documentTypesConfig))
-    ->state(new Sequence(...$sequence))
-    ->create();
+//           DocumentType::factory()
+//     ->count(count($documentTypesConfig))
+//     ->state(new Sequence(...$sequence))
+//     ->create();
 
-            /*DepartmentDocumentType::factory()
-            ->count(1)
-            ->state(new Sequence(
-                [ 'department_id'=>67,'document_type_id'=>1],
-            ))
-            ->create();*/
+foreach ($documentTypesConfig as $config) {
 
+    $exists = DocumentType::where('code', $config['code'] ?? Str::slug($config['name']))->exists();
 
-           /* AttachmentType::factory()
-            ->count(10)
-            ->state(new Sequence(
-                ['name'=>'Facture originale','slug'=>Str::slug("Facture originale")],
-                ['name'=>'Contrat','slug'=>Str::slug("Contrat")],
-                ['name'=>'Bon de regularisation','slug'=>Str::slug("Bon de regularisation")],
-                ['name'=>'Bon de commande','slug'=>Str::slug("Bon de commande")],
-                ['name'=>'Bon de livraison','slug'=>Str::slug("Bon de livraison")],
-                ['name'=>'Devis','slug'=>Str::slug("Devis")],
-                ['name'=>'Attestation','slug'=>Str::slug("Attestation")],
-                ['name'=>'Preuve de paiement','slug'=>Str::slug("Preuve de paiement")],
-                ['name'=>'Note avoir','slug'=>Str::slug("Note avoir")],
-                ['name'=>'Autre','slug'=>Str::slug("Autre")]
-            ))
-            ->create();*/
+    if ($exists) {
+        continue;
+    }
 
+    DocumentType::create([
+        'code'           => $config['code'] ?? Str::slug($config['name']),
+        'name'           => $config['name'],
+        'class_name'     => $config['class_name'] ?? null,
+        'relation_name'  => $config['relation_name'] ?? null,
+        'reception_mode' => $config['reception_mode'],
+        'slug'           => Str::slug($config['name']),
+    ]);
+}
 
-    //         $this->call([
-    //     AttachmentTypeSeeder::class,
-    //    // LedgerCodeTypeSeeder::class,
-    // ]);
+        
 
            DB::commit();
     
