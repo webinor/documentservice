@@ -6,6 +6,7 @@ use App\Exports\DocumentsExport;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
+use App\Managers\DocumentCreationManager;
 use App\Models\DocumentStatus;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
@@ -48,7 +49,8 @@ class DocumentController extends Controller
         "mission" => "mission.mission_expenses.expense_category",
         "demande-achat" => "purchase_request.purchase_request_items",
 
-        "purchase-settlement" => "purchase_settlement.purchase_settlement_items",
+        "purchase-settlement" =>
+            "purchase_settlement.purchase_settlement_items",
     ];
 
     public function __construct(
@@ -833,7 +835,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      * @param  \App\Http\Requests\StoreDocumentRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreDocumentRequest $request)
+    public function store(StoreDocumentRequest $request , DocumentCreationManager $documentCreationManager)
     {
         try {
             DB::beginTransaction();
@@ -893,8 +895,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     ],
                     201
                 );
-            } 
-            else {
+            } else {
                 //lié a un workflow
                 // 🔹 Appel au microservice workflow
                 $workflowServiceUrl = config(
@@ -965,11 +966,18 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 $documentType = $document->document_type()->first(); // Objet avec class_name, relation_name et type
 
-                $this->childHandler->handle(
-                    $document,
-                    $documentType,
-                    $validated
-                );
+                // return(get_class($documentCreationManager));
+                
+                $documentCreationManager->create(
+    $document,
+    $validated
+);
+                
+                // $this->childHandler->handle(
+                //     $document,
+                //     $documentType,
+                //     $validated
+                // );
 
                 // Si on veut gérer des fichiers uploadés
                 if ($request->hasFile("facture")) {
@@ -1012,7 +1020,6 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                     DB::commit();
 
-                    
                     $instanceResponse = Http::withToken($request->bearerToken())
                         ->acceptJson()
                         ->post(
@@ -1033,15 +1040,14 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                         );
                     }
 
-                    
-
                     // return
                     $workflowInstance = $instanceResponse->json();
 
                     return response()->json(
                         [
                             "success" => true,
-                            "message" =>"Document créé avec succès et workflow démarré",
+                            "message" =>
+                                "Document créé avec succès et workflow démarré",
                             "document" => $document,
                             "workflow_instance" => $workflowInstance,
                         ],
@@ -1261,7 +1267,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
         // $filters = $request->query('filters', $request->input('filters', []));
 
-        // throw new Exception(json_encode($filters), 1);
+        // throw new Exception(json_encode($documentTypes), 1);
         // throw new Exception($filters, 1);
 
         $query = Document::query();
@@ -1530,25 +1536,27 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         );
 
         return response()->json($formattedDocuments);
-
     }
 
     public function enrichDocument($document, $token)
     {
         $slug = $document->document_type->slug ?? null;
 
+
+
+
         $beneficiarySlugs = [
-            "papier-taxi" => "",
+            "papier-taxi" => "beneficiary",
             "note-de-frais" => "",
             "demande-d-absence" => "",
         ];
 
-        $actorSlugs = ["mission" => "actor_id"
-        ,"demande-achat" => "requested_by"
+        $actorSlugs = [
+            "mission" => "actor_id",
+            "demande-achat" => "requested_by",
         ];
 
         $relation = $this->documents_relation[$slug] ?? null;
-
 
         $main_relation = null;
         $secondary_relation = null;
@@ -1567,8 +1575,6 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         if (!$entity) {
             return $document;
         }
-
-
 
         $userServiceUrl = config("services.user_service.base_url");
 
@@ -1589,10 +1595,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $userId = $entity->{$actorSlugs[$slug]} ?? null;
         }
 
-
-
         // fallback sécurité
-        $userId = $userId > 0 ? $userId : 1;
+        $userId = $userId > 0 ? $userId : 0;
+
+        // throw new Exception(json_encode($userId), 1);
+
 
         // =========================
         // 🔹 APPEL USER SERVICE
@@ -1605,8 +1612,28 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         if ($userResponse->ok()) {
             $userData = $userResponse->json("user");
 
+        // throw new Exception(json_encode($userData['department_data']["manager_id"]), 1);
+
+
+        if ($userData['department_data']["manager_id"]) {
+
+
+        $managerResponse = Http::withToken($token)
+            ->acceptJson()
+            ->timeout(10)
+            ->get("$userServiceUrl/{$userData['department_data']['manager_id']}");
+
+
+
+            $managerData = $managerResponse->json("user");
+
+            $userData["manager"]= $managerData;
+                        
+            
+        // throw new Exception(json_encode($managerData), 1);
 
         
+        }
 
 
             // Attachement sans persistance DB
@@ -1618,15 +1645,10 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $entity->{$entityKey} = $userData;
 
             if ($secondary_relation && $third_relation) {
-
-    $entity->load(
-        "{$secondary_relation}.{$third_relation}"
-    );
-
-} elseif ($secondary_relation) {
-
-    $entity->load($secondary_relation);
-}
+                $entity->load("{$secondary_relation}.{$third_relation}");
+            } elseif ($secondary_relation) {
+                $entity->load($secondary_relation);
+            }
 
             // optionnel : normalisation ID
             if ($entityKey === "beneficiary_details") {
@@ -1682,7 +1704,6 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // return $document;
 
         // throw new Exception(json_encode($this->documents_relation[$document->document_type->slug]), 1);
-        
 
         $document->load(
             $this->documents_relation[$document->document_type->slug],

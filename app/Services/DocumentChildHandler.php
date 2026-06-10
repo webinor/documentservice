@@ -484,55 +484,50 @@ class DocumentChildHandler
             ],
 
             "demande-achat" => [
+                "data" => [
+                    //"title" => fn($v) => $v["title"] ?? null,
 
-    "data" => [
+                    "description" => fn($v) => $v["description"] ?? null,
 
-        //"title" => fn($v) => $v["title"] ?? null,
+                    "destination_service_id" => fn($v) => $v[
+                        "destination_service_id"
+                    ] ?? null,
 
-        "description" => fn($v) => $v["description"] ?? null,
+                    // "priority" => fn($v) => $v["priority"] ?? "MEDIUM",
 
-        "destination_service_id" => fn($v) => $v["destination_service_id"] ?? null,
+                    // "is_it_equipment" => fn($v) => $v["is_it_equipment"] ?? false,
 
-        // "priority" => fn($v) => $v["priority"] ?? "MEDIUM",
+                    "requested_by" => fn($v) => request()->get("user")["id"],
+                ],
 
-        // "is_it_equipment" => fn($v) => $v["is_it_equipment"] ?? false,
+                "relations" => [
+                    "purchase_request_items" => function ($v) {
+                        if (!isset($v["items"])) {
+                            return [];
+                        }
 
-        "requested_by" => fn($v) =>   request()->get("user")["id"],
-    ],
+                        $items = is_string($v["items"])
+                            ? json_decode($v["items"], true)
+                            : $v["items"];
 
-    "relations" => [
+                        return collect($items)
+                            ->map(function ($item) {
+                                return [
+                                    "designation" =>
+                                        $item["designation"] ?? null,
 
-        "purchase_request_items" => function ($v) {
+                                    "requested_quantity" =>
+                                        $item["quantity"] ?? 1,
 
-            if (!isset($v["items"])) {
-                return [];
-            }
-
-            $items = is_string($v["items"])
-                ? json_decode($v["items"], true)
-                : $v["items"];
-
-            return collect($items)
-                ->map(function ($item) {
-
-                    return [
-
-                        "designation" =>
-                            $item["designation"] ?? null,
-
-                        "requested_quantity" =>
-                            $item["quantity"] ?? 1,
-
-                        "specification" =>
-                            $item["specification"] ?? null,
-                    ];
-                })
-                ->toArray();
-        },
-    ],
-],
+                                    "specification" =>
+                                        $item["specification"] ?? null,
+                                ];
+                            })
+                            ->toArray();
+                    },
+                ],
+            ],
             // Ajoute ici d'autres types si nécessaire
-
         ];
 
         if (!$type || !isset($map[$type])) {

@@ -12,7 +12,8 @@ class PurchaseRequestItem extends Model
     protected $fillable = [
         'designation',
         'requested_quantity',
-        'specification'
+        'specification',
+        'purchase_request_id'
         
     ];
 }
