@@ -7,6 +7,7 @@ use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
 use App\Managers\DocumentCreationManager;
+use App\Managers\DocumentEnrichmentManager;
 use App\Models\DocumentStatus;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
@@ -15,6 +16,7 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\Document;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
+use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
@@ -39,6 +41,9 @@ class DocumentController extends Controller
 {
     private DocumentChildHandler $childHandler;
     private NotifyBeneficiaryService $notifyBeneficiaryService;
+    protected LegacyDocumentEnricher $legacyDocumentEnricher;
+    protected DocumentEnrichmentManager $documentEnrichmentManager;
+
     private $documents_relation = [
         "facture-fournisseur-medical" => "invoice_provider.ledger_code",
         "facture-fournisseur-informatique" => "invoice_provider",
@@ -55,10 +60,14 @@ class DocumentController extends Controller
 
     public function __construct(
         DocumentChildHandler $childHandler,
-        NotifyBeneficiaryService $notifyBeneficiaryService
+        NotifyBeneficiaryService $notifyBeneficiaryService,
+        LegacyDocumentEnricher $legacyDocumentEnricher,
+        DocumentEnrichmentManager $documentEnrichmentManager
     ) {
         $this->childHandler = $childHandler;
         $this->notifyBeneficiaryService = $notifyBeneficiaryService;
+        $this->legacyDocumentEnricher = $legacyDocumentEnricher;
+        $this->documentEnrichmentManager = $documentEnrichmentManager;
     }
     /**
      * Display a listing of the resource.
@@ -1394,23 +1403,26 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         // throw new Exception(json_encode($documents), 1);
 
+        // $legacyDocumentEnricher = $this->legacyDocumentEnricher;
+        // $documentEnrichmentManager = $this->documentEnrichmentManager;
+
         $documentsEnrich = $documents->map(function ($doc) use (
             $documentTypes,
-            $DOC_CONFIG
+            $DOC_CONFIG      
         ) {
-            // Détecter quel type de document est réellement présent
-            $activeRelation = null;
-            foreach ($documentTypes as $relation) {
-                if ($doc->relationLoaded($relation) && $doc->$relation) {
-                    $activeRelation = $relation;
-                    break;
-                }
-            }
 
-            // Base commune à tous les documents
+
+           
+
+              $type = $doc->document_type;
+
+        $handlerClass = $type->enrichment_handler_class;
+
+          // Base commune à tous les documents
             $base = [
                 "id" => $doc->id,
                 "code" => $doc->code,
+                "amount" => $doc->dynamic_amount,
                 "title" => $doc->title,
                 "date_due" => $doc->date_due,
                 "document_type_name" => $doc->document_type->name,
@@ -1420,6 +1432,37 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 "created_at" => $doc->created_at,
                 "created_by" => $doc->created_by,
             ];
+
+
+
+        if (!$handlerClass) {
+
+    return $this->legacyDocumentEnricher->enrich($doc, $base, $documentTypes);
+}
+
+return   $this->documentEnrichmentManager->enrich($doc, $base);
+
+            // Détecter quel type de document est réellement présent
+            $activeRelation = null;
+            foreach ($documentTypes as $relation) {
+                if ($doc->relationLoaded($relation) && $doc->$relation) {
+                    $activeRelation = $relation;
+                    break;
+                }
+            }
+
+          
+
+         
+
+            // throw new Exception($handlerClass, 1);
+        
+
+            if ($handlerClass) {
+    
+            return  $documentEnrichmentManager->enrich($doc, $base);
+
+            }
 
             // Si aucun type trouvé → retourner juste la base
             if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
@@ -1446,6 +1489,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "actor_type",
                 ];
                 $providerKeys = ["prestataire"]; // Liste des clés à enrichir
+
+                    // throw new Exception("-- $id --", 1);
+
 
                 if (in_array($responseKey, $userKeys) && $value) {
                     // 👉 récupération standardisée

@@ -14,7 +14,7 @@ class DocumentCreationManager
 
         $type = $document->document_type;
 
-        $handlerClass = $type->handler_class;
+        $handlerClass = $type->creation_handler_class;
 
 if (!$handlerClass) {
     throw new \Exception(
