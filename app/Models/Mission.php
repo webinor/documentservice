@@ -192,7 +192,7 @@ class Mission extends Model implements PayableDocumentInterface
                 ],
                 [
                     'amount' => $this->getSettlementAmount($transactionTypeCode),
-                    'statu' => 'PENDING',
+                    'status' => 'PENDING',
                 ]
             );
 

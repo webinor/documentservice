@@ -41,7 +41,7 @@ class StoreDocumentRequest extends FormRequest
         ];
 
         $taxiFields = [
-            "motif" => "required|string",
+            // "motif" => "required|string",
             "trajets" => "required|array|min:1",
             "trajets.*.trajet" => "required|string",
             "trajets.*.montant" => "required|numeric",

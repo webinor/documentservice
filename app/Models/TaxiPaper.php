@@ -27,9 +27,33 @@ class TaxiPaper extends Model implements PayableDocumentInterface
         string $transactionTypeCode,
         string $transactionCode
     ): void {
+
+
+            $direction = $this->getSettlementDirection($transactionTypeCode);
+           
+
+            $this->regulations()->firstOrCreate(
+                [
+                    'transaction_code' => $transactionCode,
+                ],
+                [
+                    'amount' => $this->getSettlementAmount($transactionTypeCode),
+
+                       'type' =>'supplement' ,// $direction === 'OUT' ? 'supplement'  : 'refund',
+
+                    'status' => 'PENDING',
+                ]
+            );
+
+          
         
     }
 
+
+      public function regulations()
+    {
+        return $this->hasMany(TaxiRegulation::class);
+    }
 
     public function getSettlementActor(): int
     {

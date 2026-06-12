@@ -166,7 +166,7 @@ class MissionExpenseService
 
                 $final =
                 $actualResult[$categoryId]['quantity']
-                ?? $planned;
+                ?? 0;//$planned;
 
 
                   $expense->final_quantity =

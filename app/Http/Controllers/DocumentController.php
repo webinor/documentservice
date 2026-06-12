@@ -1399,7 +1399,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // Charger les relations
         $query->with(array_merge(["document_type"], $documentTypes));
 
-        $documents = $query->get();
+        $documents = $query
+        ->orderByDesc('id')
+        ->get();
 
         // throw new Exception(json_encode($documents), 1);
 
@@ -1602,6 +1604,8 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
             "demande-achat" => "requested_by",
         ];
 
+
+
         $relation = $this->documents_relation[$slug] ?? null;
 
         $main_relation = null;
@@ -1614,6 +1618,9 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
             $third_relation = $relations[2] ?? null;
             $document->load($relation);
         }
+
+
+
 
         // Récupérer l'entité liée
         $entity = $main_relation ? $document->$main_relation : null;
@@ -1634,6 +1641,8 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
             $userId = $entity->{$beneficiarySlugs[$slug]} ?? null;
         }
 
+
+
         // =========================
         // 🚀 CAS ACTOR (MISSION)
         // =========================
@@ -1645,6 +1654,8 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         $userId = $userId > 0 ? $userId : 0;
 
         // throw new Exception(json_encode($userId), 1);
+
+
 
 
         // =========================
@@ -1661,7 +1672,12 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         // throw new Exception(json_encode($userData['department_data']["manager_id"]), 1);
 
 
-        if ($userData['department_data']["manager_id"]) {
+        // throw new Exception(json_encode($userData['department_data']), 1);
+
+
+        if ($userData['department_data'] && $userData['department_data']["manager_id"]) {
+
+
 
 
         $managerResponse = Http::withToken($token)
@@ -1745,7 +1761,12 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
         // return $workflowStatus['status'];
 
+        // throw new Exception(json_encode("ok ok"), 1);
+
+
         DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
+
+
 
         // return $document;
 
@@ -1757,8 +1778,12 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
             "secondary_attachments"
         );
 
+
+
         // ######## DYNAMIQUE : enrichir beneficiary ########
         $document = $this->enrichDocument($document, $request->bearerToken());
+
+
 
         return $document;
     }

@@ -5,22 +5,23 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\Mission\MissionAdvanceService;
 use App\Services\Mission\MissionRegulationService;
+use App\Services\TaxiPaper\TaxiPaperService;
 use Exception;
 
 class SettlementController extends Controller
 {
     private $advanceService;
     private $regulationService;
-    // private $taxiPaperService;
+    private $taxiPaperService;
 
     public function __construct(
         MissionAdvanceService $advanceService,
-        MissionRegulationService $regulationService
-        // TaxiPaperService $taxiPaperService
+        MissionRegulationService $regulationService,
+        TaxiPaperService $taxiPaperService
     ) {
         $this->advanceService = $advanceService;
         $this->regulationService = $regulationService;
-        // $this->taxiPaperService = $taxiPaperService;
+        $this->taxiPaperService = $taxiPaperService;
     }
 
     public function markAsPaid(Request $request)
@@ -63,8 +64,8 @@ class SettlementController extends Controller
                 return $this->regulationService->markAsPaid($request->all());
             }
 
-            if ($type === 'taxi_paper') {
-                // return $this->taxiPaperService->markAsPaid($request->all());
+            if ($type === 'TAXI_PAPER_SETTLEMENT') {
+                return $this->taxiPaperService->markAsPaid($request->all());
             }
 
             throw new Exception("Unsupported document type: " . $type);
