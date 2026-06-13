@@ -20,6 +20,7 @@ use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
+use App\Services\UserServiceClient;
 use App\Support\DocumentContext;
 use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
 use Carbon\Carbon;
@@ -43,6 +44,7 @@ class DocumentController extends Controller
     private NotifyBeneficiaryService $notifyBeneficiaryService;
     protected LegacyDocumentEnricher $legacyDocumentEnricher;
     protected DocumentEnrichmentManager $documentEnrichmentManager;
+    protected UserServiceClient $user_service_client;
 
     private $documents_relation = [
         "facture-fournisseur-medical" => "invoice_provider.ledger_code",
@@ -62,12 +64,14 @@ class DocumentController extends Controller
         DocumentChildHandler $childHandler,
         NotifyBeneficiaryService $notifyBeneficiaryService,
         LegacyDocumentEnricher $legacyDocumentEnricher,
-        DocumentEnrichmentManager $documentEnrichmentManager
+        DocumentEnrichmentManager $documentEnrichmentManager,
+        UserServiceClient $user_service_client
     ) {
         $this->childHandler = $childHandler;
         $this->notifyBeneficiaryService = $notifyBeneficiaryService;
         $this->legacyDocumentEnricher = $legacyDocumentEnricher;
         $this->documentEnrichmentManager = $documentEnrichmentManager;
+        $this->user_service_client = $user_service_client;
     }
     /**
      * Display a listing of the resource.
@@ -1641,6 +1645,11 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         }
 
 
+        $document->transactions = $this->user_service_client->getDocumentTransactions($document->id);
+        // $document->transactions = ["ok ok"];
+
+        // throw new Exception(json_encode($document->transactions), 1);
+        
 
 
         // Récupérer l'entité liée

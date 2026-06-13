@@ -34,4 +34,17 @@ class UserServiceClient
             ]
         );
     }
+
+    public function getDocumentTransactions(int $documentId)
+    {
+        // $baseUrl = config('services.user_service.base_url');
+
+        $response = $this->client()->get("/documents/{$documentId}/transactions");
+
+        if ($response->failed()) {
+            throw new \Exception("UserService unavailable");
+        }
+
+        return $response->json()['data'] ?? [];
+    }
 }

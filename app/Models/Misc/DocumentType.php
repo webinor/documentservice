@@ -20,8 +20,18 @@ class DocumentType extends Model
     "class_name",
     "relation_name",
     "return_policy",
-    "reception_mode" 
+    "reception_mode",
+    'icon',
+    'color',
+    'dashboard_order',
+    'dashboard_title',
+    'dashboard_subtitle',
+    'view_route',
+    'create_route'
     ];
+
+
+
 
     /**
      * Get all of the department_document_types for the DocumentType
