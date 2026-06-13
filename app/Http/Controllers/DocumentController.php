@@ -1652,6 +1652,10 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         
 
 
+
+
+        
+
         // Récupérer l'entité liée
         $entity = $main_relation ? $document->$main_relation : null;
 
