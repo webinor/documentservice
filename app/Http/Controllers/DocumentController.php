@@ -1265,6 +1265,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // Par exemple, créer une instance vide ou notifier des utilisateurs sans lancer d’instance automatique
         return null; // pas de workflow automatique
     }
+    private function getDocumentTypeCodeById(int $id): ?string
+{
+    return explode("." , DocumentType::where('id', $id)
+        ->value('relation_name'))[0];
+}
 
     private function getFilteredDocuments(Request $request)
     {
@@ -1278,6 +1283,21 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         // throw new Exception(json_encode($documentTypes), 1);
         // throw new Exception($filters, 1);
+
+        // 1. si int → on récupère le document type
+if (is_int($documentTypes)) {
+    $documentTypes = [$this->getDocumentTypeCodeById($documentTypes)];
+}
+
+// 2. si string → on le met en array
+if (is_string($documentTypes)) {
+    $documentTypes = [$documentTypes];
+}
+
+// 3. si array → OK, mais on sécurise
+if (is_array($documentTypes)) {
+    $documentTypes = array_values(array_filter($documentTypes));
+}
 
         $query = Document::query();
 
@@ -1428,6 +1448,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 "title" => $doc->title,
                 "date_due" => $doc->date_due,
                 "document_type_name" => $doc->document_type->name,
+                "document_type_slug" => $doc->document_type->slug,
                 "document_type_id" => $doc->document_type_id,
                 "type" => $doc->document_type->name,
                 "status" => $doc->status,

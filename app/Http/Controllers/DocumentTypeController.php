@@ -95,46 +95,34 @@ class DocumentTypeController extends Controller
             );
         }
     }
-    //     /**
-    //      * Display a listing of the resource.
-    //      *
-    //      * @return \Illuminate\Http\Response
-    //      */
-    //     public function index(Request $request)
-    //     {
+    public function getByIds(Request $request)
+    {
+        $ids = $request->input('ids', []);
 
-    //         try {
+        $query = DocumentType::query();
 
-    //      $query = DocumentType::orderBy('name')
-    //         ->with('department_document_types');
+        if (!empty($ids)) {
+            $query->whereIn('id', $ids);
+        }
 
-    //     // Si plusieurs IDs sont fournis
-    //     if ($request->has('ids') && is_array($request->ids) && count($request->ids)) {
-    //         $query->whereIn('id', $request->ids);
-    //     }
-    //     // Si un seul ID est fourni
-    //     elseif ($request->has('id') && is_numeric($request->id)) {
-    //         $query->where('id', $request->id);
-    //     }
+        $documentTypes = $query
+            ->select([
+                'id',
+                'name',
+                'code',
+                'slug',
+                'description',
+                'icon',
+                'color',
+            ])
+            ->orderBy('name')
+            ->get();
 
-    //     $documentTypes = $query->get();
-
-    //     Log::info("Récupération des types de documents OK", [
-    //         'count' => $documentTypes->count(),
-    //         'documentTypes' => $documentTypes
-    //     ]);
-
-    //     return response()->json(["success" => true, "data" => $documentTypes]);
-
-    // } catch (\Exception $e) {
-
-    //     Log::error("Erreur récupération types de documents", [
-    //         'message' => $e->getMessage(),
-    //         'trace' => $e->getTraceAsString(),
-    //     ]);
-    // }
-
-    //     }
+        return response()->json([
+            'success' => true,
+            'data' => $documentTypes,
+        ]);
+    }
 
     public function getRolesByDocumentType($documentTypeCode)
     {

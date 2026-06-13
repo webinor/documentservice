@@ -54,6 +54,8 @@ Route::middleware("jwt.check")
                 "/document_types/getByRelation",
                 "getDocumentTypesByRelationName"
             );
+
+            Route::get('/documentTypes/by-ids', [DocumentTypeController::class, 'getByIds']);
         });
 
         Route::post("/mission-expenses/calculate", [
