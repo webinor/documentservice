@@ -82,7 +82,7 @@ class StoreDocumentRequest extends FormRequest
             "advance_amount" => "nullable|numeric|min:0",
 
             // Mission spéciale
-            "mission_special" => "required|in:1,0",
+            "mission_special" => "nullable|in:1,0",
 
             // Acteur (missionnaire)
             "actor_type" => "required|in:me,collaborator,external",

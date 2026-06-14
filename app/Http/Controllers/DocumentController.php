@@ -1303,7 +1303,12 @@ if (is_array($documentTypes)) {
     $documentTypes = array_values(array_filter($documentTypes));
 }
 
+        // throw new Exception(json_encode($documentTypes), 1);
+
+
         $query = Document::query();
+
+        
 
         // Filtre par IDs
         if (!empty($ids)) {
@@ -1328,6 +1333,11 @@ if (is_array($documentTypes)) {
             });
         }
 
+     
+    
+
+
+
         // Filtre par relations / types de document
         if (!empty($documentTypes)) {
             $query->where(function ($q) use ($documentTypes) {
@@ -1336,6 +1346,14 @@ if (is_array($documentTypes)) {
                 }
             });
         }
+
+
+        //       $documents = $query
+        // ->orderByDesc('id')
+        // ->get();
+
+        // throw new Exception(json_encode($documents), 1);
+        
 
         // // Filtre par statut
         // if (!empty($filters["status"])) {
@@ -1351,11 +1369,15 @@ if (is_array($documentTypes)) {
             $query->whereHas("invoice_provider." . $filters["supplier_type"]);
         }
 
+      
         //   supplier_type
 
         if (!empty($filters["status"])) {
+
             $query->whereStatus($filters["status"]);
+
         }
+
 
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["document_type_id"])) {
@@ -1386,6 +1408,8 @@ if (is_array($documentTypes)) {
             });
         }
 
+
+
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["fournisseur_id"])) {
             $fournisseurId = $filters["fournisseur_id"];
@@ -1407,6 +1431,9 @@ if (is_array($documentTypes)) {
             );
         }
 
+            
+
+
         // Filtre par date
         if (!empty($filters["date_start"]) && !empty($filters["date_end"])) {
             $query->whereBetween("created_at", [
@@ -1426,6 +1453,8 @@ if (is_array($documentTypes)) {
         $documents = $query
         ->orderByDesc('id')
         ->get();
+
+        
 
         // throw new Exception(json_encode($documents), 1);
 
@@ -1464,8 +1493,13 @@ if (is_array($documentTypes)) {
 
         if (!$handlerClass) {
 
+        // throw new Exception(json_encode('$documents'), 1);
+
     return $this->legacyDocumentEnricher->enrich($doc, $base, $documentTypes);
 }
+
+        // throw new Exception(json_encode($this->documentEnrichmentManager->enrich($doc, $base)), 1);
+
 
 return   $this->documentEnrichmentManager->enrich($doc, $base);
 
@@ -1654,7 +1688,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
 
 
-        
+
 
         // Récupérer l'entité liée
         $entity = $main_relation ? $document->$main_relation : null;

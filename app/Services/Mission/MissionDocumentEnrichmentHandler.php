@@ -1,19 +1,24 @@
 <?php
 
-namespace App\Services\TaxiPaper;
+namespace App\Services\Mission;
+
 
 use App\Models\Misc\Document;
 use App\Services\DocumentType\DocumentEnrichmentHandlerInterface;
 use Exception;
 use Illuminate\Support\Facades\Http;
 
-class TaxiPaperDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInterface
+class MissionDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInterface
 {
     public function enrich(Document $document, array $base): array
     {
-        $document->load('taxi_paper');
+        
+   
 
-        $relation = $document->taxi_paper;
+        $relation = $document->mission;
+
+        $base['mission'] = optional($relation)->toArray();
+
 
         if (!$relation) {
             return $base;
@@ -22,9 +27,9 @@ class TaxiPaperDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInt
         // $base['mission'] = $relation->load('mission_expenses')->toArray();
 
         // exemple enrichissement spécifique
-        $base['beneficiary'] = $this->resolveActor($relation);
+        $base['actor'] = $this->resolveActor($relation);
 
-            // throw new Exception(json_encode($base['beneficiary']), 1);
+            // throw new Exception(json_encode($base['actor']), 1);
 
 
         return $base;
@@ -36,7 +41,7 @@ class TaxiPaperDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInt
     $baseUrl = config("services.user_service.base_url");
        
                             $response = Http::acceptJson()->get(
-                                $baseUrl . "/{$relation->beneficiary}"
+                                $baseUrl . "/{$relation->actor_id}"
                             );
 
                             if ($response->successful()) {
