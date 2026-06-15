@@ -52,7 +52,7 @@ return new class extends Migration
              */
             $table->enum('status', [
                 'pending',
-                'processed',
+                'paid',
                 'cancelled'
             ])->default('pending');
 

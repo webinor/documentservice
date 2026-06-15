@@ -71,10 +71,13 @@ class MissionService implements DocumentTypeHandlerInterface
         /**
          * Dépenses prévisionnelles
          */
-        $this->createExpenses(
-            $mission,
-            $payload['expenses'] ?? []
-        );
+        $expenses = $payload['expenses'] ?? [];
+
+        if (is_string($expenses)) {
+            $expenses = json_decode($expenses, true) ?? [];
+        }
+
+        $this->createExpenses($mission, $expenses);
     }
 
         private function toDate($value)
