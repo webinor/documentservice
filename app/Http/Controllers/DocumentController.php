@@ -1311,9 +1311,9 @@ if (is_array($documentTypes)) {
         
 
         // Filtre par IDs
-        if (!empty($ids)) {
+        // if (!empty($ids)) {
             $query->whereIn("id", $ids);
-        }
+        // }
 
         // Filtre par IDs
         // if (!empty($userId)) {
