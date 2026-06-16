@@ -48,7 +48,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('mission_id');
-            $table->index('payment_date');
+            $table->index('paid_at');
             $table->index('status');
         });
     }
