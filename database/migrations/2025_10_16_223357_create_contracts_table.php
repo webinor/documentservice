@@ -20,6 +20,8 @@ class CreateContractsTable extends Migration
         });
     }
 
+
+    
     /**
      * Reverse the migrations.
      *
