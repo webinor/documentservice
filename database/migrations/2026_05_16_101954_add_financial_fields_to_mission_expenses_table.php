@@ -23,7 +23,7 @@ class AddFinancialFieldsToMissionExpensesTable extends Migration
             // Devise
             $table->string('currency', 10)
                   ->default('XAF')
-                  ->after('total');
+                  ->after('amount');
 
             // Justification / commentaire
             $table->text('justification')
