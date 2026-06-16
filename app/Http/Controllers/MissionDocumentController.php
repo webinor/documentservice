@@ -131,22 +131,22 @@ class MissionDocumentController extends Controller
         // ]);
 
         // 🔥 génération documents
-        $missionLetter = $this->missionDocumentService->generateMissionLetter(
+        $missionSheet = $this->missionDocumentService->generateMissionLetter(
             $document->mission
         );
         $missionOrder = $this->missionDocumentService->generateMissionOrder(
             $document->mission
         );
-        $missionSheet = $this->missionDocumentService->generateRegularizationSheet(
-            $document->mission
-        );
+        // $regulationSheet = $this->missionDocumentService->generateRegularizationSheet(
+        //     $document->mission
+        // );
 
-        $letter_attachment = $this->handleMissionDocument(
+        $sheet_attachment = $this->handleMissionDocument(
             $document,
             $user_connected,
-            "lettre-de-mission",
+            "feuille-de-mission",
             null,
-            $missionLetter
+            $missionSheet
         );
 
         $order_attachment = $this->handleMissionDocument(
@@ -157,21 +157,21 @@ class MissionDocumentController extends Controller
             $missionOrder
         );
 
-        $letter_attachment = $this->handleMissionDocument(
-            $document,
-            $user_connected,
-            "feuille-de-mission",
-            null,
-            $missionSheet
-        );
+        // $regulation_attachment = $this->handleMissionDocument(
+        //     $document,
+        //     $user_connected,
+        //     "fiche-a-regulariser",
+        //     null,
+        //     $regulationSheet
+        // );
 
         return response()->json([
             "success" => true,
             "message" => "Documents générés avec succès",
             "documents" => [
-                "letter" => $missionLetter,
-                "order" => $missionOrder,
                 "sheet" => $missionSheet,
+                "order" => $missionOrder,
+                // "regulation" => $regulationSheet,
             ],
         ]);
 

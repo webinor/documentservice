@@ -24,7 +24,7 @@ class UserServiceClient
             [
                 "payload" => [
                     "actor_id" => $actor_id,
-                    "amount" => $amount,
+                    "amount" => abs($amount),
                     "reason" => $reason,
                     'direction' => $direction,
                     'transactionTypeCode' => $transactionTypeCode,

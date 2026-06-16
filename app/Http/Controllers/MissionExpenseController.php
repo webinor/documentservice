@@ -47,25 +47,26 @@ class MissionExpenseController extends Controller
             "expense_category_ids" => "required|array",
         ]);
 
-        //     $departure = $this->buildDateTime(
-        //     $data['departure_date'],
-        //     $data['departure_time']
-        // );
 
-        // $return = $this->buildDateTime(
-        //     $data['return_date'],
-        //     $data['return_time']
-        // );
-
-        $departure = Carbon::createFromFormat(
-            "d-m-Y H:i",
-            $data["departure_date"] . " " . $data["departure_time"]
+            $departure = $this->buildDateTime(
+            $data['departure_date'],
+            $data['departure_time']
         );
 
-        $return = Carbon::createFromFormat(
-            "d-m-Y H:i",
-            $data["return_date"] . " " . $data["return_time"]
+        $return = $this->buildDateTime(
+            $data['return_date'],
+            $data['return_time']
         );
+
+        // $departure = Carbon::createFromFormat(
+        //     "d-m-Y H:i",
+        //     $data["departure_date"] . " " . $data["departure_time"]
+        // );
+
+        // $return = Carbon::createFromFormat(
+        //     "d-m-Y H:i",
+        //     $data["return_date"] . " " . $data["return_time"]
+        // );
 
         // return $departure;
 
@@ -146,13 +147,27 @@ class MissionExpenseController extends Controller
         }
     }
 
-    private function buildDateTime($date, $time)
-    {
-        if (!$date || !$time) {
-            return null;
-        }
+    // private function buildDateTime($date, $time)
+    // {
+    //     if (!$date || !$time) {
+    //         return null;
+    //     }
 
-        return Carbon::createFromFormat("Y-m-d H:i:s", $date . " " . $time);
+    //     return Carbon::createFromFormat("Y-m-d H:i:s", $date . " " . $time);
+    // }
+
+    /**
+     * ===================================
+     * Build datetime
+     * ===================================
+     */
+    protected function buildDateTime(
+        $date,
+        $time
+    ) {
+        return \Carbon\Carbon::parse(
+            "{$date} {$time}"
+        );
     }
 
     public function getMissionExpenses_old(Document $document)

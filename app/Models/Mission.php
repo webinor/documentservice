@@ -261,7 +261,7 @@ class Mission extends Model implements PayableDocumentInterface
          * < 0  => le missionnaire doit rembourser
          * = 0  => équilibré
          */
-        return (float) ($totalRealExpenses + $totalAllowances - $totalAdvances);
+        return ((float) ($totalRealExpenses + $totalAllowances - $totalAdvances));
     }
 
     public function simulate($missionId)
