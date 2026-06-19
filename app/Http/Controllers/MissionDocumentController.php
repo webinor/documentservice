@@ -114,7 +114,7 @@ class MissionDocumentController extends Controller
 
         $attachment->refresh();
 
-$attachment->download_url = url('/attachments/' . $attachment->id . '/download');
+$attachment->download_url = url('/api/documents/attachments/' . $attachment->id . '/download');
 
 $attachmentType = AttachmentType::whereSlug($attachment_slug)->first();
 
