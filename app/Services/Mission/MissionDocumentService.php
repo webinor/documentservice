@@ -11,7 +11,7 @@ class MissionDocumentService
 {
     public function generateAll(Mission $mission)
     {
-        $this->generateMissionLetter($mission);
+        $this->generateMissionSheet($mission);
 
         $this->generateMissionOrder($mission);
 
@@ -21,11 +21,11 @@ class MissionDocumentService
      /**
      * Générer Lettre de Mission
      */
-    public function generateMissionLetter(Mission $mission)
+    public function generateMissionSheet(Mission $mission)
     {
-        $pdf = Pdf::loadView('templates.mission.mission-letter',compact('mission'));
+        $pdf = Pdf::loadView('templates.mission.mission-sheet',compact('mission'));
 
-        $filename = 'mission-letter-' . $mission->id . '.pdf';
+        $filename = 'mission-sheet-' . $mission->id . '.pdf';
 
             $path = 'missions/' . $filename;
 
@@ -37,6 +37,8 @@ class MissionDocumentService
          return [
         'path' => storage_path('app/public/' . $path),
         'filename' => $filename,
+        'document_id' => $mission->document->id,
+        'mission_id' => $mission->id,
         'mime' => 'application/pdf',
         'size' => Storage::disk('public')->size($path),
     ];
@@ -61,6 +63,8 @@ class MissionDocumentService
          return [
         'path' => storage_path('app/public/' . $path),
         'filename' => $filename,
+        'document_id' => $mission->document->id,
+        'mission_id' => $mission->id,
         'mime' => 'application/pdf',
         'size' => Storage::disk('public')->size($path),
     ];
@@ -85,6 +89,8 @@ class MissionDocumentService
          return [
         'path' => storage_path('app/public/' . $path),
         'filename' => $filename,
+        'document_id' => $mission->document->id,
+        'mission_id' => $mission->id,
         'mime' => 'application/pdf',
         'size' => Storage::disk('public')->size($path),
     ];

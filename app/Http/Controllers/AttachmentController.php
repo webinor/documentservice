@@ -36,6 +36,25 @@ class AttachmentController extends Controller
         //
     }
 
+    public function download($id)
+{
+    $attachment = Attachment::with(['file' , 'attachmentType'])->findOrFail($id);
+
+    $file = $attachment->file;
+
+    $path = storage_path('app/public/documents_attachments/' . $file->path);
+
+    $filename = $attachment->attachmentType->slug.'-' . $attachment->id . '.pdf';
+
+    abort_unless(file_exists($path), 404);
+
+    return response()->download(
+        $path,
+        $filename,
+        ['Content-Type' => $file->type]
+    );
+}
+
     /**
      * Store a newly created resource in storage.
      *

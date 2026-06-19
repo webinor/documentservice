@@ -80,6 +80,7 @@ class AttachmentTypeSeeder extends Seeder
                 'Ordre de mission' => false,
                 'Feuille de Mission' => false,
                 'Rapport de Mission' => false,
+                'Fiche à regulariser' => false,
             ];
 
             $this->createTypes($missionTypes, $missionCat->id, 'Mission', $testMode);

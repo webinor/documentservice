@@ -112,7 +112,21 @@ class MissionDocumentController extends Controller
 
         // GeneratePdfThumbnail::dispatch($attachment);
 
-        return $attachment;
+        $attachment->refresh();
+
+$attachment->download_url = url('/attachments/' . $attachment->id . '/download');
+
+$attachmentType = AttachmentType::whereSlug($attachment_slug)->first();
+
+$attachment->title = sprintf(
+    '%s - Mission #%s',
+    $attachmentType->name,
+    $document->mission->id
+);
+
+
+return $attachment;
+
     }
 
     public function generate(Request $request)
@@ -131,15 +145,15 @@ class MissionDocumentController extends Controller
         // ]);
 
         // 🔥 génération documents
-        $missionSheet = $this->missionDocumentService->generateMissionLetter(
+        $missionSheet = $this->missionDocumentService->generateMissionSheet(
             $document->mission
         );
         $missionOrder = $this->missionDocumentService->generateMissionOrder(
             $document->mission
         );
-        // $regulationSheet = $this->missionDocumentService->generateRegularizationSheet(
-        //     $document->mission
-        // );
+        $regulationSheet = $this->missionDocumentService->generateRegularizationSheet(
+            $document->mission
+        );
 
         $sheet_attachment = $this->handleMissionDocument(
             $document,
@@ -157,21 +171,27 @@ class MissionDocumentController extends Controller
             $missionOrder
         );
 
-        // $regulation_attachment = $this->handleMissionDocument(
-        //     $document,
-        //     $user_connected,
-        //     "fiche-a-regulariser",
-        //     null,
-        //     $regulationSheet
-        // );
+        $regulation_attachment = $this->handleMissionDocument(
+            $document,
+            $user_connected,
+            "fiche-a-regulariser",
+            null,
+            $regulationSheet
+        );
 
         return response()->json([
             "success" => true,
             "message" => "Documents générés avec succès",
-            "documents" => [
-                "sheet" => $missionSheet,
-                "order" => $missionOrder,
-                // "regulation" => $regulationSheet,
+            // "documents" => [
+            //     "sheet" => $sheet_attachment,
+            //     "order" => $order_attachment,
+            //     "regulation" => $regulation_attachment,
+            // ],
+
+            "attachments" => [
+                 $sheet_attachment,
+                $order_attachment,
+                 $regulation_attachment,
             ],
         ]);
 

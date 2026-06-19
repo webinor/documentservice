@@ -27,8 +27,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get("/documents/by-status", [DocumentController::class, "getByStatus"]);
-Route::post('documents/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
+Route::post('/documents/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
 
+ Route::get('/documents/attachments/{id}/download', [AttachmentController::class, 'download'])
+    ->name('attachments.download');
 
 Route::middleware("jwt.check")
     ->prefix("documents")
@@ -158,6 +160,9 @@ Route::get(
                 MissionDocumentController::class,
                 "generate",
             ]);
+
+    //     Route::get('/attachments/{id}/download', [AttachmentController::class, 'download'])
+    // ->name('attachments.download');
 
             Route::get("/{mission}/generate-mission-letter", [
                 MissionDocumentController::class,
