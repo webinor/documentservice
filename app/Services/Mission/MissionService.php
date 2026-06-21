@@ -6,17 +6,32 @@ namespace App\Services\Mission;
 use App\Models\Misc\Document;
 use App\Models\Mission;
 use App\Services\DocumentType\DocumentTypeHandlerInterface;
+use App\Services\ReferenceGeneratorService;
 
 class MissionService implements DocumentTypeHandlerInterface
 {
+
+private ReferenceGeneratorService $referenceGenerator;
+
+    public function __construct(ReferenceGeneratorService $referenceGenerator ) {
+        $this->referenceGenerator = $referenceGenerator;
+    }
+
+
     public function create(
         Document $document,
         array $payload
     ): void {
 
+
+
+    
+
         $mission = Mission::create([
 
             'document_id' => $document->id,
+
+            'reference' => $this->referenceGenerator->generate('MISSION'),
 
             'destination' => $payload['destination'] ?? null,
 

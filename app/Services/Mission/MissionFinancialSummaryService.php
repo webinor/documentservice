@@ -30,6 +30,8 @@ class MissionFinancialSummaryService
          */
         $mission = $document->mission;
 
+        // return
+
         $expenses = app(MissionExpenseService::class)->calculate($mission);
 
         /**

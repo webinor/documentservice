@@ -13,6 +13,8 @@ class MissionExpenseService
             'mission_expenses.expense_category'
         );
 
+        // return
+
         $expenses = $mission->mission_expenses;
 
         /**

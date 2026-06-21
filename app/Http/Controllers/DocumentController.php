@@ -1788,7 +1788,11 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
                 $document->actor = $userData["id"] ?? null;
             }
 
+            // Log::info($document->mission->toJson());
+
             $document->setRelation($main_relation, $entity);
+
+            // Log::info($document->mission->toJson());
         } else {
             // log silencieux (important en prod)
             Log::warning("User service failed", [
@@ -1850,6 +1854,8 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
         // ######## DYNAMIQUE : enrichir beneficiary ########
         $document = $this->enrichDocument($document, $request->bearerToken());
+
+        // Log::info($document->mission->toJson());
 
 
 
