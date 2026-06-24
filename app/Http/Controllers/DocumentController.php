@@ -20,6 +20,7 @@ use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
+use App\Services\SignerVisibilityPolicyFactory;
 use App\Services\UserServiceClient;
 use App\Support\DocumentContext;
 use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
@@ -243,23 +244,41 @@ class DocumentController extends Controller
      */
     public function download_document(Request $request, Document $document)
     {
-        //         $logoPath = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
 
-        // if (file_exists($logoPath)) {
-        //     $logoUrl = asset('assets/img/LOGO_CAMEROUN_ASSIST.png');
-        // } else {
-        //     $logoUrl = asset('assets/img/default-logo.png'); // fallback
-        // }
-        // return $logoUrl;
-        // Vérifier si l'utilisateur peut accéder au document
-        //$this->authorize('view', $document);
-
-        //return $document;
-        //return new Exception(json_encode($document));
 
         $document->load("document_type");
 
         $document = $this->enrichDocument($document, $request->bearerToken());
+  
+            $response = Http::withToken($request->bearerToken()) -> acceptJson()
+            ->get(
+    config('services.workflow_service.base_url')
+    . "/documents/{$document->id}/participants",
+    [
+        'document_type' =>
+            $document->document_type->slug,
+    ]
+);
+
+        if (!$response->ok()) {
+            
+        throw new Exception("Error While retrieving participants", 1);
+        
+        
+        }
+            $participants = $response->json('participants');
+            $business_signatures = $response->json('business_signatures');
+
+
+            $policy = SignerVisibilityPolicyFactory::make(
+    $document->document_type->slug
+);
+
+  $visibleParticipants = collect($participants)
+    ->filter(fn ($p) => $policy->isVisible($p))
+    ->values()
+    ->toArray();
+
 
         // Chercher le template selon le type de document
         $template = $document->document_type->slug ?? null;
@@ -271,10 +290,36 @@ class DocumentController extends Controller
         $signatureDonneur = asset("assets/img/signaturearol.jpg");
         $signatureBeneficiaire = asset("assets/img/benef.jpg");
         // Générer le PDF depuis le template Blade
+
+        $allSignatures = collect($visibleParticipants)
+    ->map(function ($p) {
+        return [
+            'type_block' => 'VALIDATION',
+            'user' => $p['user'] ?? null,
+            'role' => $p['display_role'] ?? '',
+            'date' => $p['validated_at'] ?? null,
+            'signatureUrl' => $p['user']['signatureUrl'] ?? null,
+        ];
+    })
+    ->merge(
+        collect($business_signatures)->map(function ($s) {
+            return [
+                'type_block' => 'RECEPTION',
+                'user' => $s['user'] ?? null,
+                'role' => $s['signature_type']['name'] ?? '',
+                'date' => $s['signed_at'] ?? null,
+                'signatureUrl' => $s['user']['signatureUrl'] ?? null,
+            ];
+        })
+    )
+    ->values();
         $pdf = Pdf::loadView("templates.$template", [
             "document" => $document,
             "signatureDonneur" => $signatureDonneur,
             "signatureBeneficiaire" => $signatureBeneficiaire,
+            'participants' => $visibleParticipants,
+            'business_signatures'=>$business_signatures,
+            'allSignatures' => $allSignatures
         ]);
 
         //new Exception(json_encode($template));

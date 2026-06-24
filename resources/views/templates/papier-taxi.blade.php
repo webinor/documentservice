@@ -52,7 +52,7 @@
 
         .title h2 {
             margin: 0;
-            font-size: 20px;
+            font-size: 10px;
             text-transform: uppercase;
         }
 
@@ -69,7 +69,7 @@
         .table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .table th, .table td {
@@ -86,7 +86,7 @@
         .total {
             text-align: right;
             font-weight: bold;
-            margin-bottom: 40px;
+            margin-bottom: 10px;
         }
 
         .signatures {
@@ -105,7 +105,7 @@
 
         .footer {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 10px;
             font-size: 10px;
             color: #666;
         }
@@ -175,27 +175,64 @@
 
         <p class="total">Total: {{ number_format($total, 0, ',', ' ') ?? '0' }} FCFA</p>
 
-    <div class="signatures" style="width: 100%; margin-top: 50px; color: #101010;">
-    <div class="signature-left" style="width: 48%; float: left; text-align: center;">
-        @if(!empty($signatureDonneur))
-            <img src="{{ $signatureDonneur }}" 
-                 alt="Signature donneur d'ordre" 
-                 style="max-width:200px; max-height:80px; display:block; margin: 0 auto 5px;">
-        @endif
-        <div style="margin-top: 5px; font-weight: bold;">Signature du donneur d'ordre</div>
-    </div>
+        {{-- <h3 style="margin-top:10px;margin-bottom:10px;color:#007BFF;text-align:center;">
+    Validation & Réception
+</h3> --}}
 
-    <div class="signature-right" style="width: 48%; float: right; text-align: center;">
-        @if(!empty($signatureBeneficiaire))
-            <img src="{{ $signatureBeneficiaire }}" 
-                 alt="Signature bénéficiaire" 
-                 style="max-width:200px; max-height:80px; display:block; margin: 0 auto 5px;">
-        @endif
-        <div style="margin-top: 5px; font-weight: bold;">Signature du bénéficiaire</div>
-    </div>
-</div>
+<table width="100%" style="margin-bottom:5px;">
+    <tr>
 
-<div style="clear: both;"></div>
+        @foreach($allSignatures as $item)
+
+            <td width="{{ floor(100 / count($allSignatures)) }}%"
+                align="center"
+                valign="top"
+                style="padding:8px;">
+
+                {{-- Badge type --}}
+                <div style="font-size:10px;margin-bottom:5px;">
+                    @if($item['type_block'] === 'VALIDATION')
+                        {{-- 🔵 Validation --}}
+                    @else
+                        {{-- 🟢 Réception --}}
+                    @endif
+                </div>
+
+                {{-- Signature --}}
+                <div style="height:55px;">
+                    @if(!empty($item['signatureUrl']))
+                        <img src="{{ $item['signatureUrl'] }}"
+                             style="max-width:120px; max-height:55px;">
+                    @endif
+                </div>
+
+                {{-- Nom --}}
+                <div style="font-weight:bold;margin-top:5px;font-size:11px;">
+                    {{ $item['user']['name'] ?? '-' }}
+                </div>
+
+                {{-- Rôle --}}
+                <div style="font-size:10px;color:#666;">
+                    {{ $item['role'] }}
+                </div>
+
+                {{-- Date --}}
+                <div style="font-size:9px;color:#999;margin-top:3px;">
+                    {{ $item['date']
+                        ? \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i')
+                        : '' }}
+                </div>
+
+            </td>
+
+        @endforeach
+
+    </tr>
+</table>
+
+        
+
+{{-- <div style="clear: both;"></div> --}}
 
         <div class="footer">GED - Papier Taxi généré automatiquement</div>
     </div>

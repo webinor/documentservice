@@ -103,6 +103,7 @@ Route::middleware("jwt.check")
             
         });
 
+        Route::get('/{document}/missions/sheet', [MissionController::class, 'generateSheet']);
         // Route::post('/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
 
         Route::controller(DocumentPaymentController::class)->group(function () {

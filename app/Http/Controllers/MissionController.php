@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMissionRequest;
 use App\Http\Requests\UpdateMissionRequest;
 use App\Models\Misc\Document;
 use App\Models\Mission;
+use App\Services\Mission\MissionSheetGenerator;
 
 class MissionController extends Controller
 {
@@ -17,6 +18,28 @@ class MissionController extends Controller
     public function index()
     {
         //
+    }
+
+    public function generateSheet(
+        Document $document,
+        MissionSheetGenerator $generator
+    ) {
+
+
+    // throw new \Exception(json_encode($document), 1);
+    
+// return 
+ $document->load('mission');
+
+    $mission = $document->mission;
+        $filePath = $generator->generate($mission);
+
+    // throw new \Exception(json_encode($filePath), 1);
+
+
+        return response()->download(
+            $filePath
+        );//->deleteFileAfterSend(true);
     }
 
     /**
