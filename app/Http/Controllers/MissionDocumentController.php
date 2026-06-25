@@ -51,8 +51,7 @@ class MissionDocumentController extends Controller
                 storage_path("app/public/documents_attachments"),
                 $fileName
             );
-        }
-        /**
+        } /**
          * ---------------------------------------------------------
          * Cas 2 : fichier généré automatiquement
          * ---------------------------------------------------------
@@ -114,19 +113,19 @@ class MissionDocumentController extends Controller
 
         $attachment->refresh();
 
-$attachment->download_url = url('/api/documents/attachments/' . $attachment->id . '/download');
+        $attachment->download_url = url(
+            "/api/documents/attachments/" . $attachment->id . "/download"
+        );
 
-$attachmentType = AttachmentType::whereSlug($attachment_slug)->first();
+        $attachmentType = AttachmentType::whereSlug($attachment_slug)->first();
 
-$attachment->title = sprintf(
-    '%s - Mission #%s',
-    $attachmentType->name,
-    $document->mission->id
-);
+        $attachment->title = sprintf(
+            "%s - Mission #%s",
+            $attachmentType->name,
+            $document->mission->id
+        );
 
-
-return $attachment;
-
+        return $attachment;
     }
 
     public function generate(Request $request)
@@ -146,7 +145,7 @@ return $attachment;
 
         // 🔥 génération documents
         $missionSheet = $this->missionDocumentService->generateMissionSheet(
-            $document->mission
+            $document
         );
         $missionOrder = $this->missionDocumentService->generateMissionOrder(
             $document->mission
@@ -189,9 +188,9 @@ return $attachment;
             // ],
 
             "attachments" => [
-                 $sheet_attachment,
+                $sheet_attachment,
                 $order_attachment,
-                 $regulation_attachment,
+                $regulation_attachment,
             ],
         ]);
 
