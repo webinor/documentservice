@@ -247,13 +247,13 @@ class DocumentController extends Controller
     /**
      * Télécharge le document au format PDF
      */
-    public function download_document(Request $request, Document $document)
+    public function download_document(Request $request,  DocumentEnricher $documentEnricher, Document $document)
     {
 
 
         $document->load("document_type");
 
-        $document = $this->enrichDocument($document, $request->bearerToken());
+        $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
   
 //             $response = Http::withToken($request->bearerToken()) -> acceptJson()
 //             ->get(
@@ -1913,7 +1913,6 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
 
         // ######## DYNAMIQUE : enrichir beneficiary ########
-        // $document = $this->enrichDocument($document, $request->bearerToken());
         $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
         
 
