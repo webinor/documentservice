@@ -39,8 +39,8 @@ protected UserServiceClient $user_service_client;
 
         $beneficiarySlugs = [
             "papier-taxi" => "beneficiary",
-            "note-de-frais" => "",
-            "demande-d-absence" => "",
+            "note-de-frais" => "beneficiary",
+            "demande-d-absence" => "beneficiary",
         ];
 
         $actorSlugs = [
@@ -158,6 +158,9 @@ protected UserServiceClient $user_service_client;
                 "actor_details";
 
             $entity->{$entityKey} = $userData;
+
+        throw new \Exception(json_encode("yeahhhhhhhhhhhhhhh"), 1);
+
 
             if ($secondary_relation && $third_relation) {
                 $entity->load("{$secondary_relation}.{$third_relation}");
