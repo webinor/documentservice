@@ -117,7 +117,7 @@ class MissionTemplateDataBuilder
 
         return [
 
-            'label' => $expense->expense_category->name,
+            'label' => $expense->expense_category->name ?? "--",
 
             'quantity' => $expense->final_quantity,
 
