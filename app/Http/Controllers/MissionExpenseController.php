@@ -170,32 +170,6 @@ class MissionExpenseController extends Controller
         );
     }
 
-    public function getMissionExpenses_old(Document $document)
-    {
-        $document->load("mission.mission_expenses.expense_category");
-
-        // $document = Document::with('mission')->findOrFail($docId);
-
-        $mission = $document->mission;
-
-        if (!$mission) {
-            return response()->json(
-                [
-                    "success" => false,
-                    "message" => "Mission introuvable pour ce document",
-                ],
-                404
-            );
-        }
-
-        $expenses = $mission->mission_expenses;
-
-        return response()->json([
-            "success" => true,
-            "mission_id" => $mission->id,
-            "expenses" => $expenses,
-        ]);
-    }
 
     public function getMissionExpenses(
         Document $document,

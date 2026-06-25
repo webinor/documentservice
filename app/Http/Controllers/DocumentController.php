@@ -16,12 +16,14 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\Document;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
+use App\Services\Document\DocumentEnricher;
 use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
 use App\Services\SignerVisibilityPolicyFactory;
 use App\Services\UserServiceClient;
+use App\Services\Workflow\WorkflowParticipantService;
 use App\Support\DocumentContext;
 use Barryvdh\DomPDF\Facade\Pdf; // package barryvdh/laravel-dompdf
 use Carbon\Carbon;
@@ -46,6 +48,7 @@ class DocumentController extends Controller
     protected LegacyDocumentEnricher $legacyDocumentEnricher;
     protected DocumentEnrichmentManager $documentEnrichmentManager;
     protected UserServiceClient $user_service_client;
+    private WorkflowParticipantService $workflowParticipantService;
 
     private $documents_relation = [
         "facture-fournisseur-medical" => "invoice_provider.ledger_code",
@@ -66,13 +69,15 @@ class DocumentController extends Controller
         NotifyBeneficiaryService $notifyBeneficiaryService,
         LegacyDocumentEnricher $legacyDocumentEnricher,
         DocumentEnrichmentManager $documentEnrichmentManager,
-        UserServiceClient $user_service_client
+        UserServiceClient $user_service_client,
+        WorkflowParticipantService $workflowParticipantService
     ) {
         $this->childHandler = $childHandler;
         $this->notifyBeneficiaryService = $notifyBeneficiaryService;
         $this->legacyDocumentEnricher = $legacyDocumentEnricher;
         $this->documentEnrichmentManager = $documentEnrichmentManager;
         $this->user_service_client = $user_service_client;
+        $this->workflowParticipantService = $workflowParticipantService;
     }
     /**
      * Display a listing of the resource.
@@ -250,24 +255,32 @@ class DocumentController extends Controller
 
         $document = $this->enrichDocument($document, $request->bearerToken());
   
-            $response = Http::withToken($request->bearerToken()) -> acceptJson()
-            ->get(
-    config('services.workflow_service.base_url')
-    . "/documents/{$document->id}/participants",
-    [
-        'document_type' =>
-            $document->document_type->slug,
-    ]
+//             $response = Http::withToken($request->bearerToken()) -> acceptJson()
+//             ->get(
+//     config('services.workflow_service.base_url')
+//     . "/documents/{$document->id}/participants",
+//     [
+//         'document_type' =>
+//             $document->document_type->slug,
+//     ]
+// );
+
+//         if (!$response->ok()) {
+            
+//         throw new Exception("Error While retrieving participants", 1);
+        
+        
+//         }
+//             $participants = $response->json('participants');
+//             $business_signatures = $response->json('business_signatures');
+
+$data = $this->workflowParticipantService->getParticipants(
+    $document,
+    $request->bearerToken()
 );
 
-        if (!$response->ok()) {
-            
-        throw new Exception("Error While retrieving participants", 1);
-        
-        
-        }
-            $participants = $response->json('participants');
-            $business_signatures = $response->json('business_signatures');
+$participants = $data['participants'];
+$business_signatures = $data['business_signatures'];
 
 
             $policy = SignerVisibilityPolicyFactory::make(
@@ -296,7 +309,7 @@ class DocumentController extends Controller
         return [
             'type_block' => 'VALIDATION',
             'user' => $p['user'] ?? null,
-            'role' => $p['display_role'] ?? '',
+            'role' => $p['user']['role'] ?? '',
             'date' => $p['validated_at'] ?? null,
             'signatureUrl' => $p['user']['signatureUrl'] ?? null,
         ];
@@ -306,7 +319,8 @@ class DocumentController extends Controller
             return [
                 'type_block' => 'RECEPTION',
                 'user' => $s['user'] ?? null,
-                'role' => $s['signature_type']['name'] ?? '',
+                'role' => $s['user']['role'] ?? null,
+                'signature_type' => $s['signature_type']['name'] ?? '',
                 'date' => $s['signed_at'] ?? null,
                 'signatureUrl' => $s['user']['signatureUrl'] ?? null,
             ];
@@ -1690,7 +1704,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         return response()->json($formattedDocuments);
     }
 
-    public function enrichDocument($document, $token)
+    public function OldenrichDocument($document, $token)
     {
         $slug = $document->document_type->slug ?? null;
 
@@ -1859,6 +1873,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
     public function show(
         Request $request,
         DocumentViewService $documentViewService,
+        DocumentEnricher $documentEnricher,
         Document $document
     ) {
         // return $document;
@@ -1898,7 +1913,9 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
 
         // ######## DYNAMIQUE : enrichir beneficiary ########
-        $document = $this->enrichDocument($document, $request->bearerToken());
+        // $document = $this->enrichDocument($document, $request->bearerToken());
+        $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
+        
 
         // Log::info($document->mission->toJson());
 

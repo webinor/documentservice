@@ -216,6 +216,13 @@
                     {{ $item['role'] }}
                 </div>
 
+                @if (!empty($item['signature_type']))
+                     {{-- Signature type --}}
+                <div style="font-size:10px;color:#666;">
+                    {{ $item['signature_type'] }}
+                </div>
+                @endif
+
                 {{-- Date --}}
                 <div style="font-size:9px;color:#999;margin-top:3px;">
                     {{ $item['date']

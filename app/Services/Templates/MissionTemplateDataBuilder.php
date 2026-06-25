@@ -1,0 +1,163 @@
+<?php
+
+namespace App\Services\Templates;
+
+use App\Services\Mission\MissionExpenseService;
+
+class MissionTemplateDataBuilder
+{
+    public function build($document , array $head_of_department_data)
+    {
+
+    $mission =$document->mission;
+    $transactions =$document['transactions'];
+
+    $advanceTransaction = collect($transactions)
+    ->first(function ($transaction) {
+        return $transaction['transaction_type_code'] === 'MISSION_EXPENSE_ADVANCE'
+            && $transaction['status'] === 'ready';
+    });
+
+    // $functions = collect($document['mission']['roles'] ?? [])
+    // ->pluck('name')
+    // ->implode(', ');
+
+    $function = $document['mission']['actor_details']['department_data']['position']['position']['name'] ?? null;
+
+    $manager = $document['mission']['actor_details']['manager']['name'] ?? '';
+
+    $managerFunction =$document['mission']['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
+
+
+    $expenseService = app(MissionExpenseService::class);
+
+    
+    $missionExpenses = collect($expenseService->calculate($mission)['expenses']);
+    
+
+        $data = [
+
+
+            'mission.code' => "FICHE DE MISSION #{$mission->code}",
+            'mission.title' => $mission->document->title,
+
+            'mission.destination' => $mission->destination,
+
+            'mission.departure_date' => $mission->departure_date_base_planned
+                ? date('d/m/Y', strtotime($mission->departure_date_base_planned))
+                : '',
+
+            'mission.arrival_date' => $mission->arrival_date_base_planned
+                ? date('d/m/Y', strtotime($mission->arrival_date_base_planned))
+                : '',
+
+
+                 'mission.departure_base_date' => $this->formatDateTime(
+        $mission->departure_date_base_planned,
+        $mission->departure_time_base_planned
+    ),
+
+    'mission.arrival_site_date' => $this->formatDateTime(
+        $mission->arrival_date_site_planned,
+        $mission->arrival_time_site_planned
+    ),
+
+    'mission.departure_site_date' => $this->formatDateTime(
+        $mission->departure_date_site_planned,
+        $mission->departure_time_site_planned
+    ),
+
+    'mission.arrival_base_date' => $this->formatDateTime(
+        $mission->arrival_date_base_planned,
+        $mission->arrival_time_base_planned
+    ),
+
+                
+
+            'agent.name' => $document['mission']['actor_details']['name'] ?? '',
+
+            'mission.contractor.name' => $head_of_department_data["name"],
+            'mission.contractor.position' => $head_of_department_data["department_data"]['position']['position']['name'],
+
+            'agent.position' => $function ?? '',
+
+            'advance.amount' => $advanceTransaction['amount'] ?? 0,
+        ];
+
+
+
+
+        $data['expenses.previsionnelles'] = $missionExpenses
+    ->where('type', 'PREVISIONNELLE')
+    ->map(function ($expense) {
+
+    
+        return [
+
+            'label' => $expense->expense_category->name,
+
+            'quantity' => $expense->planned_quantity,
+
+            'amount' => $expense->amount,
+
+            'total' => $expense->planned_total,
+
+        ];
+    })
+    ->values()
+    ->toArray();
+
+    // throw new \Exception(json_encode($missionExpenses), 1);
+
+
+
+    $data['expenses.declarees'] = $missionExpenses
+    ->where('type', 'DECLAREE')
+    ->map(function ($expense) {
+
+        return [
+
+            'label' => $expense->expense_category->name,
+
+            'quantity' => $expense->final_quantity,
+
+            'amount' => $expense->amount,
+
+            'total' => $expense->final_total,
+
+        ];
+    })
+    ->values()
+    ->toArray();
+
+
+
+return $data;;
+
+
+
+
+
+
+    }
+
+    private function formatDateTime(
+    ?string $date,
+    ?string $time
+): string {
+    if (empty($date)) {
+        return '';
+    }
+
+    $formattedDate = date(
+        'd/m/Y',
+        strtotime($date)
+    );
+
+    if (empty($time)) {
+        return $formattedDate;
+    }
+
+    return $formattedDate . ' ' . substr($time, 0, 5);
+}
+}

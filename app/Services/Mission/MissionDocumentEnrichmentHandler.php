@@ -50,7 +50,5 @@ class MissionDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInter
                                     $response->json();
                             }
                         
-        // logique métier spécifique TaxiPaper
-        // return $relation->actor ?? null;
     }
 }

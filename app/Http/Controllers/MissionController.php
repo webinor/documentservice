@@ -29,10 +29,8 @@ class MissionController extends Controller
     // throw new \Exception(json_encode($document), 1);
     
 // return 
- $document->load('mission');
 
-    $mission = $document->mission;
-        $filePath = $generator->generate($mission);
+        $filePath = $generator->generate($document);
 
     // throw new \Exception(json_encode($filePath), 1);
 
