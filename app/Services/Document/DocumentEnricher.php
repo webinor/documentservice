@@ -159,7 +159,7 @@ protected UserServiceClient $user_service_client;
 
             $entity->{$entityKey} = $userData;
 
-        throw new \Exception(json_encode("yeahhhhhhhhhhhhhhh"), 1);
+        throw new \Exception(json_encode($userData), 1);
 
 
             if ($secondary_relation && $third_relation) {
