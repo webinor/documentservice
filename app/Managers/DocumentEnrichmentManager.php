@@ -14,7 +14,7 @@ class DocumentEnrichmentManager
 
         if (!$handlerClass) {
     throw new \Exception(
-        "Aucun handler configuré pour le type de document '{$type->name}'"
+        "Aucun handler d'enrichissement configuré pour le type de document '{$type->name}'"
     );
 }
 

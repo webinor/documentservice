@@ -18,7 +18,7 @@ class DocumentCreationManager
 
 if (!$handlerClass) {
     throw new \Exception(
-        "Aucun handler configuré pour le type de document '{$type->name}'"
+        "Aucun handler de creation configuré pour le type de document '{$type->name}'"
     );
 }
 

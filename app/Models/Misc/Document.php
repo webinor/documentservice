@@ -77,7 +77,6 @@ class Document extends Model
 
         $status = (new DocumentStatusResolver())->resolve($types);
 
-        // dd($status);
 
         $ui = (new DocumentStatusUIMapper())->map($status);
 

@@ -50,7 +50,7 @@ class StoreDocumentRequest extends FormRequest
         ];
 
         $feeNoteFields = [
-            "motif" => "required|string",
+            // "motif" => "required|string",
             "montant" => "required|numeric",
             "beneficiaire" => "required|numeric",
         ];

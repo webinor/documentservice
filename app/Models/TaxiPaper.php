@@ -62,8 +62,7 @@ class TaxiPaper extends Model implements PayableDocumentInterface
 
     public function getSettlementAmount(string $transaction_type_code = ""): float
     {
-        // return collect($this->rides)
-        //     ->sum('montant');
+      
 
             return     $total = collect($this->rides)->reduce(function ($carry, $item) {
             return $carry + (int) ($item['montant'] ?? 0);
