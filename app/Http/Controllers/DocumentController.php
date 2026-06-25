@@ -1713,7 +1713,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
         $beneficiarySlugs = [
             "papier-taxi" => "beneficiary",
-            "note-de-frais" => "",
+            "note-de-frais" => "beneficiary",
             "demande-d-absence" => "",
         ];
 
