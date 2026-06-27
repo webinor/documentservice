@@ -17,6 +17,7 @@ return new class extends Migration
 
 
             $table->unsignedBigInteger('actor_id')
+                ->nullable()
                 ->comment("Personne concernee par le document ( employee_id, supplier_id )")
                 ->after('actor_type');
 
