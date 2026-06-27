@@ -123,9 +123,9 @@ class Mission extends Model implements PayableDocumentInterface
         return Carbon::parse($value)->format("d-m-Y");
     }
 
-    public function getSettlementActor(): int
+    public function getSettlementActor(): array
     {
-        return $this->actor_id;
+        return ['actor_type' => $this->document->actor_type , 'actor_id' => $this->document->actor_id];
     }
 
     public function getSettlementAmount(string $transaction_type_code): float

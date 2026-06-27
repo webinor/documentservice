@@ -48,9 +48,9 @@ class FeeNote extends Model implements PayableDocumentInterface
         return $this->hasMany(TaxiRegulation::class);
     }
 
-    public function getSettlementActor(): int
+      public function getSettlementActor(): array
     {
-        return $this->beneficiary;
+        return ['actor_type' => $this->document->actor_type , 'actor_id' => $this->document->actor_id];
     }
 
     public function getSettlementAmount(string $transaction_type_code = ""): float

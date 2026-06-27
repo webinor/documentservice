@@ -31,7 +31,7 @@ class NotifyBeneficiaryService
             throw new Exception("Document not payable.");
         }
 
-        $recipient = $child->getSettlementActor();
+        $actor = $child->getSettlementActor();
 
         $amount = $child->getSettlementAmount($transactionTypeCode);
 
@@ -42,8 +42,10 @@ class NotifyBeneficiaryService
 
         $details = $child->getSettlementDetails();
 
+        // throw new Exception(json_encode($actor), 1);
+
         $eventResponse = $this->userService->dispatchPaymentEvent(
-            $recipient,
+            $actor,
             $amount,
             $reason,
             $direction,
@@ -53,7 +55,6 @@ class NotifyBeneficiaryService
         );
 
         if (!$eventResponse->successful()) {
-            // throw new Exception("Event $transactionTypeCode dispatch failed.");
 
             $errorMessage =
                 $eventResponse->json("message") ??
@@ -72,7 +73,7 @@ class NotifyBeneficiaryService
 );
 
         return [
-            "user" => $eventResponse->json()["user"],
+            "actor" => $eventResponse->json()["actor"],
             "transaction_code" => $transactionCode,
             "amount" => $amount,
         ];

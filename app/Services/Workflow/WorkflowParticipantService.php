@@ -9,13 +9,16 @@ class WorkflowParticipantService
 {
     public function getParticipants($document, string $token): array
     {
+
+            // throw new Exception(json_encode($document['document_type']));
+
         $response = Http::withToken($token)
             ->acceptJson()
             ->get(
                 config('services.workflow_service.base_url') .
-                "/documents/{$document->id}/participants",
+                "/documents/{$document['id']}/participants",
                 [
-                    'document_type' => $document->document_type->slug,
+                    'document_type' => $document['document_type']['slug'],
                 ]
             );
 

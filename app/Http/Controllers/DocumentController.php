@@ -298,7 +298,6 @@ $result = $documents->map(function ($doc) {
 
         $document = $documentEnrichmentManager->enrich($doc);
 
-        // throw new Exception(json_encode($document->document_type->slug), 1);
 
 
 
@@ -323,7 +322,7 @@ $result = $documents->map(function ($doc) {
 //             $business_signatures = $response->json('business_signatures');
 
 $data = $this->workflowParticipantService->getParticipants(
-    (object)$document,
+    $document,
     $request->bearerToken()
 );
 
@@ -334,7 +333,7 @@ $business_signatures = $data['business_signatures'];
 
 
             $policy = SignerVisibilityPolicyFactory::make(
-    ((object)$document)->document_type->slug
+    $document['document_type']['slug']
 );
 
 

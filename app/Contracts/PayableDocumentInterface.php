@@ -4,7 +4,7 @@ namespace App\Contracts;
 
 interface PayableDocumentInterface
 {
-    public function getSettlementActor(): int;
+    public function getSettlementActor(): array;
 
     public function getSettlementAmount(string $transaction_type_code): float;
 

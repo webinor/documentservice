@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
+use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentTypeController;
@@ -156,6 +157,11 @@ Route::get(
         Route::put("/{document}/mission-expenses/{missionExpense}", [
             MissionExpenseController::class,
             "update",
+        ]);
+
+        Route::get("/countByDepartment/{departmentId}", [
+            DepartmentDocumentTypeController::class,
+            "countByDepartment",
         ]);
 
         Route::prefix("missions")->group(function () {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDepartmentDocumentTypeRequest;
 use App\Http\Requests\UpdateDepartmentDocumentTypeRequest;
 use App\Models\DepartmentDocumentType;
+use App\Models\Misc\Document;
 
 class DepartmentDocumentTypeController extends Controller
 {
@@ -13,10 +14,16 @@ class DepartmentDocumentTypeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        //
-    }
+    public function countByDepartment(int $departmentId)
+{
+        $documentTypeIds = DepartmentDocumentType::query()
+        ->where('department_id', $departmentId)
+        ->pluck('document_type_id');
+
+    return Document::query()
+        ->whereIn('document_type_id', $documentTypeIds)
+        ->count();
+}
 
     /**
      * Show the form for creating a new resource.

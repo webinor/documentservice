@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Contracts\PayableDocumentInterface;
+use App\Models\Misc\Document;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TaxiPaper extends Model implements PayableDocumentInterface
 {
@@ -23,6 +25,15 @@ class TaxiPaper extends Model implements PayableDocumentInterface
     ];
 
 
+    /**
+     * Get the document that owns the TaxiPaper
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function document(): BelongsTo
+    {
+        return $this->belongsTo(Document::class,);
+    }
     public function createSettlementRecord(
         string $transactionTypeCode,
         string $transactionCode
@@ -55,9 +66,9 @@ class TaxiPaper extends Model implements PayableDocumentInterface
         return $this->hasMany(TaxiRegulation::class);
     }
 
-    public function getSettlementActor(): int
+    public function getSettlementActor(): array
     {
-        return $this->beneficiary;
+        return ['actor_type' => $this->document->actor_type , 'actor_id' => $this->document->actor_id];
     }
 
     public function getSettlementAmount(string $transaction_type_code = ""): float
