@@ -17,7 +17,7 @@ class FeeNoteService implements DocumentTypeHandlerInterface
       $data = [
             "reason" => $validated["titre"] ?? null,
             "amount" => $validated["montant"] ?? null,
-            "beneficiary" => $validated["beneficiaire"] ?? null,
+            // "beneficiary" => $validated["beneficiaire"] ?? null,
         ];
 
          $document->fee_note()->create($data);

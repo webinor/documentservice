@@ -32,6 +32,8 @@ class Document extends Model
         "department_id",
         "workflow_id",
         "created_by",
+        "actor_type",
+        "actor_id",
         "reference",
         "folder_id", // 🆕 on ajoute folder_id
         "status",
@@ -52,6 +54,10 @@ class Document extends Model
             $this->load("document_type");
         }
 
+        if (!$this->document_type) {
+            throw new \Exception(json_encode($this), 1);
+            
+        }
         $relationName = $this->document_type->relation_name;
 
         if (!$relationName) {

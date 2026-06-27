@@ -149,9 +149,9 @@
         </div>
 
         <div class="info">
-            <p>BENEFICIAIRE: <span>{{ $document['taxi_paper']['actor_details']['name'] ?? '..................' }}</span></p>
-            <p>DATE ET HEURE : <span>{{ $document->created_at ?? '..................' }}</span></p>
-            <p>MOTIF : <span>{{ $document->taxi_paper->reason ?? '..................' }}</span></p>
+            <p>BENEFICIAIRE: <span>{{ $document['actor_details']['nom'] ?? '..................' }}</span></p>
+            <p>DATE ET HEURE : <span>{{ $document['created_at'] ?? '..................' }}</span></p>
+            <p>MOTIF : <span>{{ $document['taxi_paper']['reason'] ?? '..................' }}</span></p>
         </div>
 
         @php $total = 0; @endphp
@@ -163,7 +163,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($document->taxi_paper->rides ?? [] as $trajet)
+                @foreach($document['taxi_paper']['rides'] ?? [] as $trajet)
                     @php $total += (float) ($trajet['montant'] ?? 0); @endphp
                     <tr>
                         <td>{{ Str::upper($trajet['trajet']) ?? '..................' }}</td>

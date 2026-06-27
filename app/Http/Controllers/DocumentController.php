@@ -92,6 +92,46 @@ class DocumentController extends Controller
         ]);
     }
 
+
+    public function typesByIds(Request $request)
+{
+    $ids = $request->input('ids', []);
+
+    $documents = Document::whereIn('id', $ids)
+        ->with('document_type')
+        // ->select('id', 'document_type_id')
+        ->get();
+
+//     $result = $documents->mapWithKeys(function ($doc) {
+//     return [
+//         $doc->id => [
+//             "id" => $doc->document_type_id,
+//             "type" => $doc->document_type->slug ?? null,
+//         ]
+//     ];
+// });
+
+$result = $documents->map(function ($doc) {
+    return [
+        "id" => $doc->id,
+        "created_by" => $doc->created_by,
+        "actor_type" => $doc->actor_type,
+        "actor_id" => $doc->actor_id,
+        "document_type" => $doc->document_type,
+        "document_type_id" => $doc->document_type_id,
+        // "type" => $doc->document_type->slug ?? null,
+    ];
+})->values();
+
+    // $result = $documents->mapWithKeys(function ($doc) {
+    //     return ["id" => $doc->document_type_id , "type" => $doc->document_type->slug ];
+    // });
+
+    return response()->json([
+        'data' => $result
+    ]);
+}
+
     public function notifyBeneficiary(Request $request)
     {
         $request->validate([
@@ -247,13 +287,21 @@ class DocumentController extends Controller
     /**
      * Télécharge le document au format PDF
      */
-    public function download_document(Request $request,  DocumentEnricher $documentEnricher, Document $document)
+    public function download_document(Request $request, DocumentEnrichmentManager $documentEnrichmentManager, DocumentEnricher $documentEnricher, Document $doc)
     {
 
+        // throw new Exception(json_encode($doc), 1);
+        
+        $doc->load("document_type");
 
-        $document->load("document_type");
+        // $document = $documentEnricher->enrichDocument($doc, $request->bearerToken());
 
-        $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
+        $document = $documentEnrichmentManager->enrich($doc);
+
+        // throw new Exception(json_encode($document->document_type->slug), 1);
+
+
+
   
 //             $response = Http::withToken($request->bearerToken()) -> acceptJson()
 //             ->get(
@@ -275,17 +323,21 @@ class DocumentController extends Controller
 //             $business_signatures = $response->json('business_signatures');
 
 $data = $this->workflowParticipantService->getParticipants(
-    $document,
+    (object)$document,
     $request->bearerToken()
 );
+
+
 
 $participants = $data['participants'];
 $business_signatures = $data['business_signatures'];
 
 
             $policy = SignerVisibilityPolicyFactory::make(
-    $document->document_type->slug
+    ((object)$document)->document_type->slug
 );
+
+
 
   $visibleParticipants = collect($participants)
     ->filter(fn ($p) => $policy->isVisible($p))
@@ -293,16 +345,23 @@ $business_signatures = $data['business_signatures'];
     ->toArray();
 
 
+
+
         // Chercher le template selon le type de document
-        $template = $document->document_type->slug ?? null;
+        $template = $document['document_type']['slug'] ?? null;
 
         if (!$template || !view()->exists("templates.$template")) {
             abort(404, "Template $template introuvable");
         }
 
+        // throw new Exception(json_encode($template), 1);
+
+
         $signatureDonneur = asset("assets/img/signaturearol.jpg");
         $signatureBeneficiaire = asset("assets/img/benef.jpg");
         // Générer le PDF depuis le template Blade
+
+        //    throw new Exception(json_encode("oui ui"), 1);
 
         $allSignatures = collect($visibleParticipants)
     ->map(function ($p) {
@@ -336,10 +395,13 @@ $business_signatures = $data['business_signatures'];
             'allSignatures' => $allSignatures
         ]);
 
+        // throw new Exception(json_encode($allSignatures), 1);
+        
+
         //new Exception(json_encode($template));
 
         // Nom du fichier pour le téléchargement
-        $fileName = $template . "-" . $document->id . ".pdf";
+        $fileName = $template . "-" . $document['id'] . ".pdf";
 
         // Retourner le PDF en téléchargement
         return $pdf->download($fileName);
@@ -1033,6 +1095,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "created_at" => now(),
                     "updated_at" => now(),
                     "reference" => $reference,
+                    "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
+                    "actor_id" => $validated["actor"] ?? $validated["beneficiaire"]
                     // autres champs génériques...
                 ]);
 
@@ -1517,8 +1581,6 @@ if (is_array($documentTypes)) {
 
         // throw new Exception(json_encode($documents), 1);
 
-        // $legacyDocumentEnricher = $this->legacyDocumentEnricher;
-        // $documentEnrichmentManager = $this->documentEnrichmentManager;
 
         $documentsEnrich = $documents->map(function ($doc) use (
             $documentTypes,
@@ -1557,131 +1619,15 @@ if (is_array($documentTypes)) {
     return $this->legacyDocumentEnricher->enrich($doc, $base, $documentTypes);
 }
 
+
+        // throw new Exception(json_encode($doc), 1);
+
         // throw new Exception(json_encode($this->documentEnrichmentManager->enrich($doc, $base)), 1);
 
 
 return   $this->documentEnrichmentManager->enrich($doc, $base);
 
-            // Détecter quel type de document est réellement présent
-            $activeRelation = null;
-            foreach ($documentTypes as $relation) {
-                if ($doc->relationLoaded($relation) && $doc->$relation) {
-                    $activeRelation = $relation;
-                    break;
-                }
-            }
 
-          
-
-         
-
-            // throw new Exception($handlerClass, 1);
-        
-
-            if ($handlerClass) {
-    
-            return  $documentEnrichmentManager->enrich($doc, $base);
-
-            }
-
-            // Si aucun type trouvé → retourner juste la base
-            if (!$activeRelation || !isset($DOC_CONFIG[$activeRelation])) {
-                return $base;
-            }
-
-            $fields = $DOC_CONFIG[$activeRelation]["fields"];
-            $relationObj = $doc->$activeRelation;
-
-            // Injecter dynamiquement les champs configurés
-            foreach ($fields as $responseKey => $modelField) {
-                //prestataire
-                $value = $relationObj->$modelField ?? null;
-
-                if (array_key_exists($modelField, $base)) {
-                    // throw new Exception(json_encode($modelField), 1);
-                    continue;
-                }
-
-                $userKeys = [
-                    "demandeur",
-                    "validateur",
-                    "beneficiaire",
-                    "actor_type",
-                ];
-                $providerKeys = ["prestataire"]; // Liste des clés à enrichir
-
-                    // throw new Exception("-- $id --", 1);
-
-
-                if (in_array($responseKey, $userKeys) && $value) {
-                    // 👉 récupération standardisée
-                    $type = $value; // $filters['actor_type'] ?? null;
-                    $id = $relationObj->actor_id ?? null;
-                    // throw new Exception("-- $id --", 1);
-
-                    if ($id && $type) {
-                        // $missions_with_expenses = $relationObj->load('missions_expenses');
-                        $relationObj->load("mission_expenses");
-
-                        $mission = $relationObj->toArray();
-
-                        $base["mission"] = $mission;
-
-                        // $doc->load("mission.missions_expenses");
-
-                        $baseUrl = null;
-
-                        if ($type === "INTERNAL") {
-                            $baseUrl = config("services.user_service.base_url");
-                        } elseif ($type === "EXTERNAL") {
-                            $baseUrl = config(
-                                "services.external_actor_service.base_url"
-                            );
-                        }
-
-                        if ($baseUrl) {
-                            $response = Http::acceptJson()->get(
-                                $baseUrl . "/{$id}"
-                            );
-
-                            if ($response->successful()) {
-                                $value =
-                                    $response->json()["user"] ??
-                                    $response->json();
-                            }
-                        }
-                    }
-                }
-
-                if (in_array($responseKey, $providerKeys) && $value) {
-                    // Appel au microservice User pour récupérer les infos
-                    $response = Http::acceptJson() //withToken(config('services.user_service.token'))
-                        ->get(
-                            config("services.supplier_service.base_url") .
-                                "/{$value}"
-                        );
-
-                    //new Exception(json_encode($response));
-
-                    if ($response->successful()) {
-                        $value = $response->json()["data"]; // ou filtrer certaines infos, ex: ['id','name','email']
-                    } else {
-                        // new Exception(json_encode($response));
-                    }
-                }
-
-                //new Exception(json_encode($value));
-
-                $base[
-                    $responseKey == "actor_type" ? "actor" : $responseKey
-                ] = $value;
-
-                // $base[$responseKey] = $responseKey === 'amount'
-                // ? number_format($value, 0, ',', '.')
-                // : $value;
-            }
-
-            return $base;
         });
         // throw new Exception(json_encode($documentsEnrich), 1);
 
@@ -1874,6 +1820,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         Request $request,
         DocumentViewService $documentViewService,
         DocumentEnricher $documentEnricher,
+        DocumentEnrichmentManager $documentEnrichmentManager,
         Document $document
     ) {
         // return $document;
@@ -1905,15 +1852,22 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         // throw new Exception(json_encode($this->documents_relation[$document->document_type->slug]), 1);
 
         $document->load(
-            $this->documents_relation[$document->document_type->slug],
+            "document_type",
+            // $this->documents_relation[$document->document_type->slug],
             "attachments.file",
             "secondary_attachments"
         );
 
 
+        $document = $documentEnrichmentManager->enrich($document);
+
+
+        // throw new Exception(json_encode($document["transactions"]), 1);
+
+
 
         // ######## DYNAMIQUE : enrichir beneficiary ########
-        $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
+        // $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
         
 
         // Log::info($document->mission->toJson());

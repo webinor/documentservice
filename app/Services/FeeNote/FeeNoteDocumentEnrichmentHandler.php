@@ -4,6 +4,7 @@ namespace App\Services\FeeNote;
 
 use App\Models\Misc\Document;
 use App\Services\DocumentType\DocumentEnrichmentHandlerInterface;
+use App\Services\UserServiceClient;
 use Exception;
 use Illuminate\Support\Facades\Http;
 
@@ -11,41 +12,21 @@ class FeeNoteDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInter
 {
     public function enrich(Document $document, array $base): array
     {
-        $document->load('fee_note');
+        // $document->load('fee_note'); //relation deja chargee par le manager
 
-        $relation = $document->fee_note;
-
-        if (!$relation) {
-            return $base;
-        }
-
-        // $base['mission'] = $relation->load('mission_expenses')->toArray();
-
-        // exemple enrichissement spécifique
-        $base['beneficiary'] = $this->resolveActor($relation);
-
-            // throw new Exception(json_encode($base['beneficiary']), 1);
-
-
-        return $base;
-    }
-
-    private function resolveActor($relation)
-    {
-
-    $baseUrl = config("services.user_service.base_url");
        
-                            $response = Http::acceptJson()->get(
-                                $baseUrl . "/{$relation->beneficiary}"
-                            );
+        $userClient = new UserServiceClient();
 
-                            if ($response->successful()) {
-                             return   $value =
-                                    $response->json()["user"] ??
-                                    $response->json();
-                            }
-                        
-        // logique métier spécifique FeeNote
-        // return $relation->actor ?? null;
+        $actor_details = $userClient->resolveActor(
+        $document->actor_type,
+        $document->actor_id
+    );
+
+    $document->actor_details = $actor_details;
+
+     
+        return $document->toArray();
     }
+
+   
 }

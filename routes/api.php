@@ -38,6 +38,8 @@ Route::middleware("jwt.check")
         /**
          * 📌 DocumentTypeController
          */
+
+        Route::post('/types-by-ids', [DocumentController::class, 'typesByIds']);
         Route::controller(DocumentTypeController::class)->group(function () {
             Route::get(
                 "/document_types/allowed",
@@ -251,7 +253,7 @@ Route::get("/documents/{id}/download", [
     "download",
 ])->name("documents.download");
 
-Route::get("/documents/{document}/download-document", [
+Route::get("/documents/{doc}/download-document", [
     DocumentController::class,
     "download_document",
 ])->name("documents.download_document");

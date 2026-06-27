@@ -30,6 +30,12 @@ protected UserServiceClient $user_service_client;
     ) {
         $this->user_service_client = $user_service_client;
     }
+
+
+
+
+
+    
                 public function enrichDocument($document, $token)
     {
         $slug = $document->document_type->slug ?? null;
