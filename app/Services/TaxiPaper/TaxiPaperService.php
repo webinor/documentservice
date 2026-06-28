@@ -19,7 +19,7 @@ class TaxiPaperService implements DocumentTypeHandlerInterface
       $data = [
             "reason" => $validated["titre"] ?? null,
             "rides" => $validated["trajets"] ?? null,
-            "beneficiary" => $validated["beneficiaire"] ?? null,
+            // "beneficiary" => $validated["beneficiaire"] ?? null,
         ];
 
          $document->taxi_paper()->create($data);
