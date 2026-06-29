@@ -154,15 +154,15 @@ $result = $documents->map(function ($doc) {
                     $result
                 )
             );
-        } catch (\Exception $e) {
-            return response()->json(
-                [
-                    "success" => false,
-                    "message" => $e->getMessage(),
-                ],
-                400
-            );
-        }
+       } catch (\Exception $e) {
+    return response()->json([
+        "success" => false,
+        "message" => $e->getMessage(),
+        "file" => $e->getFile(),
+        "line" => $e->getLine(),
+        "trace" => $e->getTraceAsString(),
+    ], 400);
+}
     }
 
     /**

@@ -25,8 +25,8 @@ return new class extends Migration
              * supplement = entreprise complète
              */
             $table->enum('type', [
-                'refund',
-                'supplement'
+                'REFUND',
+                'SUPPLEMENT'
             ]);
 
             $table->dateTime('paid_at')->nullable();
@@ -40,20 +40,18 @@ return new class extends Migration
             /**
              * solde avant régularisation (snapshot important)
              */
-            $table->decimal('balance_before', 15, 2)->nullable();
 
             /**
              * solde après régularisation (doit tendre vers 0)
              */
-            $table->decimal('balance_after', 15, 2)->default(0);
 
             /**
              * statut du paiement
              */
             $table->enum('status', [
-                'pending',
-                'paid',
-                'cancelled'
+                'PENDING',
+                'PAID',
+                'CANCELLED'
             ])->default('pending');
 
             /**

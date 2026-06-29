@@ -57,16 +57,23 @@ class SettlementController extends Controller
             $type = $request->transaction_type_code;
 
             if ($type === 'MISSION_EXPENSE_ADVANCE') {
-                return $this->advanceService->markAsPaid($request->all());
+                // return $this->advanceService->markAsPaid($request->all());
             }
 
             if ($type === 'MISSION_SETTLEMENT') {
-                return $this->regulationService->markAsPaid($request->all());
+                // return $this->regulationService->markAsPaid($request->all());
             }
 
             if ($type === 'TAXI_PAPER_SETTLEMENT') {
-                return $this->taxiPaperService->markAsPaid($request->all());
+                // return $this->taxiPaperService->markAsPaid($request->all());
             }
+
+            if ($type === 'FEE_NOTE_SETTLEMENT') {
+                // return $this->feeNoteService->markAsPaid($request->all());
+            }
+
+            return $this->regulationService->markAsPaid($request->all());
+
 
             throw new Exception("Unsupported document type: " . $type);
 

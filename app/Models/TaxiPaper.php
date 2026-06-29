@@ -41,31 +41,44 @@ class TaxiPaper extends Model implements PayableDocumentInterface
 
 
             $direction = $this->getSettlementDirection($transactionTypeCode);
+            $amount = $this->getSettlementAmount($transactionTypeCode);
+
+            $this->financialTransactions()->create([
+    'transaction_code' => $transactionCode,
+    'transaction_type_code' => $transactionTypeCode,
+    'type' => 'ONE_SHOT',
+    'adjustment_type' => 'NONE',
+    'amount' => $amount,
+    'direction' => $direction,
+    'status' => 'PENDING',
+    // 'paid_at' => now(),
+    // 'processed_at' => now(),
+    'created_by' => request()->get('user')['id']
+]);
            
 
-            $this->regulations()->firstOrCreate(
-                [
-                    'transaction_code' => $transactionCode,
-                ],
-                [
-                    'amount' => $this->getSettlementAmount($transactionTypeCode),
+            // $this->regulations()->firstOrCreate(
+            //     [
+            //         'transaction_code' => $transactionCode,
+            //     ],
+            //     [
+            //         'amount' => $this->getSettlementAmount($transactionTypeCode),
 
-                       'type' =>'supplement' ,// $direction === 'OUT' ? 'supplement'  : 'refund',
+            //            'type' =>'supplement' ,// $direction === 'OUT' ? 'supplement'  : 'refund',
 
-                    'status' => 'PENDING',
-                ]
-            );
+            //         'status' => 'PENDING',
+            //     ]
+            // );
 
           
         
     }
 
 
-      public function regulations()
+      public function financialTransactions()
     {
-        return $this->hasMany(TaxiRegulation::class);
+        return $this->morphMany(FinancialTransaction::class, 'transactable');
     }
-
     public function getSettlementActor(): array
     {
         return ['actor_type' => $this->document->actor_type , 'actor_id' => $this->document->actor_id];

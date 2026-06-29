@@ -36,19 +36,26 @@ class DocumentPaymentController extends Controller
     public function registerPayment(Request $request, Document $document)
     {
         try {
+
+            // throw new \Exception(json_encode($request->all()));
+
+
             DB::beginTransaction();
             // Valider les données reçues
             $request->validate([
                 "paid_amount" => "required|numeric|min:0.01",
                 "payment_mode" => "required|string",
+                "transaction_code" => "required|string",
                 "user_id" => "required|integer",
                 "is_full_pay" => "sometimes|boolean",
             ]);
 
-            // throw new \Exception(json_encode($request->all()));
 
             $paid_amount = floatval($request->input("paid_amount"));
             $isFullPay = (bool) $request->input("is_full_pay", false);
+            $transaction_code =  $request->input("transaction_code");
+
+            
 
             // throw new Exception(json_encode($document->id));
 
@@ -56,6 +63,7 @@ class DocumentPaymentController extends Controller
             $payment = Payment::create([
                 "document_id" => $document->id,
                 "amount" => $paid_amount,
+                "transaction_code" => $transaction_code,
                 "payment_method" => $request->input("payment_mode"),
                 "user_id" => $request->input("user_id"),
             ]);

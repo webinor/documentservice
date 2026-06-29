@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Contracts\PayableDocumentInterface;
+use App\Models\Misc\Document;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FeeNote extends Model implements PayableDocumentInterface
 {
@@ -25,31 +27,52 @@ class FeeNote extends Model implements PayableDocumentInterface
 
             $direction = $this->getSettlementDirection($transactionTypeCode);
            
+            $amount = $this->getSettlementAmount($transactionTypeCode);
 
-            $this->regulations()->firstOrCreate(
-                [
+
+            // ->firstOrCreate(
+            //     [
+            //         'transaction_code' => $transactionCode,
+            //     ],
+             $this->financialTransactions()->firstOrCreate(
+                 [
                     'transaction_code' => $transactionCode,
                 ],
                 [
-                    'amount' => $this->getSettlementAmount($transactionTypeCode),
-
-                       'type' =>'supplement' ,// $direction === 'OUT' ? 'supplement'  : 'refund',
-
-                    'status' => 'PENDING',
-                ]
-            );
+    'transaction_type_code' => $transactionTypeCode,
+    'type' => 'ONE_SHOT',
+    'adjustment_type' => 'NONE',
+    'amount' => $amount,
+    'direction' => $direction,
+    'status' => 'PENDING',
+    // 'paid_at' => now(),
+    // 'processed_at' => now(),
+    'created_by' => request()->get('user')['id']
+]);
 
           
         
     }
 
-      public function regulations()
+    /**
+     * Get the document that owns the TaxiPaper
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function document(): BelongsTo
     {
-        return $this->hasMany(TaxiRegulation::class);
+        return $this->belongsTo(Document::class,);
+    }
+
+     public function financialTransactions()
+    {
+        return $this->morphMany(FinancialTransaction::class, 'transactable');
     }
 
       public function getSettlementActor(): array
     {
+        // throw new \Exception(json_encode($this->document), 1);
+        
         return ['actor_type' => $this->document->actor_type , 'actor_id' => $this->document->actor_id];
     }
 
@@ -68,7 +91,7 @@ class FeeNote extends Model implements PayableDocumentInterface
 
     public function getSettlementReason(string $transaction_type_code): string
     {
-        return $this->reason ?? "Reglement Papier Taxi";
+        return $this->reason ?? "Reglement Note de frais";
     }
 
           public function getSettlementDirection(string $transaction_type_code = ""): string

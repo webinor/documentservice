@@ -102,9 +102,9 @@ class Mission extends Model implements PayableDocumentInterface
         return $this->hasMany(MissionAdvance::class);
     }
 
-    public function regulations()
+   public function financialTransactions()
     {
-        return $this->hasMany(MissionRegulation::class);
+        return $this->morphMany(FinancialTransaction::class, 'transactable');
     }
 
     public function getStartDatAttribute($value)
@@ -186,7 +186,7 @@ class Mission extends Model implements PayableDocumentInterface
 
         case 'MISSION_EXPENSE_ADVANCE':
 
-            $this->advances()->firstOrCreate(
+            $this->advancesssss()->firstOrCreate(
                 [
                     'transaction_code' => $transactionCode,
                 ],
@@ -203,7 +203,7 @@ class Mission extends Model implements PayableDocumentInterface
             $direction = $this->getSettlementDirection($transactionTypeCode);
             $amount = $this->getSettlementAmount($transactionTypeCode);
 
-            $this->regulations()->firstOrCreate(
+            $this->regulationsssss()->firstOrCreate(
                 [
                     'transaction_code' => $transactionCode,
                 ],
