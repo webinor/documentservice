@@ -59,12 +59,13 @@ $business_signatures = $dataParticipants['business_signatures'];
     ->values()
     ->toArray();
 
+    // throw new Exception(json_encode($document['actor_details']['organization']['head_of_department']['employee_id']), 1);
+    // throw new Exception(json_encode($document['actor_details']['organization']['head_of_department']['employee_id']), 1);
 
-    $headOfDepartmentUserId = $document['actor_details']['organization']['head_of_department']['user_id'] ?? null;
+    $headOfDepartmentUserId = $document['actor_details']['organization']['head_of_department']['user_id'];
 
     $head_of_department_data = $this->getUser($headOfDepartmentUserId);
 
-    throw new Exception(json_encode($document['actor_details']['organization']['head_of_department']['employee_id']), 1);
         
 
     $spreadsheet = IOFactory::load($templatePath);
