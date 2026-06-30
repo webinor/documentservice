@@ -183,17 +183,27 @@ class Mission extends Model implements PayableDocumentInterface
     string $transactionCode
 ): void {
 
+
+    $direction = $this->getSettlementDirection($transactionTypeCode);
+    $amount = $this->getSettlementAmount($transactionTypeCode);
+
     switch ($transactionTypeCode) {
+
+  
 
         case 'MISSION_EXPENSE_ADVANCE':
 
-            $this->advancesssss()->firstOrCreate(
+            $this->financialTransactions()->firstOrCreate(
                 [
                     'transaction_code' => $transactionCode,
                 ],
                 [
-                    'amount' => $this->getSettlementAmount($transactionTypeCode),
+                    'amount' => $amount,
                     'status' => 'PENDING',
+                    'transaction_type_code' => $transactionTypeCode,
+                    'type' => 'ADVANCE',
+                    'adjustment_type' => 'NONE',
+                    'direction' => $direction,
                 ]
             );
 
@@ -201,8 +211,7 @@ class Mission extends Model implements PayableDocumentInterface
 
         case 'MISSION_SETTLEMENT':
 
-            $direction = $this->getSettlementDirection($transactionTypeCode);
-            $amount = $this->getSettlementAmount($transactionTypeCode);
+        
 
             $this->regulationsssss()->firstOrCreate(
                 [
@@ -210,7 +219,7 @@ class Mission extends Model implements PayableDocumentInterface
                 ],
                 [
                     'amount' => abs($amount),
-                    'type' => $direction === 'OUT'
+                    'typepppp' => $direction === 'OUT'
                         ? 'supplement'
                         : 'refund',
                     'status' => 'PENDING',
