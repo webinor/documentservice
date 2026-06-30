@@ -2,6 +2,7 @@
 
 namespace App\Services\Mission;
 
+use App\Models\FinancialTransaction;
 use App\Models\Mission;
 use App\Models\MissionAdvance;
 
@@ -9,7 +10,8 @@ class MissionAdvanceService
 {
     public function calculate(Mission $mission): array
     {
-        $advances = $mission->advances()
+        $advances = $mission->financialTransactions()
+            ->whereType("ADVANCE")
             ->orderBy('paid_at', 'desc')
             ->get();
 
@@ -35,9 +37,9 @@ class MissionAdvanceService
         /**
          * Totaux par statut
          */
-        $paid = $advances->where('status', 'paid');
-        $pending = $advances->where('status', 'pending');
-        $cancelled = $advances->where('status', 'cancelled');
+        $paid = $advances->where('status', 'PAID');
+        $pending = $advances->where('status', 'PENDING');
+        $cancelled = $advances->where('status', 'CANCELLED');
 
         $totalPaid = $paid->sum('amount');
         $totalPending = $pending->sum('amount');
@@ -80,11 +82,12 @@ class MissionAdvanceService
 
     public function markAsPaid(array $payload)
 {
-    $advance = MissionAdvance::where('transaction_code', $payload['transaction_code'])->firstOrFail();
+    $advance = FinancialTransaction::where('transaction_code', $payload['transaction_code'])->firstOrFail();
 
     $advance->update([
-        'status' => 'paid',
+        'status' => 'PAID',
         'paid_at' => now(),
+        'processed_at' => now(),
     ]);
 }
 
