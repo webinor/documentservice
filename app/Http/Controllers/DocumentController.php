@@ -348,7 +348,7 @@ $business_signatures = $data['business_signatures'];
 
 
 
-        throw new Exception(json_encode($visibleParticipants), 1);
+        throw new Exception(json_encode(sizeof($visibleParticipants)), 1);
 
 
 
