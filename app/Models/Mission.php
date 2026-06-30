@@ -20,6 +20,7 @@ class Mission extends Model implements PayableDocumentInterface
 
     protected $fillable = [
         "destination",
+        "code",
         "start_date",
         "end_date",
         "estimated_budget",
