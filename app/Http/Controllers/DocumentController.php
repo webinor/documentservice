@@ -370,6 +370,9 @@ $business_signatures = $data['business_signatures'];
 
         $allSignatures = collect($visibleParticipants)
     ->map(function ($p) {
+
+        throw new Exception(json_encode($p['user']['signatureUrl']), 1);
+
         return [
             'type_block' => 'VALIDATION',
             'user' => $p['user'] ?? null,
