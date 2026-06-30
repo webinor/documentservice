@@ -22,13 +22,13 @@ class MissionTemplateDataBuilder
     // ->pluck('name')
     // ->implode(', ');
 
-    $function = $document['actor_details']['department_data']['position']['position']['name'] ?? null;
+    $function = $document['actor']['department_data']['position']['position']['name'] ?? null;
 
-    // $manager = $document['actor_details']['manager']['name'] ?? '';
+    // $manager = $document['actor']['manager']['name'] ?? '';
 
-        throw new \Exception(json_encode($document), 1);
+        throw new \Exception(json_encode($document['actor']), 1);
 
-    // $managerFunction =$document['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
+    // $managerFunction =$document['actor']['manager']['department_data']['position']['position']['name'] ?? null;
 
 
     $expenseService = app(MissionExpenseService::class);
@@ -76,7 +76,7 @@ class MissionTemplateDataBuilder
 
                 
 
-            'agent.name' => $document['actor_details']['nom'] ?? '',
+            'agent.name' => $document['actor']['nom'] ?? '',
 
             'mission.contractor.name' => $head_of_department_data["name"],
             'mission.contractor.position' => $head_of_department_data["department_data"]['position']['position']['name'],
