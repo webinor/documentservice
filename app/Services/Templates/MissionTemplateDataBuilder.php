@@ -28,65 +28,55 @@ class MissionTemplateDataBuilder
 
     // $managerFunction =$document['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
 
-    throw new \Exception(json_encode($function), 1);
-    throw new \Exception(json_encode($document['actor_details']['department_data']), 1);
+    throw new \Exception(json_encode($head_of_department_data), 1);
+    // throw new \Exception(json_encode($document['actor_details']['department_data']), 1);
     
 
     $expenseService = app(MissionExpenseService::class);
 
     
     $missionExpenses = collect($expenseService->calculate($mission)['expenses']);
-    
+    $data = [
+    'mission.code' => "FICHE DE MISSION #{$mission['code']}",
+    'mission.title' => $mission['document']['title'] ?? '',
+    'mission.destination' => $mission['destination'] ?? '',
 
-        $data = [
+    'mission.departure_date' => !empty($mission['departure_date_base_planned'])
+        ? date('d/m/Y', strtotime($mission['departure_date_base_planned']))
+        : '',
 
+    'mission.arrival_date' => !empty($mission['arrival_date_base_planned'])
+        ? date('d/m/Y', strtotime($mission['arrival_date_base_planned']))
+        : '',
 
-            'mission.code' => "FICHE DE MISSION #{$mission->code}",
-            'mission.title' => $mission->document->title,
-
-            'mission.destination' => $mission->destination,
-
-            'mission.departure_date' => $mission->departure_date_base_planned
-                ? date('d/m/Y', strtotime($mission->departure_date_base_planned))
-                : '',
-
-            'mission.arrival_date' => $mission->arrival_date_base_planned
-                ? date('d/m/Y', strtotime($mission->arrival_date_base_planned))
-                : '',
-
-
-                 'mission.departure_base_date' => $this->formatDateTime(
-        $mission->departure_date_base_planned,
-        $mission->departure_time_base_planned
+    'mission.departure_base_date' => $this->formatDateTime(
+        $mission['departure_date_base_planned'] ?? null,
+        $mission['departure_time_base_planned'] ?? null
     ),
 
     'mission.arrival_site_date' => $this->formatDateTime(
-        $mission->arrival_date_site_planned,
-        $mission->arrival_time_site_planned
+        $mission['arrival_date_site_planned'] ?? null,
+        $mission['arrival_time_site_planned'] ?? null
     ),
 
     'mission.departure_site_date' => $this->formatDateTime(
-        $mission->departure_date_site_planned,
-        $mission->departure_time_site_planned
+        $mission['departure_date_site_planned'] ?? null,
+        $mission['departure_time_site_planned'] ?? null
     ),
 
     'mission.arrival_base_date' => $this->formatDateTime(
-        $mission->arrival_date_base_planned,
-        $mission->arrival_time_base_planned
+        $mission['arrival_date_base_planned'] ?? null,
+        $mission['arrival_time_base_planned'] ?? null
     ),
 
-                
+    'agent.name' => $document['actor_details']['nom'] ?? '',
+    'agent.position' => $function ?? '',
 
-            'agent.name' => $document['actor_details']['nom'] ?? '',
+    'mission.contractor.name' => $head_of_department_data['name'] ?? '',
+    'mission.contractor.position' => $head_of_department_data['department_data']['position']['position']['name'] ?? '',
 
-            'mission.contractor.name' => $head_of_department_data["name"],
-            'mission.contractor.position' => $head_of_department_data["department_data"]['position']['position']['name'],
-
-            'agent.position' => $function ?? '',
-
-            'advance.amount' => $advanceTransaction['amount'] ?? 0,
-        ];
-
+    'advance.amount' => $advanceTransaction['amount'] ?? 0,
+];
 
 
 
