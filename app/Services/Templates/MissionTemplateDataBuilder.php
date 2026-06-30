@@ -22,13 +22,13 @@ class MissionTemplateDataBuilder
     // ->pluck('name')
     // ->implode(', ');
 
-    $function = $document['actor_details']['department_data']['position']['position']['name'] ?? null;
+    $function = $document['actor_details']['organization']['position']['position']['name'] ?? null;
 
     // $manager = $document['actor_details']['manager']['name'] ?? '';
 
     // $managerFunction =$document['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
 
-    throw new \Exception(json_encode($document['actor_details']['organization']['position']['position']), 1);
+    throw new \Exception(json_encode($function), 1);
     throw new \Exception(json_encode($document['actor_details']['department_data']), 1);
     
 
