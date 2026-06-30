@@ -51,7 +51,7 @@ $business_signatures = $dataParticipants['business_signatures'];
 );
 
         // throw new Exception(json_encode($document['mission']['actor_details']), 1);
-        throw new Exception(json_encode($document['actor_details']), 1);
+        // throw new Exception(json_encode($document['actor_details']), 1);
 
 
   $visibleParticipants = collect($participants)
