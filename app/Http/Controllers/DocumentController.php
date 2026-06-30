@@ -331,7 +331,7 @@ $data = $this->workflowParticipantService->getParticipants(
 $participants = $data['participants'];
 $business_signatures = $data['business_signatures'];
 
-        throw new Exception(json_encode($business_signatures), 1);
+        // throw new Exception(json_encode($business_signatures), 1);
 
 
 
@@ -379,8 +379,8 @@ $business_signatures = $data['business_signatures'];
         collect($business_signatures)->map(function ($s) {
             return [
                 'type_block' => 'RECEPTION',
-                'user' => $s['user'] ?? null,
-                'role' => $s['user']['role'] ?? null,
+                'user' => $s['actor_name'] ?? null,
+                'role' => $s['actor_role'] ?? null,
                 'signature_type' => $s['signature_type']['name'] ?? '',
                 'date' => $s['signed_at'] ?? null,
                 'signatureUrl' => $s['user']['signatureUrl'] ?? null,
