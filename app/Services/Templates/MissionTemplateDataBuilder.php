@@ -47,6 +47,8 @@ class MissionTemplateDataBuilder
         ? date('d/m/Y', strtotime($mission['departure_date_base_planned']))
         : '',
 
+        
+
     'mission.arrival_date' => !empty($mission['arrival_date_base_planned'])
         ? date('d/m/Y', strtotime($mission['arrival_date_base_planned']))
         : '',
