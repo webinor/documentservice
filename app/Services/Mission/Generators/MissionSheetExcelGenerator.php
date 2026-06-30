@@ -27,7 +27,7 @@ class MissionSheetExcelGenerator
     );
 
 
-        // $document->load("document_type");
+        $document->load("document_type");
 
 
         // $document = app(DocumentEnricher::class)->enrichDocument($document, request()->bearerToken()) ;
@@ -35,7 +35,7 @@ class MissionSheetExcelGenerator
         $document = app(DocumentEnrichmentManager::class)->enrich($document);
 
 
-        // throw new \Exception(json_encode($document));
+        // throw new \Exception(json_encode($document[]));
 
 
         $dataParticipants = app(WorkflowParticipantService::class)->getParticipants(
@@ -50,7 +50,8 @@ $business_signatures = $dataParticipants['business_signatures'];
     $document->document_type->slug
 );
 
-        throw new Exception(json_encode($document['mission']['actor_details']), 1);
+        // throw new Exception(json_encode($document['mission']['actor_details']), 1);
+        throw new Exception(json_encode($document['actor_details']), 1);
 
 
   $visibleParticipants = collect($participants)
