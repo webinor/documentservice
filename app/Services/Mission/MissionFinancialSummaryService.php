@@ -70,7 +70,7 @@ class MissionFinancialSummaryService
         $regulation = app(MissionRegulationService::class)->calculate($mission);
         $totalRegulation = $regulation['total'];
 
-        throw new Exception(json_encode( $regulation['net_impact']), 1);
+        // throw new Exception(json_encode( $regulation['net_impact']), 1);
         
 
         /**

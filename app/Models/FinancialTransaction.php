@@ -23,6 +23,8 @@ class FinancialTransaction extends Model
         'type', // ADVANCE | SETTLEMENT | REFUND | SUPPLEMENT
         'direction', // IN | OUT
 
+        'adjustment_type',
+
         // montant
         'amount',
 
