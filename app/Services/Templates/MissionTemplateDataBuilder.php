@@ -35,7 +35,7 @@ class MissionTemplateDataBuilder
     $expenseService = app(MissionExpenseService::class);
 
     
-    $missionExpenses = collect($expenseService->calculate($mission)['expenses']);
+    $missionExpenses = collect($expenseService->calculate(((object)$mission))['expenses']);
     $data = [
     'mission.code' => "FICHE DE MISSION #{$mission['code']}",
     'mission.title' => $mission['document']['title'] ?? '',
