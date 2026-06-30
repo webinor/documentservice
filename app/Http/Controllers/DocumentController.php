@@ -331,7 +331,7 @@ $data = $this->workflowParticipantService->getParticipants(
 $participants = $data['participants'];
 $business_signatures = $data['business_signatures'];
 
-        // throw new Exception("Error While retrieving participants", 1);
+        throw new Exception(json_encode($business_signatures), 1);
 
 
 

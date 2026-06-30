@@ -21,7 +21,7 @@ class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
         if ($participant['source_type'] == "OWNER") {
 
             
-        return true;
+        // return true;
         
 
         }
