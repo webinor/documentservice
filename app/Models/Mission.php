@@ -213,16 +213,19 @@ class Mission extends Model implements PayableDocumentInterface
 
         
 
-            $this->regulationsssss()->firstOrCreate(
+            $this->financialTransactions()->firstOrCreate(
                 [
                     'transaction_code' => $transactionCode,
                 ],
                 [
-                    'amount' => abs($amount),
-                    'typepppp' => $direction === 'OUT'
-                        ? 'supplement'
-                        : 'refund',
                     'status' => 'PENDING',
+                    'transaction_type_code' => $transactionTypeCode,
+                    'type' => 'SETTLEMENT',
+                    'adjustment_type' => $direction === 'OUT'
+                        ? 'SUPPLEMENT'
+                        : 'REFUND',
+                    'direction' => $direction,
+                    'amount' => abs($amount),
                 ]
             );
 
