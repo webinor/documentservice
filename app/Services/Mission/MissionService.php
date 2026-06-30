@@ -46,11 +46,9 @@ private ReferenceGeneratorService $referenceGenerator;
             'is_special' =>
                 $payload['mission_special'] ?? false,
 
-            'actor_id' =>
-                $this->resolveActorId($payload),
+            // 'actor_id' =>  $this->resolveActorId($payload),
 
-            'actor_type' =>
-                $this->resolveActorType($payload),
+            // 'actor_type' =>$this->resolveActorType($payload),
 
            /**
  * BASE
