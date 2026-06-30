@@ -5,6 +5,7 @@ namespace App\Services\Mission;
 use App\Models\FinancialTransaction;
 use App\Models\Mission;
 use App\Models\MissionRegulation;
+use Illuminate\Support\Str;
 
 class MissionRegulationService
 {
@@ -26,7 +27,7 @@ class MissionRegulationService
                 'id' => $item->id,
                 'mission_id' => $item->mission_id,
 
-                'type' => $item->type, // refund | supplement
+                'type' => Str::lower($item->adjustment_type), // refund | supplement
                 'amount' => (float) $item->amount,
 
                 'balance_before' => (float) $item->balance_before,
@@ -68,8 +69,8 @@ class MissionRegulationService
          * =========================
          */
 
-        $refunds = $regulations->where('type', 'REFUND');
-        $supplements = $regulations->where('type', 'SUPPLEMENT');
+        $refunds = $regulations->where('adjustment_type', 'REFUND');
+        $supplements = $regulations->where('adjustment_type', 'SUPPLEMENT');
 
         $totalRefund = $refunds->sum('amount');
         $totalSupplement = $supplements->sum('amount');
