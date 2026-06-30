@@ -72,10 +72,10 @@ $business_signatures = $dataParticipants['business_signatures'];
 
     foreach ($mapping as $cell => $key) {
 
-    if (!isset($data[$key])) {
-        throw new \Exception(json_encode($data), 1);
+    // if (!isset($data[$key])) {
+    //     throw new \Exception(json_encode($data), 1);
         
-    }
+    // }
         $sheet->setCellValue(
             $cell,
             $data[$key] ?? ''

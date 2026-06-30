@@ -15,18 +15,20 @@ class MissionTemplateDataBuilder
     $advanceTransaction = collect($transactions)
     ->first(function ($transaction) {
         return $transaction['transaction_type_code'] === 'MISSION_EXPENSE_ADVANCE'
-            && $transaction['status'] === 'ready';
+            && $transaction['status'] === 'COMPLETED';
     });
 
-    // $functions = collect($document['mission']['roles'] ?? [])
+    // $functions = collect($document['roles'] ?? [])
     // ->pluck('name')
     // ->implode(', ');
 
-    $function = $document['mission']['actor_details']['department_data']['position']['position']['name'] ?? null;
+    $function = $document['actor_details']['department_data']['position']['position']['name'] ?? null;
 
-    $manager = $document['mission']['actor_details']['manager']['name'] ?? '';
+    // $manager = $document['actor_details']['manager']['name'] ?? '';
 
-    $managerFunction =$document['mission']['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
+        throw new \Exception(json_encode($document), 1);
+
+    // $managerFunction =$document['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
 
 
     $expenseService = app(MissionExpenseService::class);
@@ -74,7 +76,7 @@ class MissionTemplateDataBuilder
 
                 
 
-            'agent.name' => $document['mission']['actor_details']['name'] ?? '',
+            'agent.name' => $document['actor_details']['nom'] ?? '',
 
             'mission.contractor.name' => $head_of_department_data["name"],
             'mission.contractor.position' => $head_of_department_data["department_data"]['position']['position']['name'],
