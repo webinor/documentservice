@@ -70,6 +70,9 @@ class MissionFinancialSummaryService
         $regulation = app(MissionRegulationService::class)->calculate($mission);
         $totalRegulation = $regulation['total'];
 
+        throw new Exception(json_encode($regulation), 1);
+        
+
         /**
          * ============================
          * 5️⃣ Calcul balance finale
