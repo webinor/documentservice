@@ -331,6 +331,9 @@ $data = $this->workflowParticipantService->getParticipants(
 $participants = $data['participants'];
 $business_signatures = $data['business_signatures'];
 
+        // throw new Exception("Error While retrieving participants", 1);
+
+
 
             $policy = SignerVisibilityPolicyFactory::make(
     $document['document_type']['slug']
