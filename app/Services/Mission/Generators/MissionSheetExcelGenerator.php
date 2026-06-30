@@ -64,7 +64,7 @@ $business_signatures = $dataParticipants['business_signatures'];
 
     $head_of_department_data = $this->getUser($headOfDepartmentUserId);
 
-    // throw new Exception(json_encode($head_of_department_data), 1);
+    throw new Exception(json_encode($head_of_department_data), 1);
         
 
     $spreadsheet = IOFactory::load($templatePath);
