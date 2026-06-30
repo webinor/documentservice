@@ -348,6 +348,9 @@ $business_signatures = $data['business_signatures'];
 
 
 
+        throw new Exception(json_encode($visibleParticipants), 1);
+
+
 
         // Chercher le template selon le type de document
         $template = $document['document_type']['slug'] ?? null;
@@ -377,6 +380,7 @@ $business_signatures = $data['business_signatures'];
     })
     ->merge(
         collect($business_signatures)->map(function ($s) {
+            
             return [
                 'type_block' => 'RECEPTION',
                 'user' => $s['actor_name'] ?? null,
