@@ -208,7 +208,7 @@
 
                 {{-- Nom --}}
                 <div style="font-weight:bold;margin-top:5px;font-size:11px;">
-                    {{ $item['user']['name'] ?? '-' }}
+                    {{ $item['user']['name'] ?? $item['user'] }}
                 </div>
 
                 {{-- Rôle --}}
