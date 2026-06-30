@@ -348,7 +348,7 @@ $business_signatures = $data['business_signatures'];
 
 
 
-        throw new Exception(json_encode(sizeof($visibleParticipants)), 1);
+        // throw new Exception(json_encode(sizeof($visibleParticipants)), 1);
 
 
 
@@ -380,6 +380,9 @@ $business_signatures = $data['business_signatures'];
     })
     ->merge(
         collect($business_signatures)->map(function ($s) {
+
+        throw new Exception(json_encode(sizeof($s)), 1);
+
             
             return [
                 'type_block' => 'RECEPTION',
