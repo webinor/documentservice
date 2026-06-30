@@ -15,7 +15,12 @@ class CreateTaxiPapersTable extends Migration
     {
         Schema::create('taxi_papers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('document_id');
+            
+            $table->foreignId('document_id')
+                  ->after('id')
+                  ->constrained('documents')
+                  ->cascadeOnDelete();
+            
             $table->string('reason');
             $table->json('rides');//trajets
             $table->timestamps();

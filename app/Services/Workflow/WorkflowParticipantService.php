@@ -23,7 +23,7 @@ class WorkflowParticipantService
             );
 
         if (!$response->ok()) {
-            throw new Exception("Error While retrieving participants");
+            throw new Exception("Error While retrieving participants :".($response->body()));
         }
 
         return [
