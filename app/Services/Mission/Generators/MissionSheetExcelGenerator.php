@@ -27,7 +27,7 @@ class MissionSheetExcelGenerator
     );
 
 
-        $document->load("document_type");
+        // $document->load("document_type");
 
 
         // $document = app(DocumentEnricher::class)->enrichDocument($document, request()->bearerToken()) ;
@@ -35,7 +35,7 @@ class MissionSheetExcelGenerator
         $document = app(DocumentEnrichmentManager::class)->enrich($document);
 
 
-        throw new \Exception(json_encode($document));
+        throw new \Exception(json_encode($document["document_type"]));
 
 
         $dataParticipants = app(WorkflowParticipantService::class)->getParticipants(
