@@ -9,6 +9,7 @@ use App\Services\Templates\MissionTemplateDataBuilder;
 use App\Services\Document\DocumentEnricher;
 use App\Services\SignerVisibilityPolicyFactory;
 use App\Services\Workflow\WorkflowParticipantService;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -34,7 +35,7 @@ class MissionSheetExcelGenerator
         $document = app(DocumentEnrichmentManager::class)->enrich($document);
 
 
-        throw new \Exception(json_encode($document));
+        // throw new \Exception(json_encode($document));
 
 
         $dataParticipants = app(WorkflowParticipantService::class)->getParticipants(
@@ -49,7 +50,7 @@ $business_signatures = $dataParticipants['business_signatures'];
     $document->document_type->slug
 );
 
-        // throw new Exception(json_encode($participants[0]['user']), 1);
+        throw new Exception(json_encode($document['mission']['actor_details']), 1);
 
 
   $visibleParticipants = collect($participants)
