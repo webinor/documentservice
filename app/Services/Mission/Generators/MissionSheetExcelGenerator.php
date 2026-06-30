@@ -2,6 +2,7 @@
 
 namespace App\Services\Mission\Generators;
 
+use App\Managers\DocumentEnrichmentManager;
 use App\Models\Misc\Document;
 use App\Models\Mission;
 use App\Services\Templates\MissionTemplateDataBuilder;
@@ -28,7 +29,13 @@ class MissionSheetExcelGenerator
         // $document->load("document_type");
 
 
-        $document = app(DocumentEnricher::class)->enrichDocument($document, request()->bearerToken()) ;
+        // $document = app(DocumentEnricher::class)->enrichDocument($document, request()->bearerToken()) ;
+
+        $document = app(DocumentEnrichmentManager::class)->enrich($document);
+
+
+        throw new \Exception(json_encode($document));
+
 
         $dataParticipants = app(WorkflowParticipantService::class)->getParticipants(
     $document,

@@ -18,18 +18,18 @@ class MissionTemplateDataBuilder
             && $transaction['status'] === 'COMPLETED';
     });
 
-    // $functions = collect($document['roles'] ?? [])
+    // $functions = collect($document['mission']['roles'] ?? [])
     // ->pluck('name')
     // ->implode(', ');
 
-    $function = $document['actor']['department_data']['position']['position']['name'] ?? null;
+    $function = $document['mission']['actor']['department_data']['position']['position']['name'] ?? null;
 
-    // $manager = $document['actor']['manager']['name'] ?? '';
+    // $manager = $document['mission']['actor']['manager']['name'] ?? '';
 
-        throw new \Exception(json_encode($document['actor']), 1);
+    // $managerFunction =$document['mission']['actor']['manager']['department_data']['position']['position']['name'] ?? null;
 
-    // $managerFunction =$document['actor']['manager']['department_data']['position']['position']['name'] ?? null;
-
+    throw new \Exception(json_encode(['mission']['actor']), 1);
+    
 
     $expenseService = app(MissionExpenseService::class);
 
@@ -76,7 +76,7 @@ class MissionTemplateDataBuilder
 
                 
 
-            'agent.name' => $document['actor']['nom'] ?? '',
+            'agent.name' => $document['mission']['actor']['name'] ?? '',
 
             'mission.contractor.name' => $head_of_department_data["name"],
             'mission.contractor.position' => $head_of_department_data["department_data"]['position']['position']['name'],
