@@ -35,7 +35,7 @@ class MissionSheetExcelGenerator
         $document = app(DocumentEnrichmentManager::class)->enrich($document);
 
 
-        throw new \Exception(json_encode($document["document_type"]));
+        throw new \Exception(json_encode($document["document_type"]['slug']));
 
 
         $dataParticipants = app(WorkflowParticipantService::class)->getParticipants(
