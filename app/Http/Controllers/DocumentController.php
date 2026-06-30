@@ -381,7 +381,7 @@ $business_signatures = $data['business_signatures'];
     ->merge(
         collect($business_signatures)->map(function ($s) {
 
-        // throw new Exception(json_encode(($s['actor'])), 1);
+        throw new Exception(json_encode(($s['actor'])), 1);
 
             
             return [
