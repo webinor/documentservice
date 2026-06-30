@@ -174,7 +174,7 @@ $this->renderBottomSignatures(
 
     $outputPath = storage_path(
         'app/generated/mission_' .
-        $document->mission->code .
+        $document['mission']['code'] .
         '.xlsx'
     );
 
