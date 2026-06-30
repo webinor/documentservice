@@ -372,7 +372,7 @@ $business_signatures = $data['business_signatures'];
     ->map(function ($p) {
 
        if ($p['user']['signatureUrl']) {
-         throw new Exception(json_encode($p['user']['signatureUrl']), 1);
+        //  throw new Exception(json_encode($p['user']['signatureUrl']), 1);
        }
 
         return [
@@ -395,7 +395,7 @@ $business_signatures = $data['business_signatures'];
                 'role' => $s['actor_role'] ?? null,
                 'signature_type' => $s['signature_type']['name'] ?? '',
                 'date' => $s['signed_at'] ?? null,
-                'signatureUrl' => $s['actor']['user']['signature'] ?? null,
+                'signatureUrl' => $s['actor']['user']['signature'] ? "http://localhost:8088/storage/".$s['actor']['user']['signature'] : null,
             ];
         })
     )
