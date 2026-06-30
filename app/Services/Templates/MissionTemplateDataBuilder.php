@@ -28,8 +28,8 @@ class MissionTemplateDataBuilder
 
     // $managerFunction =$document['actor_details']['manager']['department_data']['position']['position']['name'] ?? null;
 
-    throw new \Exception(json_encode($function), 1);
-    // throw new \Exception(json_encode($document['actor_details']['department_data']), 1);
+    throw new \Exception(json_encode($document['actor_details']['organization']['position']['position']), 1);
+    throw new \Exception(json_encode($document['actor_details']['department_data']), 1);
     
 
     $expenseService = app(MissionExpenseService::class);
