@@ -28,6 +28,7 @@ class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         if (in_array($participant['source_value'], [
             'DIRECT_MANAGER',
+            'HEAD_OF_DEPARTMENT',
             'SIGNATORY',
         ])) {
 
