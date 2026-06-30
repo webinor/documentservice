@@ -1109,8 +1109,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "created_at" => now(),
                     "updated_at" => now(),
                     "reference" => $reference,
-                    "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
-                    "actor_id" => $validated["actor"] ?? $validated["beneficiaire"]
+                    // "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
+                    "actor_type" =>  "EMPLOYEE",
+                    "actor_id" => $validated["actor"] ?? $validated["actor_collaborator"]
                     // autres champs génériques...
                 ]);
 
