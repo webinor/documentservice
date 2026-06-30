@@ -265,7 +265,7 @@ class Mission extends Model implements PayableDocumentInterface
         ->where("calculation_stage", "FINAL")
         ->sum("total");
 
-        $totalAdvances = $this->advances()->sum('amount');
+        $totalAdvances = $this->financialTransactions()->whereType("ADVANCE")->sum('amount');
 
         /**
          * Résultat :
