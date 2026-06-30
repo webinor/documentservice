@@ -9,7 +9,7 @@ class MissionTemplateDataBuilder
     public function build($document , array $head_of_department_data)
     {
 
-    $mission =$document->mission;
+    $mission =$document['mission'];
     $transactions =$document['transactions'];
 
     $advanceTransaction = collect($transactions)
