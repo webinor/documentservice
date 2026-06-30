@@ -10,7 +10,8 @@ class MissionRegulationService
 {
     public function calculate(Mission $mission): array
     {
-        $regulations = $mission->regulations()
+        $regulations = $mission->financialTransactions()
+            ->whereType("SETTLEMENT")
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -50,9 +51,9 @@ class MissionRegulationService
          * Séparation par statut
          * =========================
          */
-        $pending = $regulations->where('status', 'pending');
-        $processed = $regulations->where('status', 'processed');
-        $cancelled = $regulations->where('status', 'cancelled');
+        $pending = $regulations->where('status', 'PENDING');
+        $processed = $regulations->where('status', 'PAID');
+        $cancelled = $regulations->where('status', 'CANCELLED');
 
         /**
          * =========================
@@ -67,8 +68,8 @@ class MissionRegulationService
          * =========================
          */
 
-        $refunds = $regulations->where('type', 'refund');
-        $supplements = $regulations->where('type', 'supplement');
+        $refunds = $regulations->where('type', 'REFUND');
+        $supplements = $regulations->where('type', 'SUPPLEMENT');
 
         $totalRefund = $refunds->sum('amount');
         $totalSupplement = $supplements->sum('amount');
@@ -153,7 +154,7 @@ class MissionRegulationService
     $regulation = FinancialTransaction::where('transaction_code', $payload['transaction_code'])->firstOrFail();
 
     $regulation->update([
-        'status' => 'paid',
+        'status' => 'PAID',
         'paid_at' => now(),
         'processed_at' => now(),
     ]);
