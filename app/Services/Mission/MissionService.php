@@ -31,7 +31,7 @@ private ReferenceGeneratorService $referenceGenerator;
 
             'document_id' => $document->id,
 
-            'reference' => $this->referenceGenerator->generate('MISSION'),
+            'code' => $this->referenceGenerator->generate('MISSION'),
 
             'destination' => $payload['destination'] ?? null,
 
