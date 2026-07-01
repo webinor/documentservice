@@ -30,7 +30,6 @@ class MissionSheetExcelGenerator
         // $document->load("document_type");
 
 
-        // $document = app(DocumentEnricher::class)->enrichDocument($document, request()->bearerToken()) ;
 
         $document = app(DocumentEnrichmentManager::class)->enrich($document);
 

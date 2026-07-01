@@ -294,7 +294,6 @@ $result = $documents->map(function ($doc) {
         
         $doc->load("document_type");
 
-        // $document = $documentEnricher->enrichDocument($doc, $request->bearerToken());
 
         $document = $documentEnrichmentManager->enrich($doc);
 
@@ -1119,16 +1118,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 // return(get_class($documentCreationManager));
                 
-                $documentCreationManager->create(
-    $document,
-    $validated
-);
+                $documentCreationManager->create($document,$validated);
                 
-                // $this->childHandler->handle(
-                //     $document,
-                //     $documentType,
-                //     $validated
-                // );
 
                 // Si on veut gérer des fichiers uploadés
                 if ($request->hasFile("facture")) {
@@ -1168,6 +1159,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                         "created_by" => $user_connected,
                         "steps" => $workflow["steps"], // tableau des étapes
                     ];
+                
+                    
 
                     DB::commit();
 
@@ -1665,166 +1658,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         return response()->json($formattedDocuments);
     }
 
-    public function OldenrichDocument($document, $token)
-    {
-        $slug = $document->document_type->slug ?? null;
-
-
-
-
-        $beneficiarySlugs = [
-            "papier-taxi" => "beneficiary",
-            "note-de-frais" => "beneficiary",
-            "demande-d-absence" => "",
-        ];
-
-        $actorSlugs = [
-            "mission" => "actor_id",
-            "demande-achat" => "requested_by",
-        ];
-
-
-
-        $relation = $this->documents_relation[$slug] ?? null;
-
-        $main_relation = null;
-        $secondary_relation = null;
-        // Charger la relation dynamique
-        if ($relation) {
-            $relations = explode(".", $relation);
-            $main_relation = $relations[0];
-            $secondary_relation = $relations[1] ?? null;
-            $third_relation = $relations[2] ?? null;
-            $document->load($relation);
-        }
-
-
-        $document->transactions = $this->user_service_client->getDocumentTransactions($document->id);
-        // $document->transactions = ["ok ok"];
-
-        // throw new Exception(json_encode($document->transactions), 1);
-        
-
-
-
-
-
-
-        // Récupérer l'entité liée
-        $entity = $main_relation ? $document->$main_relation : null;
-
-        if (!$entity) {
-            return $document;
-        }
-
-        $userServiceUrl = config("services.user_service.base_url");
-
-        $userId = null;
-
-        // =========================
-        // 👤 CAS BENEFICIARY
-        // =========================
-        if (array_key_exists($slug, $beneficiarySlugs)) {
-            // $userId = $entity->beneficiary ?? null;
-            $userId = $entity->{$beneficiarySlugs[$slug]} ?? null;
-        }
-
-
-
-        // =========================
-        // 🚀 CAS ACTOR (MISSION)
-        // =========================
-        if (array_key_exists($slug, $actorSlugs)) {
-            $userId = $entity->{$actorSlugs[$slug]} ?? null;
-        }
-
-        // fallback sécurité
-        $userId = $userId > 0 ? $userId : 0;
-
-        // throw new Exception(json_encode($userId), 1);
-
-
-
-
-        // =========================
-        // 🔹 APPEL USER SERVICE
-        // =========================
-        $userResponse = Http::withToken($token)
-            ->acceptJson()
-            ->timeout(5)
-            ->get("$userServiceUrl/{$userId}");
-
-        if ($userResponse->ok()) {
-            $userData = $userResponse->json("user");
-
-        // throw new Exception(json_encode($userData['department_data']["manager_id"]), 1);
-
-
-        // throw new Exception(json_encode($userData['department_data']), 1);
-
-
-        if ($userData['department_data'] && $userData['department_data']["manager_id"]) {
-
-
-
-
-        $managerResponse = Http::withToken($token)
-            ->acceptJson()
-            ->timeout(10)
-            ->get("$userServiceUrl/{$userData['department_data']['manager_id']}");
-
-
-
-            $managerData = $managerResponse->json("user");
-
-            $userData["manager"]= $managerData;
-                        
-            
-        // throw new Exception(json_encode($managerData), 1);
-
-        
-        }
-
-
-            // Attachement sans persistance DB
-            $entityKey = in_array($slug, $actorSlugs)
-                ? "actor_details"
-                : // : 'beneficiary_details';
-                "actor_details";
-
-            $entity->{$entityKey} = $userData;
-
-            if ($secondary_relation && $third_relation) {
-                $entity->load("{$secondary_relation}.{$third_relation}");
-            } elseif ($secondary_relation) {
-                $entity->load($secondary_relation);
-            }
-
-            // optionnel : normalisation ID
-            if ($entityKey === "beneficiary_details") {
-                // $document->beneficiary = $userData['id'] ?? null;
-                $document->actor = $userData["id"] ?? null;
-            } else {
-                $document->actor = $userData["id"] ?? null;
-            }
-
-            // Log::info($document->mission->toJson());
-
-            $document->setRelation($main_relation, $entity);
-
-            // Log::info($document->mission->toJson());
-        } else {
-            // log silencieux (important en prod)
-            Log::warning("User service failed", [
-                "slug" => $slug,
-                "status" => $userResponse->status(),
-                "body" => $userResponse->body(),
-            ]);
-        }
-
-        return $document;
-    }
-
+  
     /**
      * Display the specified resource.
      *
@@ -1855,7 +1689,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
         // return $workflowStatus['status'];
 
-        // throw new Exception(json_encode("ok ok"), 1);
+        // throw new Exception(json_encode($workflowStatus), 1);
 
 
         DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
@@ -1878,11 +1712,11 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
 
         // throw new Exception(json_encode($document["transactions"]), 1);
+        // throw new Exception(json_encode($document), 1);
 
 
 
         // ######## DYNAMIQUE : enrichir beneficiary ########
-        // $document = $documentEnricher->enrichDocument($document, $request->bearerToken());
         
 
         // Log::info($document->mission->toJson());
