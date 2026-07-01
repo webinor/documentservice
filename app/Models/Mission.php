@@ -242,6 +242,9 @@ class Mission extends Model implements PayableDocumentInterface
     public function calculateSettlementAmount(
         string $transaction_type_code
     ): float {
+
+    // throw new Exception("Error Processing Request", 1);
+    
         if ($transaction_type_code == "MISSION_EXPENSE_ADVANCE") {
             $service = new MissionExpenseAmountService(
                 new MissionExpenseCalculatorService()
