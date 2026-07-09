@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +21,25 @@ class AbsenceRequest extends Model
                 'handover_details',
                 'document_id',
     ];
+
+
+
+    protected $appends = [
+        "duration"
+    ];
+
+
+    public function getDurationAttribute()
+    {
+        if (!$this->departure_date || !$this->return_date) {
+            return 0;
+        }
+
+        return Carbon::parse($this->departure_date)
+            ->diffInDays(
+                Carbon::parse($this->return_date)
+            ) + 1;
+    }
 
 
         public function getDepartureDateAttribute($value)

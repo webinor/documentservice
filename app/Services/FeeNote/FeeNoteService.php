@@ -25,11 +25,6 @@ class FeeNoteService implements DocumentTypeHandlerInterface
 
      public function markAsPaid(array $payload)
 {
-    // $regulation = FeeNoteRegulation::where('transaction_code', $payload['transaction_code'])->firstOrFail();
-
-    // $regulation->update([
-    //     'status' => 'paid',
-    //     'paid_at' => now(),
-    // ]);
+   
 }
 }

@@ -1063,6 +1063,12 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     $workflowResponse->json();
                 }
 
+                if (!$workflowId) {
+                                     
+                throw new Exception("Aucun workflow defini pour {$documentType->name}", 1);
+
+                }
+
                 if (
                     isset($validated["prestataire"]) &&
                     $validated["prestataire"]
@@ -1147,7 +1153,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 $workflow = $workflowResponse->json();
 
-                if ($workflow) {
+                if ($documentType->reception_mode == "WORKFLOW_DRIVEN"){
+                    
+                    if ($workflow) {
                     $firstStep = $workflow["steps"][0];
 
                     $payload = [
@@ -1197,6 +1205,12 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                         ],
                         201
                     );
+                }
+                else{
+                    throw new Exception("Aucun workflow defini pour {$documentType->name}", 1);
+                    
+                }
+                
                 } else {
                     DB::commit();
 
