@@ -6,7 +6,7 @@ use App\Models\LeaveType;
 use App\Models\Misc\Document;
 use App\Services\DocumentType\DocumentTypeHandlerInterface;
 
-class AbsenceService implements DocumentTypeHandlerInterface
+class LeaveTypeService implements DocumentTypeHandlerInterface
 {
     public function create(
         Document $document,
@@ -57,13 +57,13 @@ class AbsenceService implements DocumentTypeHandlerInterface
 
     public function all(): array
 {
-    return collect(LeaveType::all())
+    return collect(LeaveType::with('rule')->orderBy('name')->get())
         ->map(function ($leaveType) {
             return [
                 'id' => $leaveType['id'],
                 'code' => $leaveType['code'],
                 'name' => $leaveType['name'],
-                'paid_days' => $leaveType['paid_days'] ?? 0,
+                'paid_days' => $leaveType['rule']['paid_days'] ?? 0,
                 'uses_balance' => $leaveType['uses_balance'] ?? true,
                 'max_days' => $leaveType['max_days'],
             ];

@@ -3,7 +3,6 @@
 namespace App\Services\Absence;
 
 
-
 use App\Contracts\SignerVisibilityPolicy;
 
 class AbsenceSignerVisibilityPolicy implements SignerVisibilityPolicy
@@ -20,16 +19,18 @@ class AbsenceSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         }
 
-        if ($participant['source_type'] == "OWNER") {
+        if ($participant['signature_visibility'] == "IF_APPROVED" && $participant['status'] == "APPROVED") {
 
             
-        // return true;
+        return true;
         
 
         }
 
         if (in_array($participant['source_value'], [
+            'OWNER',
             'DIRECT_MANAGER',
+            'HEAD_OF_DEPARTMENT',
             'SIGNATORY',
         ])) {
 

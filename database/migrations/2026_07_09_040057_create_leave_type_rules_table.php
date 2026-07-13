@@ -30,7 +30,7 @@ return new class extends Migration
              * Exemple mariage = 4
              */
             $table->unsignedInteger('paid_days')
-                ->default(0);
+            ->nullable();
 
 
             /**

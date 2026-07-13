@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Misc\DocumentType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDocumentRequest extends FormRequest
 {
@@ -55,23 +56,32 @@ class StoreDocumentRequest extends FormRequest
             "beneficiaire" => "required|numeric",
         ];
 
-        $absenceRequestFields = [
-            "motif" => "required|string",
-            "beneficiaire" => "required|numeric",
+   $absenceRequestFields = [
 
-            "dateDepart" => "required|date",
-            "heureDepart" => [
-                "required",
-                "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/",
-            ],
+    "beneficiaire" => "required|numeric",
 
-            "dateRetour" => "required|date",
-            "heureRetour" => [
-                "required",
-                "regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/",
-            ],
-        ];
+    "dateDepart" => "required|date",
+    "dateRetour" => "required|date",
 
+    "motif" => [
+        Rule::requiredIf($this->input('titre') === 'PERMISSION'),
+        'nullable',
+        'string',
+    ],
+
+    "heureDepart" => [
+        Rule::requiredIf($this->input('titre') === 'PERMISSION'),
+        'nullable',
+        'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
+    ],
+
+    "heureRetour" => [
+        Rule::requiredIf($this->input('titre') === 'PERMISSION'),
+        'nullable',
+        'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
+    ],
+
+];
         $missionFields = [
             // Infos mission
             "destination" => "required|string",

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
 
 
-            $table->foreignId('leave_request_id')
+            $table->foreignId('absence_request_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
@@ -45,7 +45,9 @@ return new class extends Migration
             $table->enum('coverage_type',[
                 'PAID',
                 'BALANCE',
-                'UNPAID'
+                'UNPAID',
+                'ANNUAL_BALANCE',
+                'EXCEPTIONAL_PAID'
             ]);
 
 
@@ -83,7 +85,7 @@ return new class extends Migration
 
 
             $table->unique([
-                'leave_request_id',
+                'absence_request_id',
                 'date'
             ]);
 

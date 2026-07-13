@@ -149,6 +149,8 @@
         </div>
 
         <div class="info">
+            <p>REFERENCE : <span>{{ $document['reference'] ?? '..................' }}</span></p>
+            <p>NUMERO PIECE : <span>{{ $document['numero_piece']['attachment_number'] ?? '..................' }}</span></p>
             <p>BENEFICIAIRE: <span>{{ $document['actor_details']['nom'] ?? '..................' }}</span></p>
             <p>DATE ET HEURE : <span>{{ $document['created_at'] ?? '..................' }}</span></p>
             <p>MOTIF : <span>{{ $document['taxi_paper']['reason'] ?? '..................' }}</span></p>

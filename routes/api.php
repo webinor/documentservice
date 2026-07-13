@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AbsenceRequestController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
@@ -9,6 +10,8 @@ use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
+use App\Http\Controllers\LeaveSimulationController;
+use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\LedgerCodeTypeController;
 use App\Http\Controllers\MissionAllowanceController;
 use App\Http\Controllers\MissionController;
@@ -18,6 +21,7 @@ use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TestThumbnailController;
+use App\Models\AbsenceRequest;
 use App\Models\Misc\Document;
 use Illuminate\Support\Facades\Route;
 
@@ -113,6 +117,33 @@ Route::middleware("jwt.check")
             Route::get("/{document}/payment-status", "paymentStatus");
             Route::post("/{document}/register-payment", "registerPayment");
         });
+
+
+
+Route::get('/{document}/leave-requests/pdf',[AbsenceRequestController::class,'pdf'])->name('leave-requests.pdf');
+
+Route::post(
+    '/absence/simulate',
+    [
+        LeaveSimulationController::class,
+        'simulate'
+    ]
+);
+
+Route::prefix('leave-types/all')->group(function () {
+
+    Route::get('/', [LeaveTypeController::class, 'index']);
+
+});
+
+// Route::prefix('leave-balances')->group(function () {
+
+//     Route::post(
+//         '/deduct',
+//         [LeaveBalanceController::class, 'deduct']
+//     );
+
+// });
 
         Route::get("/expense-categories", [
             ExpenseCategoryController::class,

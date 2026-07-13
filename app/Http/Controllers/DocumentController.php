@@ -92,45 +92,46 @@ class DocumentController extends Controller
         ]);
     }
 
-
     public function typesByIds(Request $request)
-{
-    $ids = $request->input('ids', []);
+    {
+        $ids = $request->input("ids", []);
 
-    $documents = Document::whereIn('id', $ids)
-        ->with('document_type')
-        // ->select('id', 'document_type_id')
-        ->get();
+        $documents = Document::whereIn("id", $ids)
+            ->with("document_type")
+            // ->select('id', 'document_type_id')
+            ->get();
 
-//     $result = $documents->mapWithKeys(function ($doc) {
-//     return [
-//         $doc->id => [
-//             "id" => $doc->document_type_id,
-//             "type" => $doc->document_type->slug ?? null,
-//         ]
-//     ];
-// });
+        //     $result = $documents->mapWithKeys(function ($doc) {
+        //     return [
+        //         $doc->id => [
+        //             "id" => $doc->document_type_id,
+        //             "type" => $doc->document_type->slug ?? null,
+        //         ]
+        //     ];
+        // });
 
-$result = $documents->map(function ($doc) {
-    return [
-        "id" => $doc->id,
-        "created_by" => $doc->created_by,
-        "actor_type" => $doc->actor_type,
-        "actor_id" => $doc->actor_id,
-        "document_type" => $doc->document_type,
-        "document_type_id" => $doc->document_type_id,
-        // "type" => $doc->document_type->slug ?? null,
-    ];
-})->values();
+        $result = $documents
+            ->map(function ($doc) {
+                return [
+                    "id" => $doc->id,
+                    "created_by" => $doc->created_by,
+                    "actor_type" => $doc->actor_type,
+                    "actor_id" => $doc->actor_id,
+                    "document_type" => $doc->document_type,
+                    "document_type_id" => $doc->document_type_id,
+                    // "type" => $doc->document_type->slug ?? null,
+                ];
+            })
+            ->values();
 
-    // $result = $documents->mapWithKeys(function ($doc) {
-    //     return ["id" => $doc->document_type_id , "type" => $doc->document_type->slug ];
-    // });
+        // $result = $documents->mapWithKeys(function ($doc) {
+        //     return ["id" => $doc->document_type_id , "type" => $doc->document_type->slug ];
+        // });
 
-    return response()->json([
-        'data' => $result
-    ]);
-}
+        return response()->json([
+            "data" => $result,
+        ]);
+    }
 
     public function notifyBeneficiary(Request $request)
     {
@@ -154,15 +155,18 @@ $result = $documents->map(function ($doc) {
                     $result
                 )
             );
-       } catch (\Exception $e) {
-    return response()->json([
-        "success" => false,
-        "message" => $e->getMessage(),
-        "file" => $e->getFile(),
-        "line" => $e->getLine(),
-        "trace" => $e->getTraceAsString(),
-    ], 400);
-}
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => $e->getMessage(),
+                    "file" => $e->getFile(),
+                    "line" => $e->getLine(),
+                    "trace" => $e->getTraceAsString(),
+                ],
+                400
+            );
+        }
     }
 
     /**
@@ -287,79 +291,68 @@ $result = $documents->map(function ($doc) {
     /**
      * Télécharge le document au format PDF
      */
-    public function download_document(Request $request, DocumentEnrichmentManager $documentEnrichmentManager, DocumentEnricher $documentEnricher, Document $doc)
-    {
-
+    public function download_document(
+        Request $request,
+        DocumentEnrichmentManager $documentEnrichmentManager,
+        DocumentEnricher $documentEnricher,
+        Document $doc
+    ) {
         // throw new Exception(json_encode($doc), 1);
-        
-        $doc->load("document_type");
 
+        $doc->load("document_type");
 
         $document = $documentEnrichmentManager->enrich($doc);
 
+        // throw new Exception(json_encode($document), 1);
 
+        //             $response = Http::withToken($request->bearerToken()) -> acceptJson()
+        //             ->get(
+        //     config('services.workflow_service.base_url')
+        //     . "/documents/{$document->id}/participants",
+        //     [
+        //         'document_type' =>
+        //             $document->document_type->slug,
+        //     ]
+        // );
 
+        //         if (!$response->ok()) {
 
-  
-//             $response = Http::withToken($request->bearerToken()) -> acceptJson()
-//             ->get(
-//     config('services.workflow_service.base_url')
-//     . "/documents/{$document->id}/participants",
-//     [
-//         'document_type' =>
-//             $document->document_type->slug,
-//     ]
-// );
+        //         throw new Exception("Error While retrieving participants", 1);
 
-//         if (!$response->ok()) {
-            
-//         throw new Exception("Error While retrieving participants", 1);
-        
-        
-//         }
-//             $participants = $response->json('participants');
-//             $business_signatures = $response->json('business_signatures');
+        //         }
+        //             $participants = $response->json('participants');
+        //             $business_signatures = $response->json('business_signatures');
 
-$data = $this->workflowParticipantService->getParticipants(
-    $document,
-    $request->bearerToken()
-);
+        $data = $this->workflowParticipantService->getParticipants(
+            $document,
+            $request->bearerToken()
+        );
 
+        $participants = $data["participants"];
+        $business_signatures = $data["business_signatures"];
 
+        // throw new Exception(json_encode((collect($participants)->pluck('source_value'))), 1);
+        // throw new Exception(json_encode((collect($participants))), 1);
 
-$participants = $data['participants'];
-$business_signatures = $data['business_signatures'];
+        $policy = SignerVisibilityPolicyFactory::make(
+            $document["document_type"]["slug"]
+        );
 
-        // throw new Exception(json_encode($business_signatures), 1);
-
-
-
-            $policy = SignerVisibilityPolicyFactory::make(
-    $document['document_type']['slug']
-);
-
-
-
-  $visibleParticipants = collect($participants)
-    ->filter(fn ($p) => $policy->isVisible($p))
-    ->values()
-    ->toArray();
-
-
+        $visibleParticipants = collect($participants)
+            ->filter(fn($p) => $policy->isVisible($p))
+            ->values()
+            ->toArray();
 
         // throw new Exception(json_encode(sizeof($visibleParticipants)), 1);
 
-
-
         // Chercher le template selon le type de document
-        $template = $document['document_type']['slug'] ?? null;
+        $template = $document["document_type"]["slug"] ?? null;
 
         if (!$template || !view()->exists("templates.$template")) {
             abort(404, "Template $template introuvable");
         }
 
         // throw new Exception(json_encode($template), 1);
-
 
         $signatureDonneur = asset("assets/img/signaturearol.jpg");
         $signatureBeneficiaire = asset("assets/img/benef.jpg");
@@ -368,53 +361,54 @@ $business_signatures = $data['business_signatures'];
         //    throw new Exception(json_encode("oui ui"), 1);
 
         $allSignatures = collect($visibleParticipants)
-    ->map(function ($p) {
+            ->map(function ($p) {
+                if ($p["user"]["signatureUrl"]) {
+                    //  throw new Exception(json_encode($p['user']['signatureUrl']), 1);
+                }
 
-       if ($p['user']['signatureUrl']) {
-        //  throw new Exception(json_encode($p['user']['signatureUrl']), 1);
-       }
+                return [
+                    "type_block" => "VALIDATION",
+                    "user" => $p["user"] ?? null,
+                    "role" => $p["user"]["role"] ?? "",
+                    "date" => $p["validated_at"] ?? null,
+                    "signatureUrl" => $p["user"]["signatureUrl"] ?? null,
+                ];
+            })
+            ->merge(
+                collect($business_signatures)->map(function ($s) {
+                    // throw new Exception(json_encode(($s['actor']['user']['signature'])), 1);
 
-        return [
-            'type_block' => 'VALIDATION',
-            'user' => $p['user'] ?? null,
-            'role' => $p['user']['role'] ?? '',
-            'date' => $p['validated_at'] ?? null,
-            'signatureUrl' => $p['user']['signatureUrl'] ?? null,
-        ];
-    })
-    ->merge(
-        collect($business_signatures)->map(function ($s) {
+                    return [
+                        "type_block" => "RECEPTION",
+                        "user" => $s["actor_name"] ?? null,
+                        "role" => $s["actor_role"] ?? null,
+                        "signature_type" => $s["signature_type"]["name"] ?? "",
+                        "date" => $s["signed_at"] ?? null,
+                        "signatureUrl" => $s["actor"]["user"]["signature"]
+                            ? "http://localhost:8088/storage/" .
+                                $s["actor"]["user"]["signature"]
+                            : null,
+                    ];
+                })
+            )
+            ->values();
 
-        // throw new Exception(json_encode(($s['actor']['user']['signature'])), 1);
+        // throw new Exception(json_encode($allSignatures->count()), 1);
+        // throw new Exception(json_encode($document), 1);
 
-            
-            return [
-                'type_block' => 'RECEPTION',
-                'user' => $s['actor_name'] ?? null,
-                'role' => $s['actor_role'] ?? null,
-                'signature_type' => $s['signature_type']['name'] ?? '',
-                'date' => $s['signed_at'] ?? null,
-                'signatureUrl' => $s['actor']['user']['signature'] ? "http://localhost:8088/storage/".$s['actor']['user']['signature'] : null,
-            ];
-        })
-    )
-    ->values();
         $pdf = Pdf::loadView("templates.$template", [
             "document" => $document,
             "signatureDonneur" => $signatureDonneur,
             "signatureBeneficiaire" => $signatureBeneficiaire,
-            'participants' => $visibleParticipants,
-            'business_signatures'=>$business_signatures,
-            'allSignatures' => $allSignatures
+            "participants" => $visibleParticipants,
+            "business_signatures" => $business_signatures,
+            "allSignatures" => $allSignatures,
         ]);
-
-        // throw new Exception(json_encode($allSignatures), 1);
-        
 
         //new Exception(json_encode($template));
 
         // Nom du fichier pour le téléchargement
-        $fileName = $template . "-" . $document['id'] . ".pdf";
+        $fileName = $template . "-" . $document["id"] . ".pdf";
 
         // Retourner le PDF en téléchargement
         return $pdf->download($fileName);
@@ -767,7 +761,7 @@ $business_signatures = $data['business_signatures'];
                     : "le";
 
             $authorPart =
-                $generationMode === "SYSTEM" ? "" : "{$by} {$userName} ";
+                $generationMode === "SYSTEM" ? "" : " {$by} {$userName} ";
 
             return [
                 "id" => $att["id"],
@@ -982,8 +976,10 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      * @param  \App\Http\Requests\StoreDocumentRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreDocumentRequest $request , DocumentCreationManager $documentCreationManager)
-    {
+    public function store(
+        StoreDocumentRequest $request,
+        DocumentCreationManager $documentCreationManager
+    ) {
         try {
             DB::beginTransaction();
 
@@ -1064,9 +1060,10 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 }
 
                 if (!$workflowId) {
-                                     
-                throw new Exception("Aucun workflow defini pour {$documentType->name}", 1);
-
+                    throw new Exception(
+                        "Aucun workflow defini pour {$documentType->name}",
+                        1
+                    );
                 }
 
                 if (
@@ -1115,17 +1112,19 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "updated_at" => now(),
                     "reference" => $reference,
                     // "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
-                    "actor_type" =>  "EMPLOYEE",
-                    "actor_id" => $validated["actor"] ?? $validated["actor_collaborator"] ?? $validated["beneficiaire"]
+                    "actor_type" => "EMPLOYEE",
+                    "actor_id" =>
+                        $validated["actor"] ??
+                        ($validated["actor_collaborator"] ??
+                            $validated["beneficiaire"]),
                     // autres champs génériques...
                 ]);
 
                 $documentType = $document->document_type()->first(); // Objet avec class_name, relation_name et type
 
                 // return(get_class($documentCreationManager));
-                
-                $documentCreationManager->create($document,$validated);
-                
+
+                $documentCreationManager->create($document, $validated);
 
                 // Si on veut gérer des fichiers uploadés
                 if ($request->hasFile("facture")) {
@@ -1153,64 +1152,64 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 $workflow = $workflowResponse->json();
 
-                if ($documentType->reception_mode == "WORKFLOW_DRIVEN"){
-                    
+                if ($documentType->reception_mode == "WORKFLOW_DRIVEN") {
                     if ($workflow) {
-                    $firstStep = $workflow["steps"][0];
+                        $firstStep = $workflow["steps"][0];
 
-                    $payload = [
-                        "workflow_id" => $workflow["id"],
-                        "department_id" => $validated["departement"] ?? null,
-                        "document_id" => $document->id,
-                        "status" => "IN_PROGRESS",
-                        "current_step_id" => $firstStep["id"] ?? null,
-                        "created_by" => $user_connected,
-                        "steps" => $workflow["steps"], // tableau des étapes
-                    ];
-                
-                    
+                        $payload = [
+                            "workflow_id" => $workflow["id"],
+                            "department_id" =>
+                                $validated["departement"] ?? null,
+                            "document_id" => $document->id,
+                            "status" => "IN_PROGRESS",
+                            "current_step_id" => $firstStep["id"] ?? null,
+                            "created_by" => $user_connected,
+                            "steps" => $workflow["steps"], // tableau des étapes
+                        ];
 
-                    DB::commit();
+                        DB::commit();
 
-                    $instanceResponse = Http::withToken($request->bearerToken())
-                        ->acceptJson()
-                        ->post(
-                            $workflowServiceUrl . "/workflow-instances",
-                            $payload
-                        );
+                        $instanceResponse = Http::withToken(
+                            $request->bearerToken()
+                        )
+                            ->acceptJson()
+                            ->post(
+                                $workflowServiceUrl . "/workflow-instances",
+                                $payload
+                            );
 
-                    if ($instanceResponse->failed()) {
-                        DB::rollBack();
-                        $document->delete(); // supprime le doc créé
+                        if ($instanceResponse->failed()) {
+                            DB::rollBack();
+                            $document->delete(); // supprime le doc créé
+                            return response()->json(
+                                [
+                                    "message" =>
+                                        "Échec de l’initialisation du workflow. Document supprimé.",
+                                    "backend-message" => $instanceResponse->body(),
+                                ],
+                                500
+                            );
+                        }
+
+                        // return
+                        $workflowInstance = $instanceResponse->json();
+
                         return response()->json(
                             [
+                                "success" => true,
                                 "message" =>
-                                    "Échec de l’initialisation du workflow. Document supprimé.",
-                                "backend-message" => $instanceResponse->body(),
+                                    "Document créé avec succès et workflow démarré",
+                                "document" => $document,
+                                "workflow_instance" => $workflowInstance,
                             ],
-                            500
+                            201
+                        );
+                    } else {
+                        throw new Exception(
+                            "Aucun workflow defini pour {$documentType->name}",
+                            1
                         );
                     }
-
-                    // return
-                    $workflowInstance = $instanceResponse->json();
-
-                    return response()->json(
-                        [
-                            "success" => true,
-                            "message" =>
-                                "Document créé avec succès et workflow démarré",
-                            "document" => $document,
-                            "workflow_instance" => $workflowInstance,
-                        ],
-                        201
-                    );
-                }
-                else{
-                    throw new Exception("Aucun workflow defini pour {$documentType->name}", 1);
-                    
-                }
-                
                 } else {
                     DB::commit();
 
@@ -1415,10 +1414,12 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         return null; // pas de workflow automatique
     }
     private function getDocumentTypeCodeById(int $id): ?string
-{
-    return explode("." , DocumentType::where('id', $id)
-        ->value('relation_name'))[0];
-}
+    {
+        return explode(
+            ".",
+            DocumentType::where("id", $id)->value("relation_name")
+        )[0];
+    }
 
     private function getFilteredDocuments(Request $request)
     {
@@ -1434,30 +1435,27 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // throw new Exception($filters, 1);
 
         // 1. si int → on récupère le document type
-if (is_int($documentTypes)) {
-    $documentTypes = [$this->getDocumentTypeCodeById($documentTypes)];
-}
+        if (is_int($documentTypes)) {
+            $documentTypes = [$this->getDocumentTypeCodeById($documentTypes)];
+        }
 
-// 2. si string → on le met en array
-if (is_string($documentTypes)) {
-    $documentTypes = [$documentTypes];
-}
+        // 2. si string → on le met en array
+        if (is_string($documentTypes)) {
+            $documentTypes = [$documentTypes];
+        }
 
-// 3. si array → OK, mais on sécurise
-if (is_array($documentTypes)) {
-    $documentTypes = array_values(array_filter($documentTypes));
-}
+        // 3. si array → OK, mais on sécurise
+        if (is_array($documentTypes)) {
+            $documentTypes = array_values(array_filter($documentTypes));
+        }
 
         // throw new Exception(json_encode($documentTypes), 1);
 
-
         $query = Document::query();
-
-        
 
         // Filtre par IDs
         // if (!empty($ids)) {
-            $query->whereIn("id", $ids);
+        $query->whereIn("id", $ids);
         // }
 
         // Filtre par IDs
@@ -1478,11 +1476,6 @@ if (is_array($documentTypes)) {
             });
         }
 
-     
-    
-
-
-
         // Filtre par relations / types de document
         if (!empty($documentTypes)) {
             $query->where(function ($q) use ($documentTypes) {
@@ -1492,21 +1485,19 @@ if (is_array($documentTypes)) {
             });
         }
 
-
         //       $documents = $query
         // ->orderByDesc('id')
         // ->get();
 
         // throw new Exception(json_encode($documents), 1);
-        
 
         // // Filtre par statut
-        // if (!empty($filters["status"])) {
-        //     $statuses = is_array($filters["status"])
-        //         ? $filters["status"]
-        //         : explode(",", $filters["status"]);
-        //     $query->whereIn("status", $statuses);
-        // }
+        if (!empty($filters["status_paid"])) {
+            $statuses = is_array($filters["status_paid"])
+                ? $filters["status_paid"]
+                : explode(",", $filters["status_paid"]);
+            $query->whereIn("status", $statuses);
+        }
 
         // Filtre par type de prestataire
         if (!empty($filters["supplier_type"])) {
@@ -1514,15 +1505,11 @@ if (is_array($documentTypes)) {
             $query->whereHas("invoice_provider." . $filters["supplier_type"]);
         }
 
-      
         //   supplier_type
 
         if (!empty($filters["status"])) {
-
             $query->whereStatus($filters["status"]);
-
         }
-
 
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["document_type_id"])) {
@@ -1553,8 +1540,6 @@ if (is_array($documentTypes)) {
             });
         }
 
-
-
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["fournisseur_id"])) {
             $fournisseurId = $filters["fournisseur_id"];
@@ -1576,9 +1561,6 @@ if (is_array($documentTypes)) {
             );
         }
 
-            
-
-
         // Filtre par date
         if (!empty($filters["date_start"]) && !empty($filters["date_end"])) {
             $query->whereBetween("created_at", [
@@ -1595,28 +1577,19 @@ if (is_array($documentTypes)) {
         // Charger les relations
         $query->with(array_merge(["document_type"], $documentTypes));
 
-        $documents = $query
-        ->orderByDesc('id')
-        ->get();
-
-        
+        $documents = $query->orderByDesc("id")->get();
 
         // throw new Exception(json_encode($documents), 1);
 
-
         $documentsEnrich = $documents->map(function ($doc) use (
             $documentTypes,
-            $DOC_CONFIG      
+            $DOC_CONFIG
         ) {
+            $type = $doc->document_type;
 
+            $handlerClass = $type->enrichment_handler_class;
 
-           
-
-              $type = $doc->document_type;
-
-        $handlerClass = $type->enrichment_handler_class;
-
-          // Base commune à tous les documents
+            // Base commune à tous les documents
             $base = [
                 "id" => $doc->id,
                 "code" => $doc->code,
@@ -1632,24 +1605,21 @@ if (is_array($documentTypes)) {
                 "created_by" => $doc->created_by,
             ];
 
+            if (!$handlerClass) {
+                // throw new Exception(json_encode('$documents'), 1);
 
+                return $this->legacyDocumentEnricher->enrich(
+                    $doc,
+                    $base,
+                    $documentTypes
+                );
+            }
 
-        if (!$handlerClass) {
+            // throw new Exception(json_encode($doc), 1);
 
-        // throw new Exception(json_encode('$documents'), 1);
+            // throw new Exception(json_encode($this->documentEnrichmentManager->enrich($doc, $base)), 1);
 
-    return $this->legacyDocumentEnricher->enrich($doc, $base, $documentTypes);
-}
-
-
-        // throw new Exception(json_encode($doc), 1);
-
-        // throw new Exception(json_encode($this->documentEnrichmentManager->enrich($doc, $base)), 1);
-
-
-return   $this->documentEnrichmentManager->enrich($doc, $base);
-
-
+            return $this->documentEnrichmentManager->enrich($doc, $base);
         });
         // throw new Exception(json_encode($documentsEnrich), 1);
 
@@ -1672,7 +1642,6 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
         return response()->json($formattedDocuments);
     }
 
-  
     /**
      * Display the specified resource.
      *
@@ -1705,10 +1674,7 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
 
         // throw new Exception(json_encode($workflowStatus), 1);
 
-
         DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
-
-
 
         // return $document;
 
@@ -1721,21 +1687,14 @@ return   $this->documentEnrichmentManager->enrich($doc, $base);
             "secondary_attachments"
         );
 
-
         $document = $documentEnrichmentManager->enrich($document);
-
 
         // throw new Exception(json_encode($document["transactions"]), 1);
         // throw new Exception(json_encode($document), 1);
 
-
-
         // ######## DYNAMIQUE : enrichir beneficiary ########
-        
 
         // Log::info($document->mission->toJson());
-
-
 
         return $document;
     }

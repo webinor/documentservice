@@ -5,12 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class LeaveTypeRule extends Model
+class PublicHoliday extends Model
 {
     use HasFactory;
-
-
-    protected $casts = [
-        'settings'=>'array'
-    ];
 }

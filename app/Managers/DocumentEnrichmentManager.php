@@ -88,6 +88,20 @@ protected UserServiceClient $user_service_client;
         // throw new \Exception(json_encode($transactions));
         $document->transactions = $transactions;
 
+        // $document->attachments() = $transactions;
+
+        $numero_piece = $document->attachments()
+    ->whereHas('attachmentType', function ($query) {
+        $query->where('slug', 'numero-de-piece');
+    })
+    ->first();
+
+        $document->numero_piece = $numero_piece;
+
+
+        // throw new \Exception(json_encode($attachment));
+
+
 
         $handler = app($handlerClass);
 
