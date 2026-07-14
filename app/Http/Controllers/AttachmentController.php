@@ -64,7 +64,7 @@ class AttachmentController extends Controller
     public function store(StoreAttachmentRequest $request)
     {
         // Validation
-         return
+        //  return
         $validated = $request->validated();
 
         $user = $request->get("user");
@@ -136,7 +136,8 @@ class AttachmentController extends Controller
                 }
             }
 
-            if ($validated["source"] == "new") {
+            // if ($validated["source"] == "new") {
+            if (true) {
                 // Créer l'enregistrement en base
                 $attachment = Attachment::create([
                     "document_id" => $document->id,

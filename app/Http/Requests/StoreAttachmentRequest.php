@@ -27,13 +27,13 @@ class StoreAttachmentRequest extends FormRequest
 
         if ($this->source=="new") {
             $rules += [
-                'attachment' => 'required|file|max:10240', // max 10MB
+                // 'attachment' => 'required|file|max:10240', // max 10MB
             ];
         }
         else if($this->source=="exist"){
 
              $rules += [
-                'reference' => 'required|string', // max 10MB
+                // 'reference' => 'required|string', // max 10MB
             ];
 
         }
@@ -58,8 +58,7 @@ class StoreAttachmentRequest extends FormRequest
         return $rules + [
         'attachmentType' => 'required|exists:attachment_types,id',
         'documentId' => 'required|exists:documents,id',
-        'source' => 'required|string',
-        // 'selectedCategory' => 'required|string',
+        // 'source' => 'required|string',
         
             
     ];
