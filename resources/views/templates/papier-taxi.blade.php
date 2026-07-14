@@ -47,6 +47,8 @@ td,th{
     font-size:11px;
 }
 
+
+
 </style>
 </head>
 <body>
@@ -160,7 +162,7 @@ $total = 0;
 
 <td colspan="2" class="section">
 
-TRAJETS
+INFORMATIONS FINANCIERES
 
 </td>
 
