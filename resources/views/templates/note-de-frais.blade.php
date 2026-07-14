@@ -130,11 +130,12 @@ Collaborateur
 </td>
 
 <td class="label">
-Matricule
+N° Pièce
 </td>
 
 <td>
-{{ $document['actor_details']['matricule'] ?? '-' }}
+{{-- {{ $document['actor_details']['matricule'] ?? '-' }} --}}
+{{ $document['numero_piece'] ?? '-' }}
 </td>
 
 </tr>

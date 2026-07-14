@@ -108,7 +108,8 @@ N° Pièce
 </td>
 
 <td>
-{{ $document['numero_piece']['attachment_number'] ?? '-' }}
+{{-- {{ $document['numero_piece']['attachment_number'] ?? '-' }} --}}
+{{ $document['numero_piece'] ?? '-' }}
 </td>
 
 </tr>

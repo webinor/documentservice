@@ -90,13 +90,21 @@ protected UserServiceClient $user_service_client;
 
         // $document->attachments() = $transactions;
 
-        $numero_piece = $document->attachments()
+    //     $numero_piece = $document->attachments()
+    // ->whereHas('attachmentType', function ($query) {
+    //     $query->where('slug', 'numero-de-piece');
+    // })
+    // ->first();
+
+    
+
+    //     $document->numero_piece = $numero_piece;
+
+    $document->numero_piece = $document->attachments()
     ->whereHas('attachmentType', function ($query) {
         $query->where('slug', 'numero-de-piece');
     })
-    ->first();
-
-        $document->numero_piece = $numero_piece;
+    ->value('attachment_number');
 
 
         // throw new \Exception(json_encode($attachment));
