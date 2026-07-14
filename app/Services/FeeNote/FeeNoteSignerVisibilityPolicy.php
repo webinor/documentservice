@@ -19,7 +19,7 @@ class FeeNoteSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         }
 
-        if ($participant['source_type'] == "OWNER") {
+            if ($participant['signature_visibility'] == "IF_APPROVED" && $participant['status'] == "APPROVED") {
 
             
         // return true;
@@ -29,6 +29,7 @@ class FeeNoteSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         if (in_array($participant['source_value'], [
             'DIRECT_MANAGER',
+            'HEAD_OF_DEPARTMENT',
             'SIGNATORY',
         ])) {
 

@@ -12,6 +12,7 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LeaveSimulationController;
 use App\Http\Controllers\LeaveTypeController;
+use App\Http\Controllers\LeaveWorkflowController;
 use App\Http\Controllers\LedgerCodeTypeController;
 use App\Http\Controllers\MissionAllowanceController;
 use App\Http\Controllers\MissionController;
@@ -136,14 +137,14 @@ Route::prefix('leave-types/all')->group(function () {
 
 });
 
-// Route::prefix('leave-balances')->group(function () {
+Route::prefix('leave-balances')->group(function () {
 
-//     Route::post(
-//         '/deduct',
-//         [LeaveBalanceController::class, 'deduct']
-//     );
+    Route::post(
+        '/deduct',
+        [LeaveWorkflowController::class, 'deductFromWorkflow']
+    );
 
-// });
+});
 
         Route::get("/expense-categories", [
             ExpenseCategoryController::class,

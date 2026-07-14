@@ -9,5 +9,5 @@ interface DocumentTypeHandlerInterface
     public function create(
         Document $document,
         array $data
-    ): void;
+    );
 }

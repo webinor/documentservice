@@ -60,11 +60,19 @@ class StoreDocumentRequest extends FormRequest
 
     "beneficiaire" => "required|numeric",
 
+    
+
     "dateDepart" => "required|date",
     "dateRetour" => "required|date",
 
     "motif" => [
         Rule::requiredIf($this->input('titre') === 'PERMISSION'),
+        'nullable',
+        'string',
+    ],
+
+        "type_conge" => [
+        Rule::requiredIf($this->input('titre') === 'CONGE'),
         'nullable',
         'string',
     ],

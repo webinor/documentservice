@@ -18,6 +18,10 @@ use Database\Seeders\AttachmentTypeSeeder;
 use Database\Seeders\LedgerCodeTypeSeeder;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 
+            use App\Models\RegularizationSheet;
+use App\Services\Regularization\RegularizationDocumentEnrichmentHandler;
+use App\Services\Regularization\RegularizationDocumentHandler;
+
 class DocumentTypeSeeder extends Seeder
 {
     /**
@@ -80,6 +84,45 @@ $documentTypesConfig = [
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+
+
+
+
+[
+    'code' => 'REGULARIZATION_SHEET',
+    'name' => 'Fiche à régulariser',
+    'slug' => 'fiche-a-regulariser',
+
+    'class_name' => RegularizationSheet::class,
+
+    'creation_handler_class' =>
+        RegularizationDocumentHandler::class,
+
+    'enrichment_handler_class' =>
+        RegularizationDocumentEnrichmentHandler::class,
+
+    'relation_name' => 'regularization_sheet',
+
+    'icon' => '🧾',
+
+    'color' => 'orange',
+
+    'dashboard_order' => 10,
+
+    'show_in_dashboard' => true,
+
+    'dashboard_title' => 'Fiches à régulariser',
+
+    'dashboard_subtitle' => 'À traiter',
+
+    'view_route' => '/fiches-a-regulariser',
+
+    'create_route' => '/nouveau-document?type=fiche-a-regulariser',
+
+    'return_policy' => 'ROLE',
+
+    'reception_mode' => 'WORKFLOW_DRIVEN',
+],
     
 ];
 
@@ -101,20 +144,27 @@ $documentTypesConfig = [
 
 foreach ($documentTypesConfig as $config) {
 
-    $exists = DocumentType::where('code', $config['code'] ?? Str::slug($config['name']))->exists();
-
-    if ($exists) {
-        continue;
-    }
-
-    DocumentType::create([
-        'code'           => $config['code'] ?? Str::slug($config['name']),
-        'name'           => $config['name'],
-        'class_name'     => $config['class_name'] ?? null,
-        'relation_name'  => $config['relation_name'] ?? null,
-        'reception_mode' => $config['reception_mode'],
-        'slug'           => Str::slug($config['name']),
-    ]);
+   DocumentType::updateOrCreate(
+    ['code' => $config['code']],
+    [
+        'name'                       => $config['name'],
+        'slug'                       => $config['slug'] ?? Str::slug($config['name']),
+        'class_name'                 => $config['class_name'] ?? null,
+        'creation_handler_class'     => $config['creation_handler_class'] ?? null,
+        'enrichment_handler_class'   => $config['enrichment_handler_class'] ?? null,
+        'relation_name'              => $config['relation_name'] ?? null,
+        'icon'                       => $config['icon'] ?? '📄',
+        'color'                      => $config['color'] ?? 'blue',
+        'dashboard_order'            => $config['dashboard_order'] ?? 0,
+        'show_in_dashboard'          => $config['show_in_dashboard'] ?? true,
+        'dashboard_title'            => $config['dashboard_title'] ?? $config['name'],
+        'dashboard_subtitle'         => $config['dashboard_subtitle'] ?? '',
+        'view_route'                 => $config['view_route'] ?? null,
+        'create_route'               => $config['create_route'] ?? null,
+        'return_policy'              => $config['return_policy'] ?? 'ROLE',
+        'reception_mode'             => $config['reception_mode'] ?? 'WORKFLOW_DRIVEN',
+    ]
+);
 }
 
         

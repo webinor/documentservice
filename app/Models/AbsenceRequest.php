@@ -5,13 +5,15 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AbsenceRequest extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-           'reason' ,
+                'reason' ,
                 'beneficiary',
                 'departure_date',
                 'departure_time',
@@ -20,6 +22,7 @@ class AbsenceRequest extends Model
                 'duties_handover',
                 'handover_details',
                 'document_id',
+                'leave_type_id'
     ];
 
 
@@ -57,4 +60,26 @@ class AbsenceRequest extends Model
     }
     return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
 }
+
+/**
+ * Get the leave_type that owns the AbsenceRequest
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+ */
+public function leave_type(): BelongsTo
+{
+    return $this->belongsTo(LeaveType::class);
+}
+
+/**
+ * Get the leaveRequestDays that owns the AbsenceRequest
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasMany
+ */
+public function leaveRequestDays(): HasMany
+{
+    return $this->hasMany(LeaveRequestDay::class);
+}
+
+
 }

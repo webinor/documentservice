@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\SignerVisibilityPolicy;
 use App\Services\Absence\AbsenceSignerVisibilityPolicy;
+use App\Services\FeeNote\FeeNoteSignerVisibilityPolicy;
 use App\Services\Mission\MissionSignerVisibilityPolicy;
 use App\Services\TaxiPaper\TaxiSignerVisibilityPolicy;
 
@@ -12,7 +13,8 @@ class SignerVisibilityPolicyFactory
     protected static $policies = [
         'papier-taxi' => TaxiSignerVisibilityPolicy::class,
         'mission'     => MissionSignerVisibilityPolicy::class,
-        'demande-d-absence' => AbsenceSignerVisibilityPolicy::class
+        'demande-d-absence' => AbsenceSignerVisibilityPolicy::class,
+        'note-de-frais' => FeeNoteSignerVisibilityPolicy::class,
     ];
 
     public static function make(string $documentType): SignerVisibilityPolicy

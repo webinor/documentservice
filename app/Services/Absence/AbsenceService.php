@@ -8,33 +8,32 @@ use App\Services\DocumentType\DocumentTypeHandlerInterface;
 
 class AbsenceService implements DocumentTypeHandlerInterface
 {
-    public function create(
-        Document $document,
-        array $validated
-    ): void {
-        
-      $data = [
-            "reason" => $validated["motif"] ?? null,
+    public function create(Document $document, array $validated)
+    {
+        $data = [
+            "reason" =>
+                $validated["motif"] ??
+                (LeaveType::find($validated["type_conge"])->name ?? null),
             "type" => $validated["titre"] ?? null,
+            "leave_type_id" => $validated["type_conge"] ?? null,
 
-              /**
- * BASE
- */
-'departure_date' =>  $this->toDate($validated['dateDepart'] ?? null),
+            /**
+             * BASE
+             */
+            "departure_date" => $this->toDate($validated["dateDepart"] ?? null),
 
-'departure_time' =>  $validated['heureDepart'] ?? null,
+            "departure_time" => $validated["heureDepart"] ?? null,
 
-'return_date' => $this->toDate($validated['dateRetour'] ?? null),
+            "return_date" => $this->toDate($validated["dateRetour"] ?? null),
 
-'return_time' =>  $validated['heureRetour'] ?? null,
-
+            "return_time" => $validated["heureRetour"] ?? null,
         ];
-        
 
-         $document->absence_request()->create($data);
+
+        return $document->absence_request()->create($data);
     }
 
-         private function toDate($value)
+    private function toDate($value)
     {
         if (empty($value)) {
             return null;
@@ -56,19 +55,19 @@ class AbsenceService implements DocumentTypeHandlerInterface
     }
 
     public function all(): array
-{
-    return collect(LeaveType::all())
-        ->map(function ($leaveType) {
-            return [
-                'id' => $leaveType['id'],
-                'code' => $leaveType['code'],
-                'name' => $leaveType['name'],
-                'paid_days' => $leaveType['paid_days'] ?? 0,
-                'uses_balance' => $leaveType['uses_balance'] ?? true,
-                'max_days' => $leaveType['max_days'],
-            ];
-        })
-        ->values()
-        ->toArray();
-}
+    {
+        return collect(LeaveType::all())
+            ->map(function ($leaveType) {
+                return [
+                    "id" => $leaveType["id"],
+                    "code" => $leaveType["code"],
+                    "name" => $leaveType["name"],
+                    "paid_days" => $leaveType["paid_days"] ?? 0,
+                    "uses_balance" => $leaveType["uses_balance"] ?? true,
+                    "max_days" => $leaveType["max_days"],
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
 }

@@ -22,6 +22,12 @@ class AbsenceDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInter
 
     $document->actor_details = $actor_details;
 
+    $absence = $document->absence_request;
+    $absence->load('leave_type');
+    $document->absence_request = $absence;
+
+
+
      
         return $document->toArray();
     }

@@ -347,12 +347,17 @@ protected function applyLeaveRule()
     $this->days = $this->days->map(function ($day) use (&$remainingPaidDays) {
 
 
-        /**
-         * Week-end / jours non comptés
-         */
-        if (!($day['counts_for_leave'] ?? false)) {
-            return $day;
-        }
+         /**
+     * Jour exclu (dimanche, férié...)
+     */
+    if (!($day['counts_for_leave'] ?? false)) {
+
+        $day['coverage_type'] = 'NON_WORKING';
+        $day['deducts_balance'] = false;
+        $day['deduct_days'] = 0;
+
+        return $day;
+    }
 
 
         /**
