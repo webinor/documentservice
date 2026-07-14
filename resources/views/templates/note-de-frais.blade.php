@@ -172,7 +172,7 @@ Poste
 <tr>
 
 <td colspan="2" class="section">
-NOTE DE FRAIS
+INFORMATIONS FINANCIERES
 </td>
 
 </tr>
