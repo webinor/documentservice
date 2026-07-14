@@ -147,31 +147,31 @@ class AttachmentController extends Controller
                     "created_by" => $user["id"],
                 ]);
 
-                $fileName =
-                    Str::random(20) .
-                    "_" .
-                    time() .
-                    "." .
-                    $request->attachment->extension();
-                $type = $request->attachment->getClientMimeType();
-                $size = $request->attachment->getSize();
+                // $fileName =
+                //     Str::random(20) .
+                //     "_" .
+                //     time() .
+                //     "." .
+                //     $request->attachment->extension();
+                // $type = $request->attachment->getClientMimeType();
+                // $size = $request->attachment->getSize();
 
-                $request->attachment->move(
-                    storage_path("app/public/documents_attachments"),
-                    $fileName
-                );
-                //$path = $request->file('attachment')->store('documents'); // dans storage/app/documents
+                // $request->attachment->move(
+                //     storage_path("app/public/documents_attachments"),
+                //     $fileName
+                // );
+                // //$path = $request->file('attachment')->store('documents'); // dans storage/app/documents
 
-                $file = new File();
+                // $file = new File();
 
-                $file->path = $fileName;
-                $file->type = $type;
-                $file->size = $size;
+                // $file->path = $fileName;
+                // $file->type = $type;
+                // $file->size = $size;
 
-                $attachment->file()->save($file);
+                // $attachment->file()->save($file);
 
-                // Lancer le Job en arrière-plan
-                GeneratePdfThumbnail::dispatch($attachment);
+                // // Lancer le Job en arrière-plan
+                // GeneratePdfThumbnail::dispatch($attachment);
 
                 $response = response()->json(
                     [
