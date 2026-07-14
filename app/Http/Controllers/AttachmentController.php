@@ -64,7 +64,7 @@ class AttachmentController extends Controller
     public function store(StoreAttachmentRequest $request)
     {
         // Validation
-        //  return
+         return
         $validated = $request->validated();
 
         $user = $request->get("user");
