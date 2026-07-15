@@ -16,7 +16,7 @@ class ExpenseCategoryController extends Controller
     public function index()
     {
         $categories = ExpenseCategory::select('id', 'name')
-            ->whereHas('rule')
+            // ->whereHas('rule')
             ->orderBy('name')
             ->get();
 
