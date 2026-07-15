@@ -9,6 +9,7 @@ use App\Models\Misc\Document;
 use App\Models\MissionExpense;
 use App\Services\Mission\MissionExpenseCalculatorService;
 use App\Services\Mission\MissionExpenseService;
+use App\Services\UserServiceClient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -91,10 +92,20 @@ class MissionExpenseController extends Controller
     /**
      * Retourne les limites par catégorie de dépense
      */
-    public function categoriesLimits(Request $request)
+    public function categoriesLimits(Request $request , UserServiceClient $userServiceClient)
     {
         try {
-            $employeeCategoryId = $request->employee_category_id;
+            $employeeId = $request->employee_id;
+
+         
+
+
+ $employee = $userServiceClient->resolveActor(
+    'EMPLOYEE',
+    $employeeId
+);
+
+$employeeCategoryId = $employee['category_id'];//['id'];
 
             $limits = ExpenseLimit::query()
                 ->whereHas("expense_category")

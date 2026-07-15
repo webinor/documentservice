@@ -17,6 +17,7 @@ class UserServiceClient
     {
         return $this->client()->get("/{$userId}");
     }
+    
 
     public function dispatchPaymentEvent(array $actor, int $amount , string $reason , string $direction,string $transactionTypeCode , int $document_id , array $details)
     {

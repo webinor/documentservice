@@ -71,9 +71,9 @@ width="70">
 
 PAPIER TAXI
 
-<br>
+{{-- <br> --}}
 
-Référence : #{{ $document['reference'] }}
+{{-- Référence : #{{ $document['reference'] }} --}}
 
 </td>
 
@@ -176,7 +176,7 @@ Trajet
 </td>
 
 <td class="label" width="25%">
-Montant
+Montant ( FCFA )
 </td>
 
 </tr>
@@ -201,7 +201,7 @@ $total += $ride['montant'];
 
 {{ number_format($ride['montant'],0,","," ") }}
 
-FCFA
+
 
 </td>
 
@@ -223,7 +223,7 @@ FCFA
 
 {{ number_format($total,0,","," ") }}
 
-FCFA
+{{-- FCFA --}}
 
 </b>
 

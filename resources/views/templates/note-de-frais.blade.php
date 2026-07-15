@@ -73,9 +73,9 @@ width="70">
 
 NOTE DE FRAIS
 
-<br>
+{{-- <br> --}}
 
-Référence : #{{ $document['reference'] }}
+{{-- Référence : #{{ $document['reference'] }} --}}
 
 </td>
 
@@ -185,7 +185,7 @@ Motif
 </td>
 
 <td width="25%" class="label">
-Montant
+Montant ( FCFA )
 </td>
 
 </tr>
@@ -201,7 +201,7 @@ Montant
 <td>
 
 {{ number_format($document['fee_note']['amount'] ?? 0,0,","," ") }}
-FCFA
+
 
 </td>
 
@@ -220,7 +220,7 @@ FCFA
 <b>
 
 {{ number_format($document['fee_note']['amount'] ?? 0,0,","," ") }}
-FCFA
+{{-- FCFA --}}
 
 </b>
 
