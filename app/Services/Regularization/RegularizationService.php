@@ -1,28 +1,25 @@
 <?php
 
-namespace App\Services\TaxiPaper;
+namespace App\Services\Regularization;
+
 
 
 use App\Models\Misc\Document;
-use App\Models\PurchaseRequest;
-use App\Models\PurchaseRequestItem;
-use App\Models\TaxiRegulation;
 use App\Services\DocumentType\DocumentTypeHandlerInterface;
 
-class TaxiPaperService implements DocumentTypeHandlerInterface
+class RegularizationService implements DocumentTypeHandlerInterface
 {
     public function create(
         Document $document,
         array $validated
     ): void {
         
-      $data = [
+     $data = [
             "reason" => $validated["titre"] ?? null,
-            "rides" => $validated["trajets"] ?? null,
-            // "beneficiary" => $validated["beneficiaire"] ?? null,
+            "amount" => $validated["montant"] ?? null,
         ];
 
-         $document->taxi_paper()->create($data);
+         $document->regularization_sheet()->create($data);
     }
 
      public function markAsPaid(array $payload)

@@ -15,6 +15,11 @@ class CreateRegularizationSheetsTable extends Migration
     {
         Schema::create('regularization_sheets', function (Blueprint $table) {
             $table->id();
+                $table->foreignId('document_id')
+                  ->constrained('documents')
+                  ->cascadeOnDelete();
+            $table->string('reason');
+            $table->unsignedMediumInteger('amount');
             $table->timestamps();
         });
     }

@@ -11,6 +11,7 @@ use App\Models\ItSupplier;
 use App\Models\Mission;
 use App\Models\Payment;
 use App\Models\PurchaseRequest;
+use App\Models\RegularizationSheet;
 use App\Models\TaxiPaper;
 use App\Services\DocumentStatusResolver;
 use App\Services\DocumentStatusUIMapper;
@@ -187,6 +188,11 @@ class Document extends Model
     public function absence_request(): HasOne
     {
         return $this->hasOne(AbsenceRequest::class);
+    }
+
+    public function regularization_sheet(): HasOne
+    {
+        return $this->hasOne(RegularizationSheet::class);
     }
 
     public function getCreatedAtAttribute($value)

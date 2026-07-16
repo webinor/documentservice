@@ -51,7 +51,11 @@ class StoreDocumentRequest extends FormRequest
         ];
 
         $feeNoteFields = [
-            // "motif" => "required|string",
+            "montant" => "required|numeric",
+            "beneficiaire" => "required|numeric",
+        ];
+
+        $regularizationFields = [
             "montant" => "required|numeric",
             "beneficiaire" => "required|numeric",
         ];
@@ -205,6 +209,7 @@ class StoreDocumentRequest extends FormRequest
             "CREDIT_NOTE" => [$baseRules, $invoiceFields], // ✔️ mêmes champs !
             "papier-taxi" => [$baseRules, $taxiFields],
             "note-de-frais" => [$baseRules, $feeNoteFields],
+            "fiche-a-regulariser" => [$baseRules, $regularizationFields],
             "demande-d-absence" => [$baseRules, $absenceRequestFields],
             // 🔥 AJOUT ICI
             "mission" => [$baseRules, $missionFields],
