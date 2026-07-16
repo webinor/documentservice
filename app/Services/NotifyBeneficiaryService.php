@@ -42,7 +42,7 @@ class NotifyBeneficiaryService
 
         $details = $child->getSettlementDetails();
 
-        // throw new Exception(json_encode($actor), 1);
+        // throw new Exception(json_encode($direction), 1);
 
         $eventResponse = $this->userService->dispatchPaymentEvent(
             $actor,

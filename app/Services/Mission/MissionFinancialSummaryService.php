@@ -3,6 +3,7 @@
 namespace App\Services\Mission;
 
 use App\Models\Misc\Document;
+use App\Services\Regularization\RegularizationFinancialSummaryService;
 use Illuminate\Support\Facades\Http;
 use Exception;
 
@@ -21,9 +22,16 @@ class MissionFinancialSummaryService
         /**
          * Vérification type mission
          */
+        if ($document->document_type->slug == "fiche-a-regulariser") {
+                      
+        return app(RegularizationFinancialSummaryService::class)->build($documentId);
+        // throw new Exception("Document is a regularization.");
+
+        }
         if ($document->document_type->slug !== "mission") {
             throw new Exception("Document is not a mission.");
         }
+
 
         /**
          * Relation métier mission
