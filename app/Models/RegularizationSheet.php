@@ -40,7 +40,7 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
                 "type" => "ADVANCE",
                 "adjustment_type" => "NONE",
                 "amount" => $amount,
-                "direction" => $direction,
+                "direction" => "OUT",// $direction,
                 "status" => "PENDING",
                 "created_by" => request()->get("user")["id"],
             ]
