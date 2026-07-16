@@ -162,7 +162,7 @@ class StoreDocumentRequest extends FormRequest
             /**
              * Informations générales
              */
-            "title" => "required|string|max:255",
+            "title" => "nullable|string|max:255",
 
             "description" => "required|string",
 
@@ -175,11 +175,11 @@ class StoreDocumentRequest extends FormRequest
             /**
              * Articles demandés
              */
-            "items" => "required|array|min:1",
+            // "items" => "required|array|min:1",
 
-            "items.*.designation" => "required|string|max:255",
+            // "items.*.designation" => "required|string|max:255",
 
-            "items.*.quantity" => "required|integer|min:1",
+            // "items.*.quantity" => "required|integer|min:1",
 
             "items.*.specification" => "nullable|string",
 

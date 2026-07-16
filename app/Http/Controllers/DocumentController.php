@@ -1093,6 +1093,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 // return $validated;
 
                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
+                // return
                 // Créer le document
                 $document = Document::create([
                     "title" => $validated["titre"],
@@ -1113,10 +1114,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "reference" => $reference,
                     // "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
                     "actor_type" => "EMPLOYEE",
-                    "actor_id" =>
-                        $validated["actor"] ??
-                        ($validated["actor_collaborator"] ??
-                            $validated["beneficiaire"]),
+                    "actor_id" =>  $validated["actor"] ?? $validated["actor_collaborator"] ??  $validated["beneficiaire"] ?? 0,
                     // autres champs génériques...
                 ]);
 
@@ -1169,6 +1167,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                         DB::commit();
 
+                        
+
                         $instanceResponse = Http::withToken(
                             $request->bearerToken()
                         )
@@ -1191,7 +1191,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             );
                         }
 
-                        // return
+                        
                         $workflowInstance = $instanceResponse->json();
 
                         return response()->json(
