@@ -43,7 +43,7 @@ class DocumentPaymentController extends Controller
             DB::beginTransaction();
             // Valider les données reçues
             $request->validate([
-                "paid_amount" => "required|numeric|min:0.01",
+                "paid_amount" => "required|numeric",
                 "payment_mode" => "required|string",
                 "transaction_code" => "required|string",
                 "user_id" => "required|integer",
