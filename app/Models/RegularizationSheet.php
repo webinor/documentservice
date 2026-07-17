@@ -47,7 +47,7 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
                 "transaction_type_code" => $transactionTypeCode,
                 "type" => "ADVANCE",
                 "adjustment_type" => "NONE",
-                "amount" => $amount,
+                "amount" => abs($amount),
                 "direction" => "OUT",// $direction,
                 "status" => "PENDING",
                 "created_by" => request()->get("user")["id"],
@@ -125,7 +125,7 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     ): float {
           $actualAmount = (float) $this->items()->sum('total_amount');
 
-    return abs($actualAmount - (float) $this->amount);
+    return ($actualAmount - (float) $this->amount);
     }
 
     public function getSettlementDetails(): array
