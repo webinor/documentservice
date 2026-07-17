@@ -125,7 +125,7 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     ): float {
           $actualAmount = (float) $this->items()->sum('total_amount');
 
-    return $actualAmount - (float) $this->amount;
+    return abs($actualAmount - (float) $this->amount);
     }
 
     public function getSettlementDetails(): array
