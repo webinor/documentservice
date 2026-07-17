@@ -14,6 +14,14 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
 
     protected $fillable = ["document_id", "reason", "beneficiary", "amount"];
 
+
+    public function items()
+{
+    return $this->hasMany(
+        RegularizationItem::class
+    )->orderBy('sort_order');
+}
+
     public function createSettlementRecord(
         string $transactionTypeCode,
         string $transactionCode
@@ -115,7 +123,9 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     public function getSettlementAmount(
         string $transaction_type_code = ""
     ): float {
-        return $this->actual_amount - $this->amount;
+          $actualAmount = (float) $this->items()->sum('total_amount');
+
+    return $actualAmount - (float) $this->amount;
     }
 
     public function getSettlementDetails(): array

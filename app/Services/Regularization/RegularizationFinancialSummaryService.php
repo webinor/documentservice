@@ -27,12 +27,12 @@ class RegularizationFinancialSummaryService
         /**
          * Montant demandé sur la fiche
          */
-        $requestedAmount = (float) $sheet->amount;
+        $requestedAmount = (int) $sheet->amount;
 
            /**
          * Montant reel depensé
          */
-        $actualAmount = (float) $sheet->actual_amount;
+        $totalReel = $sheet->items()->sum('total_amount');
 
         /**
          * Transactions financières
@@ -73,13 +73,17 @@ class RegularizationFinancialSummaryService
         /**
          * Solde restant
          */
-        $remaining = $actualAmount - $totalAdvance + $totalSettlement ;
+        $finalBalance = $totalReel - $totalAdvance + $totalSettlement ;
 
         return [
 
+            "total_prevu" => $requestedAmount,
+            "total_reel" => $totalReel,
+
+
             'requested_amount' => $requestedAmount,
 
-            'total_expenses'=>$actualAmount,
+            'total_expenses'=>$totalReel,
 
             'total_advance' => $totalAdvance,
 
@@ -87,9 +91,9 @@ class RegularizationFinancialSummaryService
 
             'total_paid' => $totalPaid,
 
-            'final_balance' => $remaining,
+            'final_balance' => $finalBalance,
 
-            'status' => $this->resolveStatus($remaining),
+            'settlement_status' => $this->resolveStatus($finalBalance),
 
         ];
     }

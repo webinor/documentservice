@@ -20,6 +20,7 @@ use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
+use App\Http\Controllers\RegularizationItemController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TestThumbnailController;
 use App\Models\AbsenceRequest;
@@ -156,10 +157,43 @@ Route::prefix('leave-balances')->group(function () {
             "store",
         ]);
 
-        Route::get("{document}/mission-expenses", [
+          Route::get("{document}/mission-expenses", [
             MissionExpenseController::class,
             "getMissionExpenses",
         ]);
+
+           Route::put("/{document}/mission-expenses/{missionExpense}", [
+            MissionExpenseController::class,
+            "update",
+        ]);
+
+          Route::delete("/{document}/mission-expenses/{missionExpense}", [
+            MissionExpenseController::class,
+            "destroy",
+        ]);
+
+          Route::post("/{document}/regularization-expenses", [
+            RegularizationItemController::class,
+            "store",
+        ]);
+
+          Route::get("{document}/regularization-expenses", [
+            RegularizationItemController::class,
+            "getRegularizationItems",
+        ]);
+
+           Route::put("/{document}/regularization-expenses/{item}", [
+            RegularizationItemController::class,
+            "updateItem",
+        ]);
+
+
+          Route::delete("/{document}/regularization-expenses/{item}", [
+            RegularizationItemController::class,
+            "deleteItem",
+        ]);
+
+      
 
         Route::patch("/{document}/mission", [
             MissionController::class,
@@ -167,6 +201,11 @@ Route::prefix('leave-balances')->group(function () {
         ]);
 
         Route::get("/{document}/financial-summary", [
+            MissionFinancialSummaryController::class,
+            "show",
+        ]);
+
+         Route::get("/{document}/financial-summary", [
             MissionFinancialSummaryController::class,
             "show",
         ]);
@@ -181,15 +220,9 @@ Route::get(
     [MissionFinancialReportController::class, 'export']
 );
 
-        Route::delete("/{document}/mission-expenses/{missionExpense}", [
-            MissionExpenseController::class,
-            "destroy",
-        ]);
+      
 
-        Route::put("/{document}/mission-expenses/{missionExpense}", [
-            MissionExpenseController::class,
-            "update",
-        ]);
+     
 
         Route::get("/countByDepartment/{departmentId}", [
             DepartmentDocumentTypeController::class,
