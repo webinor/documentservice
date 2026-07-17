@@ -408,9 +408,9 @@ class DocumentController extends Controller
         //new Exception(json_encode($template));
 
         // Nom du fichier pour le téléchargement
-        $fileName = $template . "-" . $document["id"] . ".pdf";
+        $fileName = $template . "-" . $document["reference"] . ".pdf";
 
-        // Retourner le PDF en téléchargement
+        // Retourner le PDF en téléchargement {{ $document['reference'] }}
         return $pdf->download($fileName);
     }
 

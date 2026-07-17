@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>FICHE A REGULARISER</title>
+    <title>FICHE A REGULARISER - {{ $document['reference'] }}</title>
 
     <style>
 
