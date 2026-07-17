@@ -11,12 +11,14 @@ class RegularizationDocumentEnrichmentHandler
     {
         $userClient = new UserServiceClient();
 
-        $actor_details = $userClient->resolveActor(
+        $document->load([
+            'regularization_sheet.items',
+        ]);
+
+        $document->actor_details = $userClient->resolveActor(
             $document->actor_type,
             $document->actor_id
         );
-
-        $document->actor_details = $actor_details;
 
         return $document->toArray();
     }
