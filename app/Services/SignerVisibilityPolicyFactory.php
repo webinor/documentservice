@@ -6,6 +6,7 @@ use App\Contracts\SignerVisibilityPolicy;
 use App\Services\Absence\AbsenceSignerVisibilityPolicy;
 use App\Services\FeeNote\FeeNoteSignerVisibilityPolicy;
 use App\Services\Mission\MissionSignerVisibilityPolicy;
+use App\Services\Regularization\RegulatizationSignerVisibilityPolicy;
 use App\Services\TaxiPaper\TaxiSignerVisibilityPolicy;
 
 class SignerVisibilityPolicyFactory
@@ -15,6 +16,7 @@ class SignerVisibilityPolicyFactory
         'mission'     => MissionSignerVisibilityPolicy::class,
         'demande-d-absence' => AbsenceSignerVisibilityPolicy::class,
         'note-de-frais' => FeeNoteSignerVisibilityPolicy::class,
+        'fiche-a-regulariser' => RegulatizationSignerVisibilityPolicy::class,
     ];
 
     public static function make(string $documentType): SignerVisibilityPolicy
