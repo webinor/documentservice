@@ -51,6 +51,27 @@ class RegularizationFinancialSummaryService
             )
             ->get();
 
+                    /**
+         * =========================
+         * Totaux par type métier
+         * =========================
+         */
+
+        $refunds = $transactions->where('adjustment_type', 'REFUND');
+        $supplements = $transactions->where('adjustment_type', 'SUPPLEMENT');
+
+        $totalRefund = $refunds->sum('amount');
+        $totalSupplement = $supplements->sum('amount');
+
+        /**
+         * =========================
+         * Impact sur le solde
+         * =========================
+         * refund => réduit la dette
+         * supplement => augmente la dette
+         */
+        $netImpact = $totalSupplement  - $totalRefund;
+
         /**
          * Paiements d'avance
          */
@@ -73,7 +94,19 @@ class RegularizationFinancialSummaryService
         /**
          * Solde restant
          */
-        $finalBalance = $totalReel - $totalAdvance + $totalSettlement ;
+
+        if ($netImpact > 0) {
+            
+            $finalBalance = $totalReel - ($totalAdvance + $totalSettlement) ;
+
+        } else {
+            
+            $finalBalance = $totalReel - ($totalAdvance - $totalSettlement) ;
+
+        }
+        
+
+        
 
         return [
 
