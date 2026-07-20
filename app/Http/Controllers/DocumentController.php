@@ -1200,7 +1200,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             [
                                 "success" => true,
                                 "message" =>
-                                    "Document créé avec succès et workflow démarré",
+                                "Document créé avec succès et workflow démarré",
                                 "document" => $document,
                                 "workflow_instance" => $workflowInstance,
                             ],
@@ -1658,28 +1658,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         DocumentCapabilitiesService $service,
         Document $document
     ) {
-        // return $document;
-        // $document->load("document_type");
-
-        // $totalPaid = $document->payments()->sum("amount");
-
-        // $document->paid_amount = $totalPaid;
-
-        // $document->formatted_amount = $document->amount
-        //     ? number_format($document->amount, 0, ",", ".")
-        //     : null;
-
       
-
-     
-        // $document->load(
-        //     "document_type",
-        //     "attachments.file",
-        //     "secondary_attachments"
-        // );
-
-        // $document = $documentEnrichmentManager->enrich($document);
-
+    
 
         $workflowContext = $documentViewService->getWorkflowStatusStatus(
             $document->id

@@ -64,6 +64,9 @@ protected UserServiceClient $user_service_client;
 
         $handlerClass = $type->enrichment_handler_class;
 
+    // throw new \Exception("{$handlerClass}");
+
+
         if (!$handlerClass) {
     throw new \Exception("Aucun handler d'enrichissement configuré pour le type de document '{$type->name}'");
 }
@@ -83,6 +86,9 @@ protected UserServiceClient $user_service_client;
             ? $relationData->toArray()
             : null;
     }
+
+    // throw new \Exception("{$relationName}");
+
         
         $transactions =  $this->user_service_client->getDocumentTransactions($document->id);
         // throw new \Exception(json_encode($transactions));
@@ -96,6 +102,9 @@ protected UserServiceClient $user_service_client;
     // })
     // ->first();
 
+    // throw new \Exception(json_encode($transactions));
+
+
     
 
     //     $document->numero_piece = $numero_piece;
@@ -107,12 +116,19 @@ protected UserServiceClient $user_service_client;
     ->value('attachment_number');
 
 
-        // throw new \Exception(json_encode($attachment));
+        // throw new \Exception(json_encode($document));
 
 
 
         $handler = app($handlerClass);
 
-        return $handler->enrich($document, $base);
+        // throw new \Exception(json_encode($handler));
+
+        $enriched = $handler->enrich($document, $base);
+
+
+
+
+        return $enriched ;
     }
 }

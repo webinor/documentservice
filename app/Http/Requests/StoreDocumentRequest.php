@@ -35,6 +35,7 @@ class StoreDocumentRequest extends FormRequest
         ];
 
         $invoiceFields = [
+            "provider_type" => "required|string",
             "prestataire" => "required|string",
             "reference_fournisseur" => "required|string",
             "dateDepot" => "required|date|before:now",
@@ -60,40 +61,36 @@ class StoreDocumentRequest extends FormRequest
             "beneficiaire" => "required|numeric",
         ];
 
-   $absenceRequestFields = [
+        $absenceRequestFields = [
+            "beneficiaire" => "required|numeric",
 
-    "beneficiaire" => "required|numeric",
+            "dateDepart" => "required|date",
+            "dateRetour" => "required|date",
 
-    
+            "motif" => [
+                Rule::requiredIf($this->input("titre") === "PERMISSION"),
+                "nullable",
+                "string",
+            ],
 
-    "dateDepart" => "required|date",
-    "dateRetour" => "required|date",
+            "type_conge" => [
+                Rule::requiredIf($this->input("titre") === "CONGE"),
+                "nullable",
+                "string",
+            ],
 
-    "motif" => [
-        Rule::requiredIf($this->input('titre') === 'PERMISSION'),
-        'nullable',
-        'string',
-    ],
+            "heureDepart" => [
+                Rule::requiredIf($this->input("titre") === "PERMISSION"),
+                "nullable",
+                'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
+            ],
 
-        "type_conge" => [
-        Rule::requiredIf($this->input('titre') === 'CONGE'),
-        'nullable',
-        'string',
-    ],
-
-    "heureDepart" => [
-        Rule::requiredIf($this->input('titre') === 'PERMISSION'),
-        'nullable',
-        'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
-    ],
-
-    "heureRetour" => [
-        Rule::requiredIf($this->input('titre') === 'PERMISSION'),
-        'nullable',
-        'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
-    ],
-
-];
+            "heureRetour" => [
+                Rule::requiredIf($this->input("titre") === "PERMISSION"),
+                "nullable",
+                'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
+            ],
+        ];
         $missionFields = [
             // Infos mission
             "destination" => "required|string",
@@ -174,7 +171,8 @@ class StoreDocumentRequest extends FormRequest
 
             "priority" => "required|in:LOW,MEDIUM,HIGH,CRITICAL",
 
-            "category" => "required|in:IT_EQUIPMENT,SOFTWARE,OFFICE_SUPPLY,FURNITURE,VEHICLE,TELECOM,SERVICE,OTHER",
+            "category" =>
+                "required|in:IT_EQUIPMENT,SOFTWARE,OFFICE_SUPPLY,FURNITURE,VEHICLE,TELECOM,SERVICE,OTHER",
 
             /**
              * Articles demandés
@@ -199,10 +197,11 @@ class StoreDocumentRequest extends FormRequest
 
             "attachments.*" => "file|max:10240",
 
-            "estimated_amount" => 'nullable|numeric|min:0',
+            "estimated_amount" => "nullable|numeric|min:0",
         ];
 
         $rulesByType = [
+            "facture-fournisseur" => [$baseRules, $invoiceFields],
             "facture-fournisseur-medical" => [$baseRules, $invoiceFields],
             "facture-fournisseur-informatique" => [$baseRules, $invoiceFields],
             "facture-note-honoraire" => [$baseRules, $invoiceFields],

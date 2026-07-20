@@ -11,6 +11,7 @@ use App\Models\Misc\DocumentType;
 use Illuminate\Support\Facades\DB;
 use App\Models\Misc\AttachmentType;
 use App\Models\DepartmentDocumentType;
+use App\Models\Finance\InvoiceProvider;
 use App\Models\Mission;
 use App\Models\Purchase;
 use App\Models\PurchaseRequest;
@@ -19,6 +20,8 @@ use Database\Seeders\LedgerCodeTypeSeeder;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 
             use App\Models\RegularizationSheet;
+use App\Services\InvoiceProvider\InvoiceProviderDocumentEnrichmentHandler;
+use App\Services\InvoiceProvider\InvoiceProviderDocumentHandler;
 use App\Services\Regularization\RegularizationDocumentEnrichmentHandler;
 use App\Services\Regularization\RegularizationDocumentHandler;
 
@@ -118,6 +121,44 @@ $documentTypesConfig = [
     'view_route' => '/fiches-a-regulariser',
 
     'create_route' => '/nouveau-document?type=fiche-a-regulariser',
+
+    'return_policy' => 'ROLE',
+
+    'reception_mode' => 'WORKFLOW_DRIVEN',
+],
+
+
+
+[
+    'code' => 'INVOICE_PROVIDER',
+
+    'name' => 'Facture fournisseur',
+
+    'slug' => 'facture-fournisseur',
+
+    'class_name' => InvoiceProvider::class,
+
+    // À activer lorsque les handlers seront implémentés
+    'creation_handler_class' => InvoiceProviderDocumentHandler::class,
+    'enrichment_handler_class' => InvoiceProviderDocumentEnrichmentHandler::class,
+
+    'relation_name' => 'invoice_provider',
+
+    'icon' => '🧾',
+
+    'color' => 'indigo',
+
+    'dashboard_order' => 20,
+
+    'show_in_dashboard' => true,
+
+    'dashboard_title' => 'Factures fournisseurs',
+
+    'dashboard_subtitle' => 'À traiter',
+
+    'view_route' => '/factures-fournisseurs',
+
+    'create_route' => '/nouveau-document?type=facture-fournisseur',
 
     'return_policy' => 'ROLE',
 
