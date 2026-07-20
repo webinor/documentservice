@@ -61,9 +61,9 @@ td{
 
 DEMANDE DE {{ $document['absence_request']['type'] }}
 
-<br>
+{{-- <br>
 
-Référence : #{{ $document['reference'] }}
+Référence : #{{ $document['reference'] }} --}}
 
 </td>
 
@@ -98,10 +98,11 @@ INFORMATIONS DU DEMANDEUR
         {{ trim(($document['actor_details']['nom'] ?? '').' '.($document['actor_details']['prenom'] ?? '')) }}
     </td>
 
-    <td class="label">Matricule</td>
+    <td class="label">Référence</td>
 
     <td>
-        {{ $document['actor_details']['matricule'] ?? '-' }}
+        {{-- {{ $document['actor_details']['matricule'] ?? '-' }} --}}
+        {{ $document['reference'] }}
     </td>
 
 </tr>
