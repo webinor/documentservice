@@ -118,7 +118,7 @@ $documentTypesConfig = [
 
     'dashboard_subtitle' => 'À traiter',
 
-    'view_route' => '/fiches-a-regulariser',
+    'view_route' => '/fiches-a-regulariser-a-valider',
 
     'create_route' => '/nouveau-document?type=fiche-a-regulariser',
 
