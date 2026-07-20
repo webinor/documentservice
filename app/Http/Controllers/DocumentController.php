@@ -16,7 +16,9 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\Document;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
+use App\Services\Document\DocumentCapabilitiesService;
 use App\Services\Document\DocumentEnricher;
+use App\Services\Document\DocumentService;
 use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
@@ -1651,53 +1653,70 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
     public function show(
         Request $request,
         DocumentViewService $documentViewService,
-        DocumentEnricher $documentEnricher,
+        DocumentService $documentService,
         DocumentEnrichmentManager $documentEnrichmentManager,
+        DocumentCapabilitiesService $service,
         Document $document
     ) {
         // return $document;
-        $document->load("document_type");
+        // $document->load("document_type");
 
-        $totalPaid = $document->payments()->sum("amount");
+        // $totalPaid = $document->payments()->sum("amount");
 
-        $document->paid_amount = $totalPaid;
+        // $document->paid_amount = $totalPaid;
 
-        $document->formatted_amount = $document->amount
-            ? number_format($document->amount, 0, ",", ".")
-            : null;
+        // $document->formatted_amount = $document->amount
+        //     ? number_format($document->amount, 0, ",", ".")
+        //     : null;
 
-        $workflowStatus = $documentViewService->getWorkflowStatusStatus(
+      
+
+     
+        // $document->load(
+        //     "document_type",
+        //     "attachments.file",
+        //     "secondary_attachments"
+        // );
+
+        // $document = $documentEnrichmentManager->enrich($document);
+
+
+        $workflowContext = $documentViewService->getWorkflowStatusStatus(
             $document->id
         );
 
-        // return $workflowStatus['status'];
+       
 
-        // throw new Exception(json_encode($workflowStatus), 1);
+        DocumentContext::setWorkflowStatus($document->id, $workflowContext);
 
-        DocumentContext::setWorkflowStatus($document->id, $workflowStatus);
+        $enrichedDocument = $documentService->enrichDocument($document);
 
-        // return $document;
+        $userInfo = request()->get("user");
 
-        // throw new Exception(json_encode($this->documents_relation[$document->document_type->slug]), 1);
+        $user = [
+            'id' => $userInfo['id'],
+            'employee_id' =>$userInfo['employee_id'],
+            'role_id' => $userInfo['role_ids'] ?? null,
+        ];
 
-        $document->load(
-            "document_type",
-            // $this->documents_relation[$document->document_type->slug],
-            "attachments.file",
-            "secondary_attachments"
-        );
+         /**
+         * Résolution des capacités
+         */
+        $capabilities = $service->resolve(
+            $enrichedDocument,
+            $workflowContext,
+            $user
+            );
+            
+        // throw new Exception(json_encode($capabilities), 1);
 
-        $document = $documentEnrichmentManager->enrich($document);
+            
+        $enrichedDocument['user_capabilities'] = $capabilities;
 
-        // throw new Exception(json_encode($document["transactions"]), 1);
-        // throw new Exception(json_encode($document), 1);
-
-        // ######## DYNAMIQUE : enrichir beneficiary ########
-
-        // Log::info($document->mission->toJson());
-
-        return $document;
+        return $enrichedDocument ;
     }
+
+
 
     /**
      * Show the form for editing the specified resource.

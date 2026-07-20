@@ -32,6 +32,8 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
 
         
        
+        // throw new \Exception(json_encode($direction), 1);
+        
 
          switch ($transactionTypeCode) {
 
@@ -95,6 +97,7 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
 
             break;
     }
+
     }
 
     /**
@@ -141,9 +144,27 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     public function getSettlementDirection(
         string $transaction_type_code = ""
     ): string {
+
+
+
+         switch ($transaction_type_code) {
+
+  
+
+        case 'REGULARIZATION_ADVANCE':
+
+            return "OUT";
+
+                    
+            break;
+    }
+
+
+
         $balance = $this->getSettlementAmount();
 
-        // throw new \Exception(json_encode($balance), 1);
+       
+        
 
         if ($balance > 0) {
             return "OUT";

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Misc\File;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,6 +34,17 @@ class RegularizationItem extends Model
     {
         return $this->belongsTo(RegularizationSheet::class);
     }
+
+    public function files()
+{
+    return $this->morphMany(File::class, 'model');
+}
+
+public function receipt()
+{
+    return $this->morphOne(File::class, 'model')
+        ->where('type', 'RECEIPT');
+}
 
     protected static function booted()
 {

@@ -225,7 +225,7 @@ $total += $item['total_amount'];
 
 <tr>
     <td class="label">
-        Avance reçue
+        Montant reçue
     </td>
 
     <td align="right">
@@ -307,6 +307,7 @@ $balance = $total - ($document['regularization_sheet']['amount'] ?? 0);
 
 @endif
 
+<br>
 <!-- ====================================================== -->
 <!-- SIGNATURES -->
 <!-- ====================================================== -->

@@ -13,23 +13,26 @@ class UpdateRegularizationItemRequest extends FormRequest
 
     public function rules()
     {
+
+   
+
         return [
 
             'designation' => [
                 'sometimes',
-                'string',
+                // 'string',
                 'max:255',
             ],
 
             'quantity' => [
                 'sometimes',
-                'numeric',
+                // 'numeric',
                 'min:0',
             ],
 
             'unit_price' => [
                 'sometimes',
-                'numeric',
+                // 'numeric',
                 'min:0',
             ],
 

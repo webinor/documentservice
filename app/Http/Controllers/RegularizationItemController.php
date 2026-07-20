@@ -6,6 +6,8 @@ use App\Http\Requests\StoreRegularizationItemRequest;
 use App\Http\Requests\UpdateRegularizationItemRequest;
 use App\Models\Misc\Document;
 use App\Models\RegularizationItem;
+use App\Services\Common\FileManager;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class RegularizationItemController extends Controller
@@ -50,26 +52,36 @@ class RegularizationItemController extends Controller
     }
 
 
-        public function getRegularizationItems(
-        Document $document
-        // MissionExpenseCalculatorService $service
-        // MissionExpenseService $service
-    ) {
-        // $document->load('mission.mission_expenses.expense_category');
-        $document->load("regularization_sheet.items");
 
-        $items = $document->regularization_sheet->items;
+public function getRegularizationItems(Document $document)
+{
+    $document->load('regularization_sheet.items.receipt');
 
-        return response()->json(
-        
-                [
-                    "success" => true,
-                    "items" => $items
-                ],
-              
-            
-        );
-    }
+    $items = $document->regularization_sheet->items->map(function ($item) {
+
+        return [
+            'id' => $item->id,
+            'designation' => $item->designation,
+            'quantity' => $item->quantity,
+            'unit_price' => $item->unit_price,
+            'total' => (float) $item->quantity * (float) $item->unit_price,
+
+            'receipt' => $item->receipt,
+
+            'receipt_url' => $item->receipt
+                ? Storage::url($item->receipt->path)
+                : null,
+
+            'created_at' => $item->created_at,
+            'updated_at' => $item->updated_at,
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'items' => $items,
+    ]);
+}
 
     /**
      * Supprimer une ligne d'une fiche à régulariser.
@@ -111,69 +123,76 @@ class RegularizationItemController extends Controller
 
 
 
-    /**
-     * Mettre à jour une ligne de fiche à régulariser.
-     */
-    public function updateItem(
-        UpdateRegularizationItemRequest $request,
-        Document $document,
-        RegularizationItem $item
+
+public function updateItem(
+    UpdateRegularizationItemRequest $request,
+    Document $document,
+    RegularizationItem $item,
+    FileManager $fileManager
+) {
+    $document->load('regularization_sheet');
+
+    abort_if(
+        !$document->regularization_sheet,
+        404,
+        "Aucune fiche à régulariser associée à ce document."
+    );
+
+    abort_if(
+        $item->regularization_sheet_id !== $document->regularization_sheet->id,
+        403,
+        "Cette ligne n'appartient pas à cette fiche."
+    );
+
+    $validated = collect($request->validated())
+    ->except('receipt')
+    ->toArray();
+
+
+    return DB::transaction(function () use (
+        $request,
+        $item,
+        $validated,
+        $fileManager
     ) {
-
-        $document->load('regularization_sheet');
-
-        abort_if(
-            !$document->regularization_sheet,
-            404,
-            "Aucune fiche à régulariser associée à ce document."
-        );
-
-        abort_if(
-            $item->regularization_sheet_id !== $document->regularization_sheet->id,
-            403,
-            "Cette ligne n'appartient pas à cette fiche."
-        );
-
-        $validated = $request->validated();
 
         /**
          * Upload du justificatif
          */
-        if ($request->hasFile('receipt')) {
+         if ($request->hasFile('receipt')) {
 
-            // Suppression de l'ancien fichier
-            if (
-                $item->receipt &&
-                Storage::disk('public')->exists($item->receipt)
-            ) {
-                Storage::disk('public')->delete($item->receipt);
-            }
+            $fileManager->replace(
+                $item,
+                'RECEIPT',
+                $request->file('receipt')
+            );
 
-            $validated['receipt'] = $request
-                ->file('receipt')
-                ->store(
-                    'regularization-items',
-                    'public'
-                );
         }
 
+
         /**
-         * Mise à jour
+         * Mise à jour ligne
          */
         $item->fill($validated);
 
-        // /**
-        //  * Calcul automatique du total
-        //  */
-        // $item->total_amount =
-        //     ($item->quantity ?? 0)
-        //     * ($item->unit_price ?? 0);
+
+        /**
+         * Calcul automatique
+         */
+        $item->total_amount =
+            ($item->quantity ?? 0)
+            *
+            ($item->unit_price ?? 0);
+
 
         $item->save();
 
+
         return response()->json([
             'message' => 'Ligne mise à jour avec succès.',
-            'data' => $item->fresh(),
+            'data' => $item->fresh('receipt'),
         ]);
-    }
+
+    });
+}
 }

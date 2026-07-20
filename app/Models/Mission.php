@@ -137,6 +137,20 @@ class Mission extends Model implements PayableDocumentInterface
     public function getSettlementDirection(
         string $transaction_type_code
     ): string {
+
+
+     switch ($transaction_type_code) {
+
+  
+
+        case 'MISSION_EXPENSE_ADVANCE':
+
+            return "OUT"; 
+            break;
+    }
+
+
+
         $balance = $this->calculateSettlementAmount($transaction_type_code);
 
         if ($balance > 0) {

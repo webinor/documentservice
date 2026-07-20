@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
+use App\Http\Controllers\DocumentCapabilitiesController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentTypeController;
@@ -45,6 +46,11 @@ Route::middleware("jwt.check")
         /**
          * 📌 DocumentTypeController
          */
+
+        Route::get(
+        '/{document}/capabilities',
+        [DocumentCapabilitiesController::class, 'show']
+    );
 
         Route::post('/types-by-ids', [DocumentController::class, 'typesByIds']);
         Route::controller(DocumentTypeController::class)->group(function () {
@@ -172,20 +178,27 @@ Route::prefix('leave-balances')->group(function () {
             "destroy",
         ]);
 
-          Route::post("/{document}/regularization-expenses", [
-            RegularizationItemController::class,
-            "store",
-        ]);
+     
+          
+        //   post("/{document}/regularization-expenses", [
+        //     RegularizationItemController::class,
+        //     "store",
+        // ]);
 
           Route::get("{document}/regularization-expenses", [
             RegularizationItemController::class,
             "getRegularizationItems",
         ]);
 
-           Route::put("/{document}/regularization-expenses/{item}", [
+           Route::post("/{document}/regularization-expenses", [
+            RegularizationItemController::class,
+            "store",
+        ]);
+
+             Route::match(['put', 'post'], "/{document}/regularization-expenses/{item}", [
             RegularizationItemController::class,
             "updateItem",
-        ]);
+        ]); 
 
 
           Route::delete("/{document}/regularization-expenses/{item}", [
