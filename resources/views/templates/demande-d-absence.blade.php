@@ -59,7 +59,7 @@ td{
 
 <td width="80%" align="center" class="header">
 
-DEMANDE DE {{ $document['absence_requests']['type'] }}
+DEMANDE DE {{ $document['absence_request']['type'] }}
 
 <br>
 
