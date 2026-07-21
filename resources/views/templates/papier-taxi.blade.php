@@ -21,7 +21,8 @@ td,th{
 }
 
 .header{
-    background:#1f4e79;
+    /* background:#1f4e79; */
+    background:#ea9c0c;
     color:#fff;
     font-size:16px;
     font-weight:bold;
@@ -30,12 +31,18 @@ td,th{
 .section{
     background:#eeeeee;
     font-weight:bold;
-    font-size:11px;
+    font-size:13px;
 }
 
 .label{
     font-weight:bold;
+    font-size:12px;
 }
+
+.sub-label{
+            font-weight:lighter;
+            font-size:12px;
+        }
 
 .signature{
     height:80px;
@@ -85,7 +92,7 @@ PAPIER TAXI
 
 <table>
 
-<tr>
+<tr class="sub-label">
 
 <td colspan="4" class="section">
 INFORMATIONS GÉNÉRALES
@@ -93,7 +100,7 @@ INFORMATIONS GÉNÉRALES
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Référence
@@ -114,7 +121,7 @@ N° Pièce
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Bénéficiaire
@@ -134,7 +141,7 @@ Date
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Motif
@@ -159,7 +166,7 @@ $total = 0;
 
 <table>
 
-<tr>
+<tr class="sub-label">
 
 <td colspan="2" class="section">
 
@@ -169,7 +176,7 @@ INFORMATIONS FINANCIERES
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label" width="75%">
 Trajet
@@ -189,7 +196,7 @@ $total += $ride['montant'];
 
 @endphp
 
-<tr>
+<tr class="sub-label">
 
 <td>
 
@@ -209,7 +216,7 @@ $total += $ride['montant'];
 
 @endforeach
 
-<tr>
+<tr class="sub-label">
 
 <td align="right">
 

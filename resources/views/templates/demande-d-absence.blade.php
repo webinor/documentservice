@@ -29,13 +29,19 @@ td{
 .section{
     background:#eeeeee;
     font-weight:bold;
-    font-size:11px;
+    font-size:14px;
 }
 
 
 .label{
     font-weight:bold;
+    font-size:12px;
 }
+
+.sub-label{
+            font-weight:lighter;
+            font-size:12px;
+        }
 
 
 .signature{
@@ -81,7 +87,7 @@ Référence : #{{ $document['reference'] }} --}}
 
 <table>
 
-<tr>
+<tr class="sub-label">
 
 <td colspan="4" class="section">
 INFORMATIONS DU DEMANDEUR
@@ -90,7 +96,7 @@ INFORMATIONS DU DEMANDEUR
 </tr>
 
 
-<tr>
+<tr class="sub-label">
 
     <td class="label">Nom</td>
 
@@ -109,7 +115,7 @@ INFORMATIONS DU DEMANDEUR
 
 
 
-<tr>
+<tr class="sub-label">
 
     <td class="label">Poste</td>
 
@@ -138,13 +144,13 @@ INFORMATIONS DU DEMANDEUR
 
 <table>
 
-<tr>
+<tr class="sub-label">
     <td colspan="4" class="section">
          ABSENCE
     </td>
 </tr>
 
-<tr>
+<tr class="sub-label">
 
     <td class="label">
         Type
@@ -156,7 +162,7 @@ INFORMATIONS DU DEMANDEUR
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
     <td class="label">
         Début
@@ -188,7 +194,7 @@ INFORMATIONS DU DEMANDEUR
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
     <td class="label">
         Durée
@@ -217,13 +223,13 @@ INFORMATIONS DU DEMANDEUR
 <!-- SOLDE -->
 <table>
 
-<tr>
+<tr class="sub-label">
     <td colspan="4" class="section">
          DIRECTION
     </td>
 </tr>
 
-<tr>
+<tr class="sub-label">
 
     <td>Solde disponible</td>
 
@@ -239,7 +245,7 @@ INFORMATIONS DU DEMANDEUR
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
     <td colspan="3">
         Solde restant
@@ -272,7 +278,7 @@ INFORMATIONS DU DEMANDEUR
 <table>
 
 
-<tr>
+<tr class="sub-label">
 
     
 <td colspan="4" class="section">
@@ -285,7 +291,7 @@ DECISION
 </tr>
 
 
-<tr>
+<tr class="sub-label">
 
 
 <td colspan="4" style="color: rgb(39, 189, 28); font-weight: bold;">
@@ -306,7 +312,7 @@ DECISION
 
 
 
-<tr>
+<tr class="sub-label">
 
 
 <td colspan="4">

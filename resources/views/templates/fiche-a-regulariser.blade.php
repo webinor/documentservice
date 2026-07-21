@@ -23,7 +23,7 @@
         }
 
         .header{
-            background:#1f4e79;
+            background:#7c3aed;
             color:#fff;
             font-size:16px;
             font-weight:bold;
@@ -32,11 +32,17 @@
         .section{
             background:#eeeeee;
             font-weight:bold;
-            font-size:11px;
+            font-size:13px;
         }
 
         .label{
             font-weight:bold;
+            font-size:12px;
+        }
+
+        .sub-label{
+            font-weight:lighter;
+            font-size:12px;
         }
 
         .signature{
@@ -87,7 +93,7 @@ FICHE À RÉGULARISER
 
 <table>
 
-<tr>
+<tr class="sub-label">
 
 <td colspan="4" class="section">
 INFORMATIONS GÉNÉRALES
@@ -95,7 +101,7 @@ INFORMATIONS GÉNÉRALES
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Référence
@@ -115,7 +121,7 @@ Date
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Collaborateur
@@ -136,7 +142,7 @@ N° Pièce
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Département
@@ -166,13 +172,13 @@ Poste
 
 <table>
 
-<tr>
+<tr class="sub-label">
     <td colspan="5" class="section">
         DÉPENSES À RÉGULARISER
     </td>
 </tr>
 
-<tr>
+<tr class="sub-label">
     <td width="40%" class="label">Désignation</td>
     <td width="15%" class="label" align="center">Qté</td>
     <td width="20%" class="label" align="right">Prix unitaire</td>
@@ -189,7 +195,7 @@ $total = 0;
 $total += $item['total_amount'];
 @endphp
 
-<tr>
+<tr class="sub-label">
 
     <td>
         {{ $item['designation'] }}
@@ -217,13 +223,13 @@ $total += $item['total_amount'];
 
 <table>
 
-<tr>
+<tr class="sub-label">
     <td colspan="2" class="section">
         RÉSUMÉ FINANCIER
     </td>
 </tr>
 
-<tr>
+<tr class="sub-label">
     <td class="label">
         Montant reçue
     </td>
@@ -233,7 +239,7 @@ $total += $item['total_amount'];
     </td>
 </tr>
 
-<tr>
+<tr class="sub-label">
     <td class="label">
         Dépenses réelles
     </td>
@@ -247,7 +253,7 @@ $total += $item['total_amount'];
 $balance = $total - ($document['regularization_sheet']['amount'] ?? 0);
 @endphp
 
-<tr>
+<tr class="sub-label">
 
     <td class="label">
 
@@ -289,13 +295,13 @@ $balance = $total - ($document['regularization_sheet']['amount'] ?? 0);
 
 <table>
 
-<tr>
+<tr class="sub-label">
     <td class="section">
         OBSERVATIONS
     </td>
 </tr>
 
-<tr>
+<tr class="sub-label">
     <td>
 
         {{ $document['regularization_sheet']['comment'] }}

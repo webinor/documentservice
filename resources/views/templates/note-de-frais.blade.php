@@ -23,7 +23,7 @@
         }
 
         .header{
-            background:#1f4e79;
+            background:#0f766e;
             color:#fff;
             font-size:16px;
             font-weight:bold;
@@ -32,11 +32,17 @@
         .section{
             background:#eeeeee;
             font-weight:bold;
-            font-size:11px;
+            font-size:13px;
         }
 
         .label{
             font-weight:bold;
+            font-size:12px;
+        }
+
+        .sub-label{
+            font-weight:lighter;
+            font-size:12px;
         }
 
         .signature{
@@ -91,7 +97,7 @@ NOTE DE FRAIS
 
 <table>
 
-<tr>
+<tr class="sub-label">
 
 <td colspan="4" class="section">
 INFORMATIONS GÉNÉRALES
@@ -99,7 +105,7 @@ INFORMATIONS GÉNÉRALES
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Référence
@@ -119,7 +125,7 @@ Date
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Collaborateur
@@ -140,7 +146,7 @@ N° Pièce
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td class="label">
 Département
@@ -170,7 +176,7 @@ Poste
 
 <table>
 
-<tr>
+<tr class="sub-label">
 
 <td colspan="2" class="section">
 INFORMATIONS FINANCIERES
@@ -178,7 +184,7 @@ INFORMATIONS FINANCIERES
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td width="75%" class="label">
 Motif
@@ -190,7 +196,7 @@ Montant ( FCFA )
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td>
 
@@ -207,7 +213,7 @@ Montant ( FCFA )
 
 </tr>
 
-<tr>
+<tr class="sub-label">
 
 <td align="right">
 
