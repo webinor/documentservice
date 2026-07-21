@@ -126,7 +126,7 @@ class AttachmentController extends Controller
 
                     DB::commit();
 
-                    return $response = response()->json(
+                    return response()->json(
                         [
                             "success" => true,
                             "existing_attachment" => $attachment_document,
@@ -136,7 +136,7 @@ class AttachmentController extends Controller
                 }
             }
 
-            // if ($validated["source"] == "new") {
+            // if (isset($validated["source"]) && $validated["source"] == "new") {
             if (true) {
                 // Créer l'enregistrement en base
                 $attachment = Attachment::create([
@@ -147,31 +147,34 @@ class AttachmentController extends Controller
                     "created_by" => $user["id"],
                 ]);
 
-                // $fileName =
-                //     Str::random(20) .
-                //     "_" .
-                //     time() .
-                //     "." .
-                //     $request->attachment->extension();
-                // $type = $request->attachment->getClientMimeType();
-                // $size = $request->attachment->getSize();
+                if ($request->hasFile('attachment')) {
 
-                // $request->attachment->move(
-                //     storage_path("app/public/documents_attachments"),
-                //     $fileName
-                // );
-                // //$path = $request->file('attachment')->store('documents'); // dans storage/app/documents
+    $fileName =
+        Str::random(20) .
+        "_" .
+        time() .
+        "." .
+        $request->attachment->extension();
 
-                // $file = new File();
+    $type = $request->attachment->getClientMimeType();
+    $size = $request->attachment->getSize();
 
-                // $file->path = $fileName;
-                // $file->type = $type;
-                // $file->size = $size;
+    $request->attachment->move(
+        storage_path("app/public/documents_attachments"),
+        $fileName
+    );
 
-                // $attachment->file()->save($file);
+    $file = new File();
 
-                // // Lancer le Job en arrière-plan
-                // GeneratePdfThumbnail::dispatch($attachment);
+    $file->path = $fileName;
+    $file->type = $type;
+    $file->size = $size;
+
+    $attachment->file()->save($file);
+
+    // Génération miniature uniquement si fichier présent
+    GeneratePdfThumbnail::dispatch($attachment);
+}
 
                 $response = response()->json(
                     [
@@ -181,7 +184,7 @@ class AttachmentController extends Controller
                     ],
                     201
                 );
-            } elseif ($validated["source"] == "exist") {
+            } elseif (isset($validated["source"]) && $validated["source"] == "exist") {
                 ////////////on duplique le fichier
 
                 $document = Document::with("main_attachment.file")
@@ -254,7 +257,7 @@ class AttachmentController extends Controller
 
             DB::commit();
 
-            return $response;
+            return $response ;
         } catch (\Throwable $th) {
             DB::rollback();
             throw $th;
