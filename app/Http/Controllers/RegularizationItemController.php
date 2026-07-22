@@ -16,40 +16,53 @@ class RegularizationItemController extends Controller
      * Ajouter une ligne à une fiche à régulariser.
      */
     public function store(
-        StoreRegularizationItemRequest $request,
-        Document $document
-    ) {
-        $document->load('regularization_sheet');
+    StoreRegularizationItemRequest $request,
+    Document $document
+) {
+    $document->load('regularization_sheet');
 
-        abort_if(
-            !$document->regularization_sheet,
-            404,
-            "Aucune fiche à régulariser associée à ce document."
-        );
+    abort_if(
+        !$document->regularization_sheet,
+        404,
+        "Aucune fiche à régulariser associée à ce document."
+    );
 
-        $validated = $request->validated();
+    $validated = $request->validated();
 
-        $item = RegularizationItem::create([
-            'regularization_sheet_id' => $document->regularization_sheet->id,
+    $sheet = $document->regularization_sheet;
 
-            // 'designation' => $validated['designation'] ?? '',
+    // Vérifier si c'est le premier élément
+    $isFirstItem = !RegularizationItem::where(
+        'regularization_sheet_id',
+        $sheet->id
+    )->exists();
 
-            // 'quantity' => $validated['quantity'] ?? 1,
 
-            // 'unit_price' => $validated['unit_price'] ?? 0,
+    $item = RegularizationItem::create([
+        'regularization_sheet_id' => $sheet->id,
 
-            // 'total_amount' =>
-            //     ($validated['quantity'] ?? 1)
-            //     * ($validated['unit_price'] ?? 0),
+        'designation' => $isFirstItem
+            ? $sheet->reason
+            : ($validated['designation'] ?? null),
 
-            // 'comment' => $validated['comment'] ?? null,
-        ]);
+        // 'quantity' => $validated['quantity'] ?? 1,
 
-        return response()->json([
-            'message' => 'Ligne ajoutée avec succès.',
-            'data' => $item,
-        ], 201);
-    }
+        // 'unit_price' => $validated['unit_price'] ?? 0,
+
+        // 'total_amount' =>
+        //     ($validated['quantity'] ?? 1)
+        //     *
+        //     ($validated['unit_price'] ?? 0),
+
+        // 'comment' => $validated['comment'] ?? null,
+    ]);
+
+
+    return response()->json([
+        'message' => 'Ligne ajoutée avec succès.',
+        'data' => $item,
+    ], 201);
+}
 
 
 
@@ -71,6 +84,16 @@ public function getRegularizationItems(Document $document)
             'receipt_url' => $item->receipt
                 ? Storage::url($item->receipt->path)
                 : null,
+
+              'view_url' => route(
+            'regularization-items.view',
+            $item->receipt->path
+        ),
+
+        'download_url' => route(
+            'regularization-items.download',
+            $item->receipt->path
+        ),
 
             'created_at' => $item->created_at,
             'updated_at' => $item->updated_at,
@@ -195,4 +218,34 @@ public function updateItem(
 
     });
 }
+
+
+
+public function view($path)
+{
+    abort_unless(
+        Storage::disk('public')->exists($path),
+        404
+    );
+
+    return response()->file(
+        Storage::disk('public')->path($path)
+    );
+}
+
+
+public function download($path)
+{
+    abort_unless(
+        Storage::disk('public')->exists($path),
+        404,
+        "Fichier introuvable"
+    );
+
+    return Storage::disk('public')->download($path);
+}
+
+
+
+
 }

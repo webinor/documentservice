@@ -41,6 +41,7 @@ class Document extends Model
         "date_due",
         "prestataire_name",
         "amount",
+        "uuid"
     ];
 
     protected $casts = [

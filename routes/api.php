@@ -34,11 +34,31 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get("/documents/by-status", [DocumentController::class, "getByStatus"]);
-Route::post('/documents/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
 
- Route::get('/documents/attachments/{id}/download', [AttachmentController::class, 'download'])
+
+
+Route::prefix("documents")
+    ->group(function () {
+
+
+    Route::get("/by-status", [DocumentController::class, "getByStatus"]);
+Route::post('/settlements/mark-paid', [SettlementController::class, 'markAsPaid']);
+
+ Route::get('/attachments/{id}/download', [AttachmentController::class, 'download'])
     ->name('attachments.download');
+
+        Route::get(
+    '/regularization-items/{path}/view',
+    [RegularizationItemController::class, 'view']
+)->where('path', '.*')->name('regularization-items.view');;
+
+
+Route::get(
+    '/regularization-items/{path}/download',
+    [RegularizationItemController::class, 'download']
+)->where('path', '.*')->name('regularization-items.download');
+
+    });
 
 Route::middleware("jwt.check")
     ->prefix("documents")
@@ -205,6 +225,17 @@ Route::prefix('leave-balances')->group(function () {
             RegularizationItemController::class,
             "deleteItem",
         ]);
+
+//       Route::get(
+//     '/regularization-items/{path}/view',
+//     [RegularizationItemController::class, 'view']
+// )->where('path', '.*');
+
+
+// Route::get(
+//     '/regularization-items/{path}/download',
+//     [RegularizationItemController::class, 'download']
+// )->where('path', '.*');
 
       
 

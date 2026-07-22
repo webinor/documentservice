@@ -675,10 +675,27 @@ class DocumentController extends Controller
 
     public function getAttachments($documentId)
     {
-        $document = Document::with([
+
+
+         if (Str::isUuid($documentId)) {
+   
+           $document = Document::with([
+            "attachments.attachmentType",
+            "attachments.file",
+        ])->whereUuid($documentId)->first();
+         
+} else {
+    
+
+  $document = Document::with([
             "attachments.attachmentType",
             "attachments.file",
         ])->findOrFail($documentId);
+
+
+}
+
+      
 
         $user = request()->get("user");
 
@@ -783,7 +800,23 @@ class DocumentController extends Controller
     {
         $user = $request->get("user");
 
-        $document = Document::findOrFail($id);
+        
+
+
+           if (Str::isUuid($id)) {
+   
+           $document = Document::whereUuid($id)->first();
+         
+} else {
+    
+
+ $document = Document::findOrFail($id);
+
+
+}
+
+
+
         $documentType = $document->document_type_id;
 
         // Vérifie bien que $user contient bien une clé "id"
@@ -1656,10 +1689,18 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         DocumentService $documentService,
         DocumentEnrichmentManager $documentEnrichmentManager,
         DocumentCapabilitiesService $service,
-        Document $document
+        $documentIdentifier
     ) {
       
+    // throw new Exception("Error Processing Request", 1);
     
+    
+    if (Str::isUuid($documentIdentifier)) {
+    $document = Document::where('uuid', $documentIdentifier)->firstOrFail();
+} else {
+    $document = Document::findOrFail($documentIdentifier);
+}
+
 
         $workflowContext = $documentViewService->getWorkflowStatusStatus(
             $document->id
