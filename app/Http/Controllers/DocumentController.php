@@ -1524,7 +1524,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // ->orderByDesc('id')
         // ->get();
 
-        // throw new Exception(json_encode($documents), 1);
+        // throw new Exception(json_encode($filters), 1);
 
         // // Filtre par statut
         if (!empty($filters["status_paid"])) {
@@ -1533,6 +1533,15 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 : explode(",", $filters["status_paid"]);
             $query->whereIn("status", $statuses);
         }
+
+        if (!empty($filters["employee_id"])) {
+
+            $query->whereActorId($filters["employee_id"]);
+        }
+
+        if (!empty($filters["reference"])) {
+    $query->where("reference", "like", "%" . $filters["reference"] . "%");
+}
 
         // Filtre par type de prestataire
         if (!empty($filters["supplier_type"])) {
