@@ -14,13 +14,13 @@ public function __construct(EmployeeServiceClient $employee_service_client) {
     $this->employee_service_client = $employee_service_client;
 }
     public function deductFromWorkflow(
-        int $documentId,
+        string $documentUuid,
         int $instanceId
     )
     {
         $document = Document::with([
         'absence_request.leaveRequestDays'
-    ])->findOrFail($documentId);
+    ])->whereUuid($documentUuid)->firstOrFail();
 
 
 
@@ -47,7 +47,7 @@ public function __construct(EmployeeServiceClient $employee_service_client) {
     return $this->employee_service_client->deductLeaveDays([
         'employee_id' => $employeeId,
         'absence_request_id' => $absence->id,
-        'document_id' => $documentId,
+        'document_uuid' => $documentUuid,
         'workflow_instance_id' => $instanceId,
         'leave_type_id' => $absence->leave_type_id,
         'days' => $days,

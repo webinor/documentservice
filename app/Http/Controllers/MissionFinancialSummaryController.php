@@ -15,10 +15,10 @@ class MissionFinancialSummaryController extends Controller
         $this->summaryService = $summaryService;
     }
 
-    public function show(Document $document)
+    public function show( $documentId)
     {
         $summary = $this->summaryService
-            ->build($document->id);
+            ->build($documentId);
 
         return response()->json(array_merge(
         [

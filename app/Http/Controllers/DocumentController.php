@@ -17,6 +17,7 @@ use App\Models\Misc\Document;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
 use App\Services\Document\DocumentCapabilitiesService;
+use App\Services\Document\DocumentContextService;
 use App\Services\Document\DocumentEnricher;
 use App\Services\Document\DocumentService;
 use App\Services\Document\LegacyDocumentEnricher;
@@ -297,9 +298,15 @@ class DocumentController extends Controller
         Request $request,
         DocumentEnrichmentManager $documentEnrichmentManager,
         DocumentEnricher $documentEnricher,
-        Document $doc
+         $documentIdentifier
     ) {
         // throw new Exception(json_encode($doc), 1);
+
+        if (Str::isUuid($documentIdentifier)) {
+    $doc = Document::where('uuid', $documentIdentifier)->firstOrFail();
+} else {
+    $doc = Document::findOrFail($documentIdentifier);
+}
 
         $doc->load("document_type");
 
@@ -674,6 +681,237 @@ class DocumentController extends Controller
     }
 
     public function getAttachments($documentId)
+{
+    if (Str::isUuid($documentId)) {
+
+        $document = Document::with([
+            "attachments.attachmentType",
+            "attachments.file",
+            "documentReferences.documentReferenceType",
+        ])->whereUuid($documentId)->firstOrFail();
+
+    } else {
+
+        $document = Document::with([
+            "attachments.attachmentType",
+            "attachments.file",
+            "documentReferences.documentReferenceType",
+        ])->findOrFail($documentId);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attachments
+    |--------------------------------------------------------------------------
+    */
+
+    $attachments = $document->attachments->map(function ($attachment) {
+
+        return [
+            "id" => $attachment->id,
+            "attachment_number" => $attachment->attachment_number,
+            "attachment_type_id" => $attachment->attachment_type_id,
+
+            "generation_mode" =>
+                $attachment->attachmentType->generation_mode ?? null,
+
+            "attachment_type_slug" =>
+                optional($attachment->attachmentType)->slug ?? "--",
+
+            "name" =>
+                optional($attachment->attachmentType)->name ?? "--",
+
+            "created_by_id" => $attachment->created_by,
+
+            "created_at" =>
+                $attachment->created_at
+                    ? $attachment->created_at->format("d/m/Y à H:i")
+                    : null,
+
+            "url" =>
+                optional($attachment->file)->path ?? "#",
+        ];
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | References
+    |--------------------------------------------------------------------------
+    */
+
+    $references = $document->documentReferences->map(function ($reference) {
+
+        return [
+            "id" => $reference->id,
+
+            "reference_type_id" => $reference->documentReferenceType->id,
+
+            "reference_type" => $reference->documentReferenceType,
+
+            "reference_type_code" =>
+                $reference->reference_type_code,
+
+            "reference_type_slug" =>
+                optional($reference->documentReferenceType)->slug ?? "--",
+
+            "name" =>
+                optional($reference->documentReferenceType)->label ?? "--",
+
+            "reference" =>
+                $reference->reference,
+
+            "attachment" =>
+                $reference->attachment,
+
+            "metadata" =>
+                $reference->metadata,
+
+            "created_by_id" =>
+                $reference->created_by,
+
+            "created_at" =>
+                $reference->created_at
+                    ? $reference->created_at->format("d/m/Y à H:i")
+                    : null,
+        ];
+    });
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Récupération des utilisateurs
+    |--------------------------------------------------------------------------
+    */
+
+    $userIds = collect()
+        ->merge($attachments->pluck("created_by_id"))
+        ->merge($references->pluck("created_by_id"))
+        ->filter()
+        ->unique()
+        ->values()
+        ->all();
+
+
+    $users = [];
+
+    if (!empty($userIds)) {
+
+        $response = Http::withToken(request()->bearerToken())
+            ->acceptJson()
+            ->get(
+                config("services.user_service.base_url") . "/getByIds",
+                [
+                    "ids" => implode(",", $userIds),
+                ]
+            );
+
+
+        if ($response->successful()) {
+            $users = collect($response->json())
+                ->keyBy("id");
+        }
+    }
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Formatage final attachments
+    |--------------------------------------------------------------------------
+    */
+
+    $attachments = $attachments->map(function ($att) use ($users) {
+
+        $userName =
+            $users[$att["created_by_id"]]["name"] ??
+            "Utilisateur ID: {$att["created_by_id"]}";
+
+
+        $attachmentNumber =
+            $att["attachment_number"]
+                ? " #" . $att["attachment_number"]
+                : "";
+
+
+        $generationMode =
+            $att["generation_mode"] ?? "USER";
+
+
+        $generatedLabel =
+            $generationMode === "SYSTEM"
+                ? "généré automatiquement le"
+                : "le";
+
+
+        $authorPart =
+            $generationMode === "SYSTEM"
+                ? ""
+                : " par {$userName}";
+
+
+        return [
+            "id" => $att["id"],
+            "name" =>
+                "{$att["name"]}{$attachmentNumber}{$authorPart} {$generatedLabel} {$att["created_at"]}",
+
+            "url" => $att["url"],
+            "slug" => $att["attachment_type_slug"],
+        ];
+    });
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Formatage final references
+    |--------------------------------------------------------------------------
+    */
+
+    $references = $references->map(function ($ref) use ($users) {
+
+        $userName =
+            $users[$ref["created_by_id"]]["name"] ??
+            "Utilisateur ID: {$ref["created_by_id"]}";
+
+
+        return [
+            "id" => $ref["id"],
+
+            "name" => "{$ref["name"]} : {$ref["reference"]} par {$userName} le {$ref["created_at"]}",
+
+            "reference_type_id" => $ref["reference_type_id"],
+
+            "reference_type" => $ref["reference_type"],
+
+            "referenceHasAttachment" => $ref["reference_type"]["has_attachment"],
+
+            "reference" => $ref["reference"],
+
+            "slug" => $ref["reference_type_slug"],
+
+            "code" => $ref["reference_type_code"],
+
+            "attachment" => $ref["attachment"],
+
+            "metadata" =>  $ref["metadata"],
+        ];
+    });
+
+
+
+    return response()->json([
+        "success" => true,
+        "data" => [
+            "attachments" => $attachments,
+            "references" => $references,
+        ],
+    ]);
+}
+
+    public function OldgetAttachments($documentId)
     {
 
 
@@ -697,9 +935,10 @@ class DocumentController extends Controller
 
       
 
-        $user = request()->get("user");
+        // $user = request()->get("user");
 
         $attachments = $document->attachments->map(function ($attachment) {
+
             return [
                 "id" => $attachment->id,
                 "attachment_number" => $attachment->attachment_number,
@@ -742,22 +981,7 @@ class DocumentController extends Controller
             }
         }
 
-        // Enrichir les attachments avec le nom
-        // $attachments = $attachments->map(function ($att) use ($users) {
-        //     $userName =
-        //         $users[$att["created_by_id"]]["name"] ??
-        //         "Utilisateur ID: {$att["created_by_id"]}";
-        //     $attachment_number = $att["attachment_number"]
-        //         ? " #" . $att["attachment_number"] . " "
-        //         : " ";
-        //     $by = "par";
-        //     return [
-        //         "id" => $att["id"],
-        //         "name" => "{$att["name"]}$attachment_number{$by} {$userName} le {$att["created_at"]}",
-        //         "url" => $att["url"],
-        //         "slug" => $att["attachment_type_slug"],
-        //     ];
-        // });
+    
 
         $attachments = $attachments->map(function ($att) use ($users) {
             $userName =
@@ -1133,6 +1357,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 $document = Document::create([
                     "title" => $validated["titre"],
                     "document_type_id" => $validated["document_type_id"],
+                    'uuid' => (string) Str::uuid(),
 
                     "status" => $this->get_initial_status(
                         $validated["document_type_id"]
@@ -1194,6 +1419,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             "department_id" =>
                                 $validated["departement"] ?? null,
                             "document_id" => $document->id,
+                            "document_uuid" => $document->uuid,
                             "status" => "IN_PROGRESS",
                             "current_step_id" => $firstStep["id"] ?? null,
                             "created_by" => $user_connected,
@@ -1462,9 +1688,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         $ids = $request->input("ids", []);
         $userId = $request->input("userId", null);
+        $from = $request->input("from", null);
         $documentTypes = $request->input("documentTypes", ["invoice_provider"]);
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
         // $filters = $request->query('filters', $request->input('filters', []));
+
+
+      
 
         // throw new Exception(json_encode($documentTypes), 1);
         // throw new Exception($filters, 1);
@@ -1650,7 +1880,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             ];
 
             if (!$handlerClass) {
-                // throw new Exception(json_encode('$documents'), 1);
+                throw new Exception("Aucun enricher pour $type", 1);
 
                 return $this->legacyDocumentEnricher->enrich(
                     $doc,
@@ -1658,8 +1888,6 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     $documentTypes
                 );
             }
-
-            // throw new Exception(json_encode($doc), 1);
 
             // throw new Exception(json_encode($this->documentEnrichmentManager->enrich($doc, $base)), 1);
 
@@ -1672,6 +1900,16 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
     public function getDocumentsByIds(Request $request)
     {
+
+      $ids = $request->input("ids", []);
+      $from = $request->input("from", null);
+
+        if ($from == "command" ) {
+             $query = Document::query();
+             $query->whereIn("id", $ids);
+            return  $query->get();
+        }
+
         $formatRules = [
             "amount" => fn($v) => number_format($v, 0, ",", "."), // 500000 → 500.000
             "created_at" => fn($v) => \Carbon\Carbon::parse($v)->format(
@@ -1696,19 +1934,15 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         Request $request,
         DocumentViewService $documentViewService,
         DocumentService $documentService,
-        DocumentEnrichmentManager $documentEnrichmentManager,
-        DocumentCapabilitiesService $service,
+        DocumentCapabilitiesService $documentCapabilitiesService,
+        DocumentContextService $documentContextService,
         $documentIdentifier
     ) {
       
     // throw new Exception("Error Processing Request", 1);
     
     
-    if (Str::isUuid($documentIdentifier)) {
-    $document = Document::where('uuid', $documentIdentifier)->firstOrFail();
-} else {
-    $document = Document::findOrFail($documentIdentifier);
-}
+     $document = $documentService->getDoc($documentIdentifier);
 
 
         $workflowContext = $documentViewService->getWorkflowStatusStatus(
@@ -1732,7 +1966,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
          /**
          * Résolution des capacités
          */
-        $capabilities = $service->resolve(
+        $capabilities = $documentCapabilitiesService->resolve(
+            $enrichedDocument,
+            $workflowContext,
+            $user
+            );
+
+        $context = $documentContextService->resolve(
             $enrichedDocument,
             $workflowContext,
             $user
@@ -1742,6 +1982,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
             
         $enrichedDocument['user_capabilities'] = $capabilities;
+        $enrichedDocument['workflowContext'] = $workflowContext;
+        $enrichedDocument['context'] = $context;
 
         return $enrichedDocument ;
     }

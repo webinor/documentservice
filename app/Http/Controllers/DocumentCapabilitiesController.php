@@ -12,11 +12,14 @@ class DocumentCapabilitiesController extends Controller
 {
     public function show(
         Request $request,
-        Document $document,
+        $documentIdentifier,
         DocumentViewService $documentViewService,
         DocumentService $documentService,
         DocumentCapabilitiesService $service
     ) {
+
+     $document = $documentService->getDoc($documentIdentifier);
+
         /**
          * Chargement des relations nécessaires
          */

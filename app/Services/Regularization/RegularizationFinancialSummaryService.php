@@ -9,12 +9,17 @@ use Exception;
 
 class RegularizationFinancialSummaryService
 {
-    public function build(int $documentId): array
+    public function build(Document $document): array
     {
-        $document = Document::with([
+        // $document = Document::with([
+        //     'document_type',
+        //     'regularization_sheet',
+        // ])->findOrFail($documentId);
+
+        $document->load([
             'document_type',
             'regularization_sheet',
-        ])->findOrFail($documentId);
+        ]);
 
         if ($document->document_type->slug !== 'fiche-a-regulariser') {
 

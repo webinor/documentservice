@@ -22,6 +22,8 @@ class Attachment extends Model
         return $this->morphOne(File::class, 'model');
     }
 
+    
+
     public function attachmentType()
     {
         return $this->belongsTo(AttachmentType::class);

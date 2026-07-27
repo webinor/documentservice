@@ -30,6 +30,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'internal' =>[
+                'token' => 'wf_8s7d98f7ds98f7ds'
+    ],
+
     'user_service' => [
     'base_url' => env('USER_SERVICE_BASE_URL', 'http://localhost:8088/api/users'),
 ],

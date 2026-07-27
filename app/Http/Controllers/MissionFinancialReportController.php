@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\Mission\MissionFinancialReportExport;
 use App\Models\Misc\Document;
 use App\Models\Mission;
+use App\Services\Document\DocumentService;
 use App\Services\Mission\MissionFinancialReportService;
 use Exception;
 use Illuminate\Http\Request;
@@ -32,9 +33,13 @@ class MissionFinancialReportController extends Controller
     }
 
 
-    public function export(Document $document, 
+    public function export( $documentIdentifier, 
+    DocumentService $documentService,
         MissionFinancialReportService $financialReportService)
 {
+
+    $document = $documentService->getDoc($documentIdentifier);
+
        if ($document->document_type->slug !== "mission") {
             throw new Exception("Document is not a mission.");
         }

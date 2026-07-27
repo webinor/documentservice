@@ -65,16 +65,16 @@ $documentTypesConfig = [
     //     'reception_mode'=> 'AUTO_BY_ROLE',
     // ],
 
-    [
-                'code' => 'MISSION',
-                'name' => 'Mission',
-                'class_name'    => Mission::class,
-                'relation_name' => 'mission',
-                'return_policy' => 'ROLE',
-                'reception_mode' => 'WORKFLOW_DRIVEN',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+    // [
+    //             'code' => 'MISSION',
+    //             'name' => 'Mission',
+    //             'class_name'    => Mission::class,
+    //             'relation_name' => 'mission',
+    //             'return_policy' => 'ROLE',
+    //             'reception_mode' => 'WORKFLOW_DRIVEN',
+    //             'created_at' => now(),
+    //             'updated_at' => now(),
+    //         ],
 
 
               [

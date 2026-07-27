@@ -7,12 +7,14 @@ use App\Http\Requests\UpdateMissionExpenseRequest;
 use App\Models\ExpenseLimit;
 use App\Models\Misc\Document;
 use App\Models\MissionExpense;
+use App\Services\Document\DocumentService;
 use App\Services\Mission\MissionExpenseCalculatorService;
 use App\Services\Mission\MissionExpenseService;
 use App\Services\UserServiceClient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class MissionExpenseController extends Controller
 {
@@ -182,13 +184,19 @@ $employeeCategoryId = $employee['category_id'];//['id'];
     }
 
 
+   
+
+
     public function getMissionExpenses(
-        Document $document,
+         $documentIdentifier,
         // MissionExpenseCalculatorService $service
-        MissionExpenseService $service
+        MissionExpenseService $service,
+        DocumentService $documentService
     ) {
-        // $document->load('mission.mission_expenses.expense_category');
-        $document->load("mission");
+
+    $document = $documentService->getDoc($documentIdentifier);
+
+    $document->load("mission");
 
         $mission = $document->mission;
 

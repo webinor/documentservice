@@ -4,6 +4,7 @@ namespace App\Services\Document;
 
 use App\Managers\DocumentEnrichmentManager;
 use App\Models\Misc\Document;
+use Illuminate\Support\Str;
 
 class DocumentService
 
@@ -42,5 +43,19 @@ class DocumentService
 
         return $document;
 
+    }
+
+     public function getDoc($identifier) : Document {
+
+
+    if (Str::isUuid($identifier)) {
+    $document = Document::where('uuid', $identifier)->firstOrFail();
+} else {
+    $document = Document::findOrFail($identifier);
+
+}
+
+return $document;
+        
     }
 }

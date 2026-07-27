@@ -3,6 +3,7 @@
 namespace App\Models\Misc;
 
 use App\Models\AbsenceRequest;
+use App\Models\DocumentReference;
 use App\Models\DocumentStatus;
 use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
@@ -213,6 +214,13 @@ class Document extends Model
     {
         return $this->hasMany(Attachment::class);
     }
+
+    public function documentReferences(): HasMany
+    {
+        return $this->hasMany(DocumentReference::class);
+    }
+
+    
 
    
     /**

@@ -4,27 +4,34 @@ namespace App\Services\Mission;
 
 use App\Models\Misc\Document;
 use App\Services\Regularization\RegularizationFinancialSummaryService;
-use Illuminate\Support\Facades\Http;
 use Exception;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class MissionFinancialSummaryService
 {
     /**
      * Construire le résumé financier complet
      */
-    public function build(int $documentId): array
+    public function build( $documentId): array
     {
         /**
          * Document principal
          */
-        $document = Document::with("document_type")->findOrFail($documentId);
+        // $document = Document::with("document_type")->findOrFail($documentId);
+         if (Str::isUuid($documentId)) {
+    $document = Document::where('uuid', $documentId)->firstOrFail();
+} else {
+    $document = Document::findOrFail($documentId);
+}
+
 
         /**
          * Vérification type mission
          */
         if ($document->document_type->slug == "fiche-a-regulariser") {
                       
-        return app(RegularizationFinancialSummaryService::class)->build($documentId);
+        return app(RegularizationFinancialSummaryService::class)->build($document);
         // throw new Exception("Document is a regularization.");
 
         }

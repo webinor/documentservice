@@ -6,6 +6,9 @@ use App\Http\Requests\StoreAttachmentTypeRequest;
 use App\Http\Requests\UpdateAttachmentTypeRequest;
 use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
+use App\Services\Common\WorkflowRequirementService;
+use App\Services\Document\DocumentService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -95,8 +98,19 @@ class AttachmentTypeController extends Controller
     /**
      * Retourne les attachment_types requis non encore associés au document
      */
-    public function missingForDocument(Request $request, $documentId)
+    public function OldmissingForDocument(Request $request,
+     DocumentService $documentService,
+     $documentUuid
+     )
     {
+
+    // throw new Exception("$documentId", 1);
+
+     $document = $documentService->getDoc($documentUuid);
+
+     $documentId = $document->id;
+
+    
         // IDs envoyés depuis le WorkflowService
         $requiredIds = $request->input("attachment_type_required", []);
 
@@ -121,19 +135,41 @@ class AttachmentTypeController extends Controller
                     "id" => $type->id,
                     "name" => $type->name,
                     "slug" => $type->slug,
-                    "slug" => $type->slug,
-                    "attachment_number_required" =>
-                        $type->attachment_number_required,
+                    "attachment_number_required" => $type->attachment_number_required,
                     "category_id" => $type->attachmentTypeCategory->id,
                     "category_name" => $type->attachmentTypeCategory->name,
                 ];
             });
         return response()->json($missingAttachmentTypes);
-        /*  return response()->json([
-            "success" => true,
-            "data" => ["missingAttachmentTypes" => $missingAttachmentTypes],
-        ]);*/
+      
     }
+
+
+public function missingForDocument(
+    Request $request,
+    DocumentService $documentService,
+    WorkflowRequirementService $requirements,
+    string $documentUuid
+) {
+    $document = $documentService->getDoc($documentUuid);
+
+    // throw new Exception(json_encode($request->input('attachment_type_required', [])), 1);
+
+
+    $missing = [
+        'attachments' => $requirements->getMissingAttachments(
+            $document->id,
+            $request->input('attachment_type_required', [])
+        ),
+
+        'references' => $requirements->getMissingReferences(
+            $document->id,
+            $request->input('document_reference_type_required', [])
+        ),
+    ];
+
+    return response()->json($missing);
+}
 
     /**
      * Show the form for creating a new resource.

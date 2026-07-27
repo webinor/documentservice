@@ -9,6 +9,7 @@ use App\Models\RegularizationItem;
 use App\Services\Common\FileManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RegularizationItemController extends Controller
 {
@@ -66,10 +67,26 @@ class RegularizationItemController extends Controller
 
 
 
-public function getRegularizationItems(Document $document)
+public function getRegularizationItems( $documentIdentifier)
 {
-    $document->load('regularization_sheet.items.receipt');
 
+ if (Str::isUuid($documentIdentifier)) {
+    $document = Document::where('uuid', $documentIdentifier)->firstOrFail();
+} else {
+    $document = Document::findOrFail($documentIdentifier);
+}
+
+  
+
+   
+   $document->load('regularization_sheet.items.receipt');
+
+    if (!$document->regularization_sheet) {
+    
+    return [];
+   }
+
+// return $document->regularization_sheet->items;
     $items = $document->regularization_sheet->items->map(function ($item) {
 
         return [
@@ -85,15 +102,15 @@ public function getRegularizationItems(Document $document)
                 ? Storage::url($item->receipt->path)
                 : null,
 
-              'view_url' => route(
+              'view_url' =>$item->receipt ? route(
             'regularization-items.view',
-            $item->receipt->path
-        ),
+            $item->receipt->path 
+        ) : null,
 
-        'download_url' => route(
+        'download_url' => $item->receipt ? route(
             'regularization-items.download',
-            $item->receipt->path
-        ),
+            $item->receipt->path 
+        ) : null,
 
             'created_at' => $item->created_at,
             'updated_at' => $item->updated_at,

@@ -131,8 +131,8 @@ class MissionDocumentController extends Controller
     public function generate(Request $request)
     {
         //   return
-        $document_id = $request->get("document_id", 0);
-        $document = Document::with("mission")->find($document_id);
+        $document_uuid = $request->get("document_uuid", 0);
+        $document = Document::with("mission")->whereUuid($document_uuid)->firstOrFail();
         $user_connected = $request->get("user"); // récupéré du user-service
 
         //  app(MissionDocumentService::class)
@@ -196,7 +196,7 @@ class MissionDocumentController extends Controller
 
         return response()->json([
             "message" => "Documents générés avec succès",
-            "document_id" => $document_id,
+            "document_uuid" => $document_uuid,
             "document" => $document,
         ]);
     }

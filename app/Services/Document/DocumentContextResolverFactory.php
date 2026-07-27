@@ -4,29 +4,30 @@ namespace App\Services\Document;
 
 use App\Models\Misc\Document;
 use App\Services\Document\Contracts\DocumentCapabilitiesResolver;
+use App\Services\Document\Contracts\DocumentContextResolver;
 use App\Services\Document\Resolvers\DefaultCapabilitiesResolver;
+use App\Services\Document\Resolvers\DefaultContextResolver;
 use App\Services\Document\Resolvers\MissionCapabilitiesResolver;
 use App\Services\Document\Resolvers\RegularizationCapabilitiesResolver;
+use App\Services\Document\Resolvers\TaxiPaperContextResolver;
 
-class DocumentCapabilitiesResolverFactory
+class DocumentContextResolverFactory
 {
     public static function make(
          $document
-    ): DocumentCapabilitiesResolver {
+    ): DocumentContextResolver {
 
         switch ($document['document_type']['slug']) {
 
             case "mission":
-                // return app(MissionCapabilitiesResolver::class);
 
             case "fiche-a-regulariser":
-                return app(RegularizationCapabilitiesResolver::class);
 
-            case "taxi-paper":
-                // return app(TaxiPaperCapabilitiesResolver::class);
+            case "papier-taxi":
+                return app(TaxiPaperContextResolver::class);
 
             default:
-                return app(DefaultCapabilitiesResolver::class);
+                return app(DefaultContextResolver::class);
         }
     }
 }

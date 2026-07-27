@@ -22,18 +22,16 @@ implements DocumentCapabilitiesResolver
         |--------------------------------------------------------------------------
         */
 
-        // return [$document['actor_id'] == $user['employee_id']];
 
         $can_add_items = in_array(
-                "ADD_REGULARIZATION_ITEM",
-                $workflowContext["business_actions"] ?? []
+                "ADD_REGULARIZATION_ITEM",$workflowContext["business_actions"] ?? []
             ) && $document['actor_id'] == $user['employee_id'];
-
-        // $currentStep = optional($document->workflowInstance)->currentStep;
 
 
         $actions["can_add_items"] = true;
         $actions["can_add_items"] = $can_add_items;
+
+        
 
 
 

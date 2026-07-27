@@ -8,6 +8,8 @@ use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentCapabilitiesController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentPaymentController;
+use App\Http\Controllers\DocumentReferenceController;
+use App\Http\Controllers\DocumentReferenceTypeController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
@@ -279,8 +281,7 @@ Route::get(
                 "generate",
             ]);
 
-    //     Route::get('/attachments/{id}/download', [AttachmentController::class, 'download'])
-    // ->name('attachments.download');
+  
 
             Route::get("/{mission}/generate-mission-letter", [
                 MissionDocumentController::class,
@@ -330,6 +331,11 @@ Route::get(
             "missingForDocument",
         ]);
 
+        Route::post("/{documentId}/missing-reference-types", [
+            DocumentReferenceTypeController::class,
+            "missingForDocument",
+        ]);
+
         /**
          * 📌 LedgerCodeTypeController
          */
@@ -342,6 +348,8 @@ Route::get(
          * 📌 AttachmentController
          */
         Route::post("/attachments", [AttachmentController::class, "store"]);
+        Route::post("/document-references", [DocumentReferenceController::class, "store"]);
+        Route::put("/document-references/{documentReference}", [DocumentReferenceController::class, "update"]);
 
         /**
          * 📌 API Resources

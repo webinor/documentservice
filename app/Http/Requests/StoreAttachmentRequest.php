@@ -57,7 +57,7 @@ class StoreAttachmentRequest extends FormRequest
 
         return $rules + [
         'attachmentType' => 'required|exists:attachment_types,id',
-        'documentId' => 'required|exists:documents,id',
+        'documentId' => 'required|exists:documents,uuid',
         'source' => 'nullable|string',
         
             

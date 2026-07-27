@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateAttachmentRequest;
 use App\Jobs\GeneratePdfThumbnail;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Misc\File;
+use App\Services\Document\DocumentService;
 use Illuminate\Http\Request;
 
 class AttachmentController extends Controller
@@ -61,7 +62,10 @@ class AttachmentController extends Controller
      * @param  \App\Http\Requests\StoreAttachmentRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreAttachmentRequest $request)
+    public function store(StoreAttachmentRequest $request,
+        DocumentService $documentService
+    
+    )
     {
         // Validation
         //  return
@@ -73,7 +77,8 @@ class AttachmentController extends Controller
             DB::beginTransaction();
 
             // Vérifier que le document existe
-            $document = Document::findOrFail($validated["documentId"]);
+            // $document = Document::findOrFail($validated["documentId"]);
+            $document = $documentService->getDoc($validated["documentId"]);
 
             $existing_attachment = isset($validated["attachment_number"])
                 ? Attachment::whereAttachmentNumber(

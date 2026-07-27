@@ -16,9 +16,21 @@ class JwtIntrospection
 
         Log::info('Token reçu : ' . ($token ?? 'NULL'));
 
-        if (!$token) {
-            return response()->json(['error' => 'Token manquant'], 401);
+        
+
+           if (!$token) {
+
+        if ($request->header('X-Service-Token')
+            === config('services.internal.token')) {
+
+            return $next($request);
         }
+
+
+        return response()->json([
+            "message"=>"Token manquant 1"
+        ],401);
+    }
 
         $response = Http::withHeaders([
             'Authorization' => "Bearer $token"

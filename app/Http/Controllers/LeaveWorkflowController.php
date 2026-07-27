@@ -13,7 +13,7 @@ class LeaveWorkflowController extends Controller
     ) {
         return response()->json(
             $service->deductFromWorkflow(
-                $request->document_id,
+                $request->document_uuid,
                 $request->instance_id
             )
         );

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMissionRequest;
 use App\Http\Requests\UpdateMissionRequest;
 use App\Models\Misc\Document;
 use App\Models\Mission;
+use App\Services\Document\DocumentService;
 use App\Services\Mission\MissionSheetGenerator;
 
 class MissionController extends Controller
@@ -21,11 +22,13 @@ class MissionController extends Controller
     }
 
     public function generateSheet(
-        Document $document,
+         $documentIdentifier,
+        DocumentService $documentService,
         MissionSheetGenerator $generator
     ) {
 
 
+    $document = $documentService->getDoc($documentIdentifier);
     // throw new \Exception(json_encode($document), 1);
     
 // return 

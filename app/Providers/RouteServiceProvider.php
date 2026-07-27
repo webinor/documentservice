@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Misc\Document;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -35,6 +37,23 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+//          Route::bind('document', function ($value) {
+            
+
+//              if (Str::isUuid($value)) {
+//     $document = Document::where('uuid', $value)->firstOrFail();
+// } else {
+//     $document = Document::findOrFail($value);
+// }
+
+// // throw new \Exception("Error Processing Request", 1);
+
+
+// return $document;
+
+
+//         });
+
         $this->configureRateLimiting();
 
         $this->routes(function () {

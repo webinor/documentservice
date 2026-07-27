@@ -8,6 +8,7 @@ use App\Models\Misc\Document;
 use App\Models\Mission;
 use App\Models\MissionAllowance;
 use App\Models\MissionPolicy;
+use App\Services\Document\DocumentService;
 use App\Services\Mission\MissionAllowanceCalculator;
 use App\Services\Mission\MissionAllowanceService;
 use Illuminate\Http\Request;
@@ -31,9 +32,11 @@ class MissionAllowanceController extends Controller
      */
     public function index(
         Request $request,
-        Document $document,
-        MissionAllowanceService $service
+         $documentIdentifier,
+        MissionAllowanceService $service,
+        DocumentService $documentService
     ) {
+        $document = $documentService->getDoc($documentIdentifier);
         $document->load("mission");
 
         $mission = $document->mission;
