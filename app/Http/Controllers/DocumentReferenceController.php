@@ -48,6 +48,12 @@ class DocumentReferenceController extends Controller
 
     $user = $request->get("user");
 
+    $reference = str_pad($validated['reference'], 4, '0', STR_PAD_LEFT);
+
+if (strlen($reference) === 4) {
+    $reference = now()->format('y') . $reference;
+}
+
     try {
 
         DB::beginTransaction();
@@ -169,7 +175,6 @@ if ($request->hasFile('attachment')) {
         "file_size" => $size
     ];
 
-
     $reference->save();
 
 }
@@ -235,7 +240,13 @@ if ($request->hasFile('attachment')) {
     // return
     $validated = $request->validated();
 
-    DB::transaction(function () use ($request, $validated, $documentReference) {
+     $reference = str_pad($validated['reference'], 4, '0', STR_PAD_LEFT);
+
+if (strlen($reference) === 4) {
+    $reference = now()->format('y') . $reference;
+}
+
+    DB::transaction(function () use ($request, $validated, $documentReference,$reference) {
 
       $reference_type = DocumentReferenceType::findOrFail($validated["document_reference_type_id"]);
 
@@ -243,7 +254,7 @@ if ($request->hasFile('attachment')) {
         $documentReference->update([
             'document_reference_type_id' => $validated['document_reference_type_id'],
             'reference_type_code' => $reference_type -> code,
-            'reference' => $validated['reference'],
+            'reference' => $reference,
             'metadata' => $validated['metadata'] ?? $documentReference->metadata,
         ]);
 

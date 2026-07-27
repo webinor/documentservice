@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Misc\Document;
 use Carbon\Carbon;
 
-class DocumentFilterService
+class OldDocumentFilterService
 {
     /**
      * CONFIGURATION DES TYPES DE DOCUMENTS

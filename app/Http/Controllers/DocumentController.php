@@ -19,6 +19,7 @@ use App\Models\Misc\File;
 use App\Services\Document\DocumentCapabilitiesService;
 use App\Services\Document\DocumentContextService;
 use App\Services\Document\DocumentEnricher;
+use App\Services\Document\DocumentFilterService;
 use App\Services\Document\DocumentService;
 use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
@@ -1767,6 +1768,17 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         if (!empty($filters["employee_id"])) {
 
             $query->whereActorId($filters["employee_id"]);
+        }
+
+        $query = app(DocumentFilterService::class)->apply($query , $filters);
+
+
+
+        if (!empty($filters["accounting_entry_number"])) {
+
+             $query->whereHas("documentReferences", function ($q) use ($filters) {
+        $q->where("reference", "like", "%" . $filters["accounting_entry_number"] . "%");
+    });
         }
 
         if (!empty($filters["reference"])) {

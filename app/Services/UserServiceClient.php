@@ -6,47 +6,82 @@ use Illuminate\Support\Facades\Http;
 
 class UserServiceClient
 {
-    protected function client()
+    protected $defaulUrl ;
+
+    public function __construct() {
+        $this->defaulUrl =  config("services.user_service.base_url");
+    }
+    protected function client($url = null)
     {
+        if (!$url) {
+           $url = $this->defaulUrl;
+        }
         return Http::withToken(request()->bearerToken())
             ->acceptJson()
-            ->baseUrl(config("services.user_service.base_url"));
+            ->baseUrl($url);
     }
+
 
     public function getUser(int $userId)
     {
         return $this->client()->get("/{$userId}");
     }
-    
 
-    public function dispatchPaymentEvent(array $actor, int $amount , string $reason , string $direction,string $transactionTypeCode , int $document_id , array $details)
+
+    public function employeesByDepartment(int $departmentId): array
     {
-        
-        
-        return $this->client()->post("/events/dispatch/init-confirm-payment-receive",
+      $response = $this->client(config("services.department_service.base_url"))
+    ->get("/employees", [
+        "department_id" => $departmentId
+    ]);
+
+
+        if ($response->failed()) {
+            throw new \Exception("UserService unavailable".($response->body()));
+        }
+
+
+        return $response->json()['data'] ?? [];
+    }
+
+
+    public function dispatchPaymentEvent(
+        array $actor,
+        int $amount,
+        string $reason,
+        string $direction,
+        string $transactionTypeCode,
+        int $document_id,
+        array $details
+    )
+    {
+        return $this->client()->post(
+            "/events/dispatch/init-confirm-payment-receive",
             [
                 "payload" => [
                     "actor" => $actor,
                     "amount" => abs($amount),
                     "reason" => $reason,
-                    'direction' => $direction,
-                    'transactionTypeCode' => $transactionTypeCode,
-                    'document_id'=>$document_id,
-                    'details'=>$details
+                    "direction" => $direction,
+                    "transactionTypeCode" => $transactionTypeCode,
+                    "document_id" => $document_id,
+                    "details" => $details
                 ]
             ]
         );
     }
 
+
     public function getDocumentTransactions(int $documentId)
     {
-        // $baseUrl = config('services.user_service.base_url');
+        $response = $this->client()
+            ->get("/documents/{$documentId}/transactions");
 
-        $response = $this->client()->get("/documents/{$documentId}/transactions");
 
         if ($response->failed()) {
             throw new \Exception("UserService unavailable");
         }
+
 
         return $response->json()['data'] ?? [];
     }
@@ -55,6 +90,7 @@ class UserServiceClient
     public function resolveActor(string $type, int $id): ?array
     {
         $baseUrl = config("services.user_service.base_url");
+
 
         switch ($type) {
 
@@ -70,13 +106,15 @@ class UserServiceClient
                 return null;
         }
 
+
         $response = Http::acceptJson()->get($url);
+
 
         if (!$response->successful()) {
             return null;
         }
 
+
         return $response->json('user') ?? $response->json('employee');
     }
-
 }

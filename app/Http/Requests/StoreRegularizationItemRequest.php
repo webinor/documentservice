@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AssistanceMode;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRegularizationItemRequest extends FormRequest
 {
@@ -18,6 +20,29 @@ class StoreRegularizationItemRequest extends FormRequest
                 'required',
                 'exists:documents,id',
             ],
+
+           
+
+'assistance_mode' => [
+    'nullable',
+    Rule::in(AssistanceMode::values()),
+],
+
+ 'case_number' => [
+            Rule::requiredIf(function () {
+
+                return in_array(
+                    $this->assistance_mode,
+                    [
+                        AssistanceMode::ASSISTANCE_NORMAL,
+                        AssistanceMode::ASSISTANCE_URGENT,
+                    ]
+                );
+
+            }),
+            'string',
+            'max:100',
+        ],
 
             'designation' => [
                 'nullable',

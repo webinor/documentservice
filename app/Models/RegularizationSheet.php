@@ -12,7 +12,7 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
 {
     use HasFactory;
 
-    protected $fillable = ["document_id", "reason", "beneficiary", "amount"];
+    protected $fillable = ["document_id", "reason", "beneficiary", "amount" , 'case_number',  'assitance_mode'];
 
 
     public function items()

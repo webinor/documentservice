@@ -39,6 +39,7 @@ class StoreDocumentReferenceRequest extends FormRequest
         "reference" => [
             "required",
             "string",
+            "regex:/^[0-9]{1,4}$/",
             "max:255"
         ],
 

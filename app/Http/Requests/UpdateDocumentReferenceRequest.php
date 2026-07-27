@@ -29,7 +29,7 @@ class UpdateDocumentReferenceRequest extends FormRequest
             'reference' => [
                 'required',
                 'string',
-                'max:255',
+                "regex:/^[0-9]{1,4}$/",
                 Rule::unique('document_references', 'reference')
                     ->ignore($referenceId),
             ],
