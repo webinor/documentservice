@@ -44,6 +44,7 @@ class DocumentReferenceController extends Controller
     DocumentService $documentService
 ) {
 
+    
     $validated = $request->validated();
 
     $user = $request->get("user");
@@ -76,7 +77,7 @@ if (strlen($reference) === 4) {
             )
             ->where(
                 'reference',
-                $validated["reference"]
+                $reference
             )
             ->first();
 
@@ -107,7 +108,7 @@ if (strlen($reference) === 4) {
 
             "reference_type_code" => $reference_type->code,
 
-            "reference" =>   $validated["reference"],
+            "reference" =>   $reference,
 
             "created_by" =>
                 $user["id"],
