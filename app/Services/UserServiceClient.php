@@ -52,7 +52,7 @@ class UserServiceClient
         string $direction,
         string $transactionTypeCode,
         int $document_id,
-        int $document_uuid,
+        string $document_uuid,
         array $details
     )
     {
