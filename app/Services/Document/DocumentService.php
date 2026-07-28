@@ -35,7 +35,7 @@ class DocumentService
             "document_type",
             "attachments.file",
             "secondary_attachments",
-            "documentReferences"
+            "document_references"
         );
 
         $document = $this->documentEnrichmentManager->enrich($document);

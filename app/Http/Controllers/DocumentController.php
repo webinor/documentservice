@@ -688,7 +688,7 @@ class DocumentController extends Controller
         $document = Document::with([
             "attachments.attachmentType",
             "attachments.file",
-            "documentReferences.documentReferenceType",
+            "document_references.documentReferenceType",
         ])->whereUuid($documentId)->firstOrFail();
 
     } else {
@@ -696,7 +696,7 @@ class DocumentController extends Controller
         $document = Document::with([
             "attachments.attachmentType",
             "attachments.file",
-            "documentReferences.documentReferenceType",
+            "document_references.documentReferenceType",
         ])->findOrFail($documentId);
     }
 
@@ -742,7 +742,7 @@ class DocumentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    $references = $document->documentReferences->map(function ($reference) {
+    $references = $document->document_references->map(function ($reference) {
 
         return [
             "id" => $reference->id,
@@ -1244,7 +1244,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             DB::beginTransaction();
 
             // Récupérer les données validées par le FormRequest
-            // return
+            return
             $validated = $request->validated();
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
@@ -1776,7 +1776,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         if (!empty($filters["accounting_entry_number"])) {
 
-             $query->whereHas("documentReferences", function ($q) use ($filters) {
+             $query->whereHas("document_references", function ($q) use ($filters) {
         $q->where("reference", "like", "%" . $filters["accounting_entry_number"] . "%");
     });
         }

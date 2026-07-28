@@ -215,7 +215,7 @@ class Document extends Model
         return $this->hasMany(Attachment::class);
     }
 
-    public function documentReferences(): HasMany
+    public function document_references(): HasMany
     {
         return $this->hasMany(DocumentReference::class);
     }

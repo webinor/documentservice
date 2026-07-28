@@ -22,12 +22,7 @@ class TaxiPaperDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInt
     );
 
     // $base['actor_details'] = $actor_details;
-    $document->actor_details = $actor_details;
-
-    
-
-    // throw new Exception(json_encode($actor_details), 1);
-    
+    $document->actor_details = $actor_details;    
 
     return $document->toArray();
 }
