@@ -52,6 +52,7 @@ class UserServiceClient
         string $direction,
         string $transactionTypeCode,
         int $document_id,
+        int $document_uuid,
         array $details
     )
     {
@@ -65,6 +66,7 @@ class UserServiceClient
                     "direction" => $direction,
                     "transactionTypeCode" => $transactionTypeCode,
                     "document_id" => $document_id,
+                    "document_uuid" => $document_uuid,
                     "details" => $details
                 ]
             ]

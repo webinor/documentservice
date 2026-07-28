@@ -57,6 +57,7 @@ class NotifyBeneficiaryService
             $direction,
             $transactionTypeCode,
             $document->id,
+            $document->uuid,
             $details
         );
 

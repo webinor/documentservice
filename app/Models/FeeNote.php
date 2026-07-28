@@ -16,7 +16,7 @@ class FeeNote extends Model implements PayableDocumentInterface
         'document_id',
         'reason',
         'beneficiary',
-        'amount',
+        'amount'
     ];
 
  public function createSettlementRecord(
