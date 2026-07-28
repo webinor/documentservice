@@ -140,7 +140,7 @@ class DocumentController extends Controller
     public function notifyBeneficiary(Request $request)
     {
         $request->validate([
-            "document" => "required|integer|exists:documents,id",
+            "document" => "required|string|exists:documents,uuid",
             "transactionTypeCode" => "required|string",
         ]);
 
