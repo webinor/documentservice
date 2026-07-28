@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
+use App\Services\Document\DocumentService;
 use App\Services\Transaction\TransactionTypeLabelService;
 use App\Services\UserServiceClient;
 use Exception;
@@ -12,18 +13,23 @@ class NotifyBeneficiaryService
 {
     protected UserServiceClient $userService;
     protected TransactionTypeLabelService $transactionTypeLabelService;
+    protected DocumentService $documentService;
 
     public function __construct(
         UserServiceClient $userService,
-        TransactionTypeLabelService $transactionTypeLabelService
+        TransactionTypeLabelService $transactionTypeLabelService,
+        DocumentService $documentService
     ) {
         $this->userService = $userService;
         $this->transactionTypeLabelService = $transactionTypeLabelService;
+        $this->documentService = $documentService;
     }
 
-    public function execute(int $documentId, string $transactionTypeCode): array
+    public function execute(string $documentIdentifier, string $transactionTypeCode): array
     {
-        $document = Document::with("document_type")->findOrFail($documentId);
+        // $document = Document::with("document_type")->findOrFail($documentId);
+
+        $document = $this->documentService->getDoc($documentIdentifier);
 
         $child = $document->{$document->document_type->relation_name};
 
