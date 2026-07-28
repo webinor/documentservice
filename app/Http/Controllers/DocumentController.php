@@ -1244,7 +1244,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             DB::beginTransaction();
 
             // Récupérer les données validées par le FormRequest
-            return
+            // return
             $validated = $request->validated();
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
