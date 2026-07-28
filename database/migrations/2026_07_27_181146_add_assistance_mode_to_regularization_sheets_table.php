@@ -19,7 +19,7 @@ class AddAssistanceModeToRegularizationSheetsTable extends Migration
         'assistance_mode',
         AssistanceMode::values())
                 ->nullable()
-                ->after('regularization_sheet_id');
+                ->after('id');
         });
     }
 
