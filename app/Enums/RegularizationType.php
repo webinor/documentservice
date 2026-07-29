@@ -2,12 +2,11 @@
 
 namespace App\Enums;
 
-class AssistanceMode
+class RegularizationType
 {
+    const INTERNAL = 'INTERNAL';
+    const ASSISTANCE = 'ASSISTANCE';
 
-    const ASSISTANCE_NORMAL = 'ASSISTANCE_NORMAL';
-
-    const ASSISTANCE_URGENT = 'ASSISTANCE_URGENT';
 
     /**
      * Retourne toutes les valeurs autorisées.
@@ -17,8 +16,8 @@ class AssistanceMode
     public static function values()
     {
         return [
-            self::ASSISTANCE_NORMAL,
-            self::ASSISTANCE_URGENT,
+            self::INTERNAL,
+            self::ASSISTANCE,
         ];
     }
 
@@ -30,15 +29,15 @@ class AssistanceMode
     public static function options()
     {
         return [
-
             [
-                'value' => self::ASSISTANCE_NORMAL,
+                'value' => self::INTERNAL,
+                'label' => 'Fonctionnement interne',
+            ],
+            [
+                'value' => self::ASSISTANCE,
                 'label' => 'Assistance',
             ],
-            [
-                'value' => self::ASSISTANCE_URGENT,
-                'label' => 'Assistance urgente',
-            ],
+
         ];
     }
 
@@ -51,8 +50,8 @@ class AssistanceMode
     public static function label($value)
     {
         $labels = [
-            self::ASSISTANCE_NORMAL => 'Assistance',
-            self::ASSISTANCE_URGENT => 'Assistance urgente',
+            self::INTERNAL => 'Fonctionnement interne',
+            self::ASSISTANCE => 'Assistance',
         ];
 
         return $labels[$value] ?? null;

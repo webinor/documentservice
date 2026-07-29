@@ -59,6 +59,12 @@ class StoreDocumentRequest extends FormRequest
         $regularizationFields = [
             "montant" => "required|numeric",
             "beneficiaire" => "required|numeric",
+
+            "regularization_type" => "nullable|string",
+            "assistance_mode" => "nullable|string",
+            "case_number" => "nullable|string",
+
+        
         ];
 
         $absenceRequestFields = [

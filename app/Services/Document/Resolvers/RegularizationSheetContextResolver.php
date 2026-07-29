@@ -5,7 +5,7 @@ namespace App\Services\Document\Resolvers;
 use App\Models\Misc\Document;
 use App\Services\Document\Contracts\DocumentContextResolver;
 
-class TaxiPaperContextResolver
+class RegularizationSheetContextResolver
 implements DocumentContextResolver
 {
     public function resolve(
@@ -14,9 +14,7 @@ implements DocumentContextResolver
         array $user
     ): array {
 
-    // return
-        $actions = [];
-
+  
         /*
         |--------------------------------------------------------------------------
         | Etape métier
@@ -24,7 +22,8 @@ implements DocumentContextResolver
         */
 
 
-        $signature = (isset($workflowContext["signatures"]) && sizeof($workflowContext["signatures"]) > 0 )? $workflowContext["signatures"][0] : null;
+        $signatures = (isset($workflowContext["signatures"]) && sizeof($workflowContext["signatures"]) > 0 )? $workflowContext["signatures"][0] : null;
+        // $signature = ($workflowContext["signatures"]) > 0 ? $workflowContext["signatures"] : null;
 
 
  
@@ -34,7 +33,7 @@ implements DocumentContextResolver
 
         return [
 
-            "signature" => $signature
+            "signatures" => $signatures
 
 
         ];

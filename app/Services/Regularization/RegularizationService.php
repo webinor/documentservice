@@ -17,7 +17,15 @@ class RegularizationService implements DocumentTypeHandlerInterface
      $data = [
             "reason" => $validated["titre"] ?? null,
             "amount" => $validated["montant"] ?? null,
+
+            "regularization_type" => $validated["regularization_type"] ?? "INTERNAL",
+            "assistance_mode" => $validated["assistance_mode"] ?? null,
+            "case_number" => $validated["case_number"] ?? null,
+
         ];
+
+        // throw new \Exception(json_encode($data), 1);
+        
 
          $document->regularization_sheet()->create($data);
     }
