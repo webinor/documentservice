@@ -1244,7 +1244,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             DB::beginTransaction();
 
             // Récupérer les données validées par le FormRequest
-            return
+            // return
             $validated = $request->validated();
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
@@ -1408,7 +1408,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 // 3️⃣ Création de l’instance de workflow
                 //  $workflowInstanceUrl = config('services.workflow.base_url') . "/api/workflow-instances";
-
+// return
                 $workflow = $workflowResponse->json();
 
                 if ($documentType->reception_mode == "WORKFLOW_DRIVEN") {
@@ -1430,7 +1430,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                         DB::commit();
 
                         
-
+// 
                         $instanceResponse = Http::withToken(
                             $request->bearerToken()
                         )
@@ -1453,6 +1453,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             );
                         }
 
+// return
                         
                         $workflowInstance = $instanceResponse->json();
 
@@ -1755,7 +1756,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // ->orderByDesc('id')
         // ->get();
 
-        // throw new Exception(json_encode($filters), 1);
+        // throw new Exception(json_encode($ids), 1);
 
         // // Filtre par statut
         if (!empty($filters["status_paid"])) {
@@ -1951,21 +1952,22 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $documentIdentifier
     ) {
       
-    // throw new Exception("Error Processing Request", 1);
     
     
      $document = $documentService->getDoc($documentIdentifier);
 
 
+
         $workflowContext = $documentViewService->getWorkflowStatusStatus(
             $document->id
-        );
-
-       
+        );       
 
         DocumentContext::setWorkflowStatus($document->id, $workflowContext);
 
+
         $enrichedDocument = $documentService->enrichDocument($document);
+
+
 
         $userInfo = request()->get("user");
 
@@ -1984,13 +1986,18 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $user
             );
 
+        
+
         $context = $documentContextService->resolve(
             $enrichedDocument,
             $workflowContext,
             $user
             );
+
+    // throw new Exception("Error Processing Request", 1);
+
             
-        // throw new Exception(json_encode($capabilities), 1);
+        // throw new Exception(json_encode($context), 1);
 
             
         $enrichedDocument['user_capabilities'] = $capabilities;
