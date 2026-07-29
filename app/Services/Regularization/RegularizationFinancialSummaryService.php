@@ -131,6 +131,13 @@ class RegularizationFinancialSummaryService
 
             'final_balance' => $finalBalance,
 
+                // =========================
+    // Workflow Action Context
+    // =========================
+    'has_refund' => $totalRefund > 0,
+    'has_supplement' => $totalSupplement > 0,
+    'has_financial_movement' => $totalRefund > 0 || $totalSupplement > 0,
+
             'settlement_status' => $this->resolveStatus($finalBalance),
 
         ];
