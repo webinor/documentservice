@@ -324,7 +324,7 @@ style="border:none;
 font-size:9px;
 color:#777;">
 
-Document généré automatiquement par la GED Cameroun Assistance
+Document généré automatiquement par CAS CONNECT
 
 </td>
 

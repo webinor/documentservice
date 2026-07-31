@@ -111,23 +111,21 @@ class RegularizationFinancialSummaryService
         }
         
 
-        $initialPaymentCompleted = $totalAdvance > 0;
+$initialPaymentCompleted = $totalAdvance > 0;
 
-$hasFinancialMovement = !$initialPaymentCompleted || ( $totalRefund > 0 || $totalSupplement > 0);
+// $hasFinancialMovement = !$initialPaymentCompleted || ( $totalRefund > 0 || $totalSupplement > 0);
 
-$financialMovementCompleted = $hasFinancialMovement
-    ? $finalBalance == 0
-    : true;
+$hasFinancialMovement =$initialPaymentCompleted && $finalBalance != 0 ; //!$initialPaymentCompleted || ( $totalRefund > 0 || $totalSupplement > 0);
 
-    $regularizationCompleted =
-    !$hasFinancialMovement
-    ||($initialPaymentCompleted && $finalBalance == 0);
+$financialMovementCompleted = $hasFinancialMovement ? $finalBalance == 0 : true;
+
+$regularizationCompleted = !$hasFinancialMovement || ( $initialPaymentCompleted && $finalBalance == 0 );
 
         return [
 
-            "total_prevu" => $requestedAmount,
-            "total_reel" => $totalReel,
+            'total_prevu' => $requestedAmount,
 
+            'total_reel' => $totalReel,
 
             'requested_amount' => $requestedAmount,
 

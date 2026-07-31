@@ -394,10 +394,12 @@ class DocumentController extends Controller
                         "role" => $s["actor_role"] ?? null,
                         "signature_type" => $s["signature_type"]["name"] ?? "",
                         "date" => $s["signed_at"] ?? null,
-                        "signatureUrl" => $s["actor"]["user"]["signature"]
-                            ? "http://localhost:8088/storage/" .
-                                $s["actor"]["user"]["signature"]
-                            : null,
+                        "signatureUrl" =>
+                        isset( $s["actor"]
+                        ["user"]
+                        ["signature"])
+                            ? 
+                            "http://localhost:8088/storage/" .$s["actor"]["user"]["signature"] : null,
                     ];
                 })
             )
