@@ -4,7 +4,7 @@
             align="center"
             style="
                 border:none;
-                font-size:9px;
+                font-size:12px;
                 color:#777;
                 line-height:14px;
             "
