@@ -25,6 +25,7 @@ use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
+use App\Services\Pdf\PdfMetadataService;
 use App\Services\SignerVisibilityPolicyFactory;
 use App\Services\UserServiceClient;
 use App\Services\Workflow\WorkflowParticipantService;
@@ -298,7 +299,7 @@ class DocumentController extends Controller
     public function download_document(
         Request $request,
         DocumentEnrichmentManager $documentEnrichmentManager,
-        DocumentEnricher $documentEnricher,
+        PdfMetadataService $metadataService,
          $documentIdentifier
     ) {
         // throw new Exception(json_encode($doc), 1);
@@ -408,6 +409,8 @@ class DocumentController extends Controller
         // throw new Exception(json_encode($allSignatures->count()), 1);
         // throw new Exception(json_encode($document), 1);
 
+          $metadata = $metadataService->build($document);
+
         $pdf = Pdf::loadView("templates.$template", [
             "document" => $document,
             "signatureDonneur" => $signatureDonneur,
@@ -415,6 +418,7 @@ class DocumentController extends Controller
             "participants" => $visibleParticipants,
             "business_signatures" => $business_signatures,
             "allSignatures" => $allSignatures,
+            'metadata'=>$metadata
         ]);
 
         //new Exception(json_encode($template));

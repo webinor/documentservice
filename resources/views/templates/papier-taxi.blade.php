@@ -315,7 +315,9 @@ SIGNATURES
 </table>
 
 
-<table>
+@include('pdf.components.document-footer')
+
+{{-- <table>
 
 <tr>
 
@@ -330,7 +332,7 @@ Document généré automatiquement par CAS CONNECT
 
 </tr>
 
-</table>
+</table> --}}
     
 </body>
 </html>
