@@ -4,6 +4,7 @@ namespace App\Services\Mission;
 
 use App\Models\Misc\Document;
 use App\Services\Regularization\RegularizationFinancialSummaryService;
+use App\Services\Regularization\TaxiFinancialSummaryService;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -35,6 +36,14 @@ class MissionFinancialSummaryService
         // throw new Exception("Document is a regularization.");
 
         }
+
+        if ($document->document_type->slug == "papier-taxi") {
+                      
+        return app(TaxiFinancialSummaryService::class)->build($document);
+        // throw new Exception("Document is a regularization.");
+
+        }
+
         if ($document->document_type->slug !== "mission") {
             throw new Exception("Document is not a mission.");
         }
