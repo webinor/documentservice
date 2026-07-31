@@ -93,6 +93,10 @@ public function getRegularizationItems( $documentIdentifier)
 
             'id' => $item->id,
 
+            'app_url' => config('app.url'),
+            'url' => url('/'),
+
+
             'designation' => $item->designation,
 
             'quantity' => $item->quantity,
