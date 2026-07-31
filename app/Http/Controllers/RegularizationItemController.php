@@ -113,13 +113,20 @@ public function getRegularizationItems( $documentIdentifier)
                 : null,
 
 
-'view_url' => $item->receipt
-    ? "{$baseUrl}/regularization-items/{$item->receipt->path}/view"
+                'view_url' => $item->receipt
+    ? "{$baseUrl}/api/documents/regularization-items/view/{$item->receipt->path}"
     : null,
 
 'download_url' => $item->receipt
-    ? "{$baseUrl}/regularization-items/{$item->receipt->path}/download"
+    ? "{$baseUrl}/api/documents/regularization-items/download/{$item->receipt->path}"
     : null,
+// 'view_url' => $item->receipt
+//     ? "{$baseUrl}/regularization-items/{$item->receipt->path}/view"
+//     : null,
+
+// 'download_url' => $item->receipt
+//     ? "{$baseUrl}/regularization-items/{$item->receipt->path}/download"
+//     : null,
 
         //     'view_url' =>$item->receipt ? route(
         //     'regularization-items.view',
@@ -259,6 +266,7 @@ public function updateItem(
 
 public function view($path)
 {
+    // return ($path);
     // return Storage::disk('public')->exists($path);
     abort_unless(
         Storage::disk('public')->exists($path),
