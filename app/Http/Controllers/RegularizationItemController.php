@@ -86,15 +86,16 @@ public function getRegularizationItems( $documentIdentifier)
     return [];
    }
 
+   $baseUrl = rtrim(config('app.url'), '/');
 // return $document->regularization_sheet->items;
-    $items = $document->regularization_sheet->items->map(function ($item) {
+    $items = $document->regularization_sheet->items->map(function ($item) use ($baseUrl) {
 
         return [
 
             'id' => $item->id,
 
-            'app_url' => config('app.url'),
-            'url' => url('/'),
+            // 'app_url' => config('app.url'),
+            // 'url' => url('/'),
 
 
             'designation' => $item->designation,
@@ -111,15 +112,24 @@ public function getRegularizationItems( $documentIdentifier)
                 ? Storage::url($item->receipt->path)
                 : null,
 
-            'view_url' =>$item->receipt ? route(
-            'regularization-items.view',
-            $item->receipt->path 
-        ) : null,
 
-        'download_url' => $item->receipt ? route(
-            'regularization-items.download',
-            $item->receipt->path 
-        ) : null,
+'view_url' => $item->receipt
+    ? "{$baseUrl}/regularization-items/{$item->receipt->path}/view"
+    : null,
+
+'download_url' => $item->receipt
+    ? "{$baseUrl}/regularization-items/{$item->receipt->path}/download"
+    : null,
+
+        //     'view_url' =>$item->receipt ? route(
+        //     'regularization-items.view',
+        //     $item->receipt->path 
+        // ) : null,
+
+        // 'download_url' => $item->receipt ? route(
+        //     'regularization-items.download',
+        //     $item->receipt->path 
+        // ) : null,
 
             'created_at' => $item->created_at,
             'updated_at' => $item->updated_at,
