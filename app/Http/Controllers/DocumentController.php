@@ -1811,23 +1811,23 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         }
 
         // Filtre par montant dans InvoiceProvider
-        if (!empty($filters["amount"])) {
-            // throw new Exception($filters["amount"], 1);
+        // if (!empty($filters["amount"])) {
+        //     // throw new Exception($filters["amount"], 1);
 
-            $query->whereHas("invoice_provider", function ($q) use ($filters) {
-                switch ($filters["amount"]) {
-                    case "lt_100k":
-                        $q->where("amount", "<", 100000);
-                        break;
-                    case "100k_500k":
-                        $q->whereBetween("amount", [100000, 500000]);
-                        break;
-                    case "gt_500k":
-                        $q->where("amount", ">", 500000);
-                        break;
-                }
-            });
-        }
+        //     $query->whereHas("invoice_provider", function ($q) use ($filters) {
+        //         switch ($filters["amount"]) {
+        //             case "lt_100k":
+        //                 $q->where("amount", "<", 100000);
+        //                 break;
+        //             case "100k_500k":
+        //                 $q->whereBetween("amount", [100000, 500000]);
+        //                 break;
+        //             case "gt_500k":
+        //                 $q->where("amount", ">", 500000);
+        //                 break;
+        //         }
+        //     });
+        // }
 
         // Filtre par fournisseur (via InvoiceProvider)
         if (!empty($filters["fournisseur_id"])) {

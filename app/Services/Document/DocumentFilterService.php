@@ -58,10 +58,10 @@ class DocumentFilterService
         // );
 
 
-        // $this->filterAmount(
-        //     $query,
-        //     $filters
-        // );
+        $this->filterAmount(
+            $query,
+            $filters
+        );
 
 
         return $query;
@@ -289,25 +289,30 @@ private function filterStatus(
 private function filterAmount(
     Builder $query,
     array $filters
-){
+): void {
 
-    if(
-        empty($filters['amount_min'])
-        &&
-        empty($filters['amount_max'])
-    ){
+    $min = $filters['amount'][0] ?? null;
+    $max = $filters['amount'][1] ?? null;
+
+    // throw new \Exception($max, 1);
+    
+
+    if ($min === null && $max === null) {
         return;
     }
 
+    if ($min !== null && $max !== null) {
+        $query->whereBetween('amount', [$min, $max]);
+        return;
+    }
 
-    /*
-       FUTUR :
+    if ($min !== null) {
+        $query->where('amount', '>=', $min);
+    }
 
-       document_search_metadata.amount
-
-    */
-
-
+    if ($max !== null) {
+        $query->where('amount', '<=', $max);
+    }
 }
 
 
