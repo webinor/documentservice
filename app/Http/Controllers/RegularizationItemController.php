@@ -245,7 +245,7 @@ public function updateItem(
 
 public function view($path)
 {
-    return Storage::disk('public')->exists($path);
+    // return Storage::disk('public')->exists($path);
     abort_unless(
         Storage::disk('public')->exists($path),
         404
