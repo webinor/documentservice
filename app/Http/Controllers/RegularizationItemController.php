@@ -90,10 +90,15 @@ public function getRegularizationItems( $documentIdentifier)
     $items = $document->regularization_sheet->items->map(function ($item) {
 
         return [
+
             'id' => $item->id,
+
             'designation' => $item->designation,
+
             'quantity' => $item->quantity,
+
             'unit_price' => $item->unit_price,
+
             'total' => (float) $item->quantity * (float) $item->unit_price,
 
             'receipt' => $item->receipt,
@@ -102,7 +107,7 @@ public function getRegularizationItems( $documentIdentifier)
                 ? Storage::url($item->receipt->path)
                 : null,
 
-              'view_url' =>$item->receipt ? route(
+            'view_url' =>$item->receipt ? route(
             'regularization-items.view',
             $item->receipt->path 
         ) : null,
@@ -240,6 +245,7 @@ public function updateItem(
 
 public function view($path)
 {
+    return Storage::disk('public')->exists($path);
     abort_unless(
         Storage::disk('public')->exists($path),
         404
