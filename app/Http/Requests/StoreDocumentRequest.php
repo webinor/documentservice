@@ -27,6 +27,8 @@ class StoreDocumentRequest extends FormRequest
     {
         $type = DocumentType::findOrFail($this->document_type_id);
 
+        // throw new \Exception("$type", 1);
+        
         // 🔥 Mapping dynamique : chaque type a ses règles
         $baseRules = [
             "titre" => "required|string",
@@ -44,9 +46,14 @@ class StoreDocumentRequest extends FormRequest
 
         $taxiFields = [
             // "motif" => "required|string",
-            "trajets" => "required|array|min:1",
-            "trajets.*.trajet" => "required|string",
-            "trajets.*.montant" => "required|numeric",
+            // "trajets" => "required|array|min:1",
+            // "trajets.*.trajet" => "required|string",
+            // "trajets.*.montant" => "required|numeric",
+
+            "libelles" => "required|array|min:1",
+            "libelles.*.libelle" => "required|string",
+            "libelles.*.montant" => "required|numeric",
+
             "beneficiaire" => "required|numeric",
             //"montant" => "required|numeric",
         ];
@@ -57,14 +64,17 @@ class StoreDocumentRequest extends FormRequest
         ];
 
         $regularizationFields = [
-            "montant" => "required|numeric",
+            // "montant" => "required|numeric",
             "beneficiaire" => "required|numeric",
 
             "regularization_type" => "nullable|string",
             "assistance_mode" => "nullable|string",
             "case_number" => "nullable|string",
 
-        
+            "libelles" => "required|array|min:1",
+            "libelles.*.libelle" => "required|string",
+            "libelles.*.quantite" => "required|numeric",
+            "libelles.*.montant" => "required|numeric",
         ];
 
         $absenceRequestFields = [
@@ -241,6 +251,8 @@ class StoreDocumentRequest extends FormRequest
             ];
         } elseif ($type->reception_mode == "WORKFLOW_DRIVEN") {
             $selected = $rulesByType[$type->slug] ?? [$baseRules];
+
+        // throw new \Exception(json_encode($selected), 1);
 
             // Fusionne proprement les règles
             return array_merge(...$selected);

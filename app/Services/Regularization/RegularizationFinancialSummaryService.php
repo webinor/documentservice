@@ -18,7 +18,7 @@ class RegularizationFinancialSummaryService
 
         $document->load([
             'document_type',
-            'regularization_sheet',
+            'regularization_sheet.items',
         ]);
 
         if ($document->document_type->slug !== 'fiche-a-regulariser') {
@@ -32,12 +32,18 @@ class RegularizationFinancialSummaryService
         /**
          * Montant demandé sur la fiche
          */
-        $requestedAmount = (int) $sheet->amount;
+        $requestedAmount =  (float) $sheet->items->sum(function ($item) {
+    return ($item->planned_quantity ?? 0) * ($item->planned_amount ?? 0);
+});
+
+$totalReel = (float) $sheet->items->sum(function ($item) {
+    return ($item->actual_quantity ?? 0) * ($item->actual_amount ?? 0);
+});
 
            /**
          * Montant reel depensé
          */
-        $totalReel = $sheet->items()->sum('total_amount');
+        // $totalReel = $sheet->items()->sum('total_amount');
 
         /**
          * Transactions financières

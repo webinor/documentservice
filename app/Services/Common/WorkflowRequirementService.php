@@ -7,6 +7,7 @@ use App\Models\Misc\Attachment;
 use App\Models\Misc\AttachmentType;
 use App\Models\DocumentReference;
 use App\Models\DocumentReferenceType;
+use App\Models\DocumentSignaturePosition;
 use Closure;
 
 class WorkflowRequirementService
@@ -127,4 +128,42 @@ class WorkflowRequirementService
             }
         );
     }
+
+    /**
+ * Retourne les types de signatures manquants.
+ */
+public function getMissingSignatures(
+    int $documentId,
+    array $requiredTypes
+) {
+    if (empty($requiredTypes)) {
+        return collect();
+    }
+
+    /**
+     * Types de signatures déjà configurés sur le document.
+     */
+    $existingTypes = DocumentSignaturePosition::query()
+        ->where('document_id', $documentId)
+        ->pluck('signature_type');
+
+    /**
+     * Types attendus mais absents.
+     */
+    $missingTypes = collect($requiredTypes)
+        ->diff($existingTypes);
+
+    if ($missingTypes->isEmpty()) {
+        return collect();
+    }
+
+    return $missingTypes
+        ->map(function ($type) {
+            return [
+                'signature_type' => $type,
+                'name' => str_replace('_', ' ', ucfirst(strtolower($type))),
+            ];
+        })
+        ->values();
+}
 }

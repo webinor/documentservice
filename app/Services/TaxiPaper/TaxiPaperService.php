@@ -8,6 +8,7 @@ use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\TaxiRegulation;
 use App\Services\DocumentType\DocumentTypeHandlerInterface;
+use Illuminate\Support\Str;
 
 class TaxiPaperService implements DocumentTypeHandlerInterface
 {
@@ -17,8 +18,8 @@ class TaxiPaperService implements DocumentTypeHandlerInterface
     ): void {
         
       $data = [
-            "reason" => $validated["titre"] ?? null,
-            "rides" => $validated["trajets"] ?? null,
+            "reason" => Str::upper($validated["titre"]) ?? null,
+            "rides" => $validated["libelles"] ?? null,
             // "beneficiary" => $validated["beneficiaire"] ?? null,
         ];
 

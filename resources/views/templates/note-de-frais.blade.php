@@ -322,7 +322,9 @@ style="font-size:9px;color:#666;margin-top:4px;">
 <!-- FOOTER -->
 <!-- ====================================================== -->
 
-<table>
+@include('pdf.components.document-footer')
+
+{{-- <table>
 
 <tr>
 
@@ -336,7 +338,7 @@ Document généré automatiquement par la GED Cameroun Assistance
 
 </tr>
 
-</table>
+</table> --}}
 
 </body>
 

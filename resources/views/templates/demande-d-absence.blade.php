@@ -417,3 +417,6 @@ Observation :
     </tr>
 
 </table>
+
+
+@include('pdf.components.document-footer')

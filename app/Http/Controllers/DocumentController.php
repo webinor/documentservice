@@ -316,24 +316,6 @@ class DocumentController extends Controller
 
         // throw new Exception(json_encode($document), 1);
 
-        //             $response = Http::withToken($request->bearerToken()) -> acceptJson()
-        //             ->get(
-        //     config('services.workflow_service.base_url')
-        //     . "/documents/{$document->id}/participants",
-        //     [
-        //         'document_type' =>
-        //             $document->document_type->slug,
-        //     ]
-        // );
-
-        //         if (!$response->ok()) {
-
-        //         throw new Exception("Error While retrieving participants", 1);
-
-        //         }
-        //             $participants = $response->json('participants');
-        //             $business_signatures = $response->json('business_signatures');
-
         $data = $this->workflowParticipantService->getParticipants(
             $document,
             $request->bearerToken()
@@ -420,6 +402,8 @@ class DocumentController extends Controller
             "allSignatures" => $allSignatures,
             'metadata'=>$metadata
         ]);
+
+        $pdfContent = $pdf->output();
 
         //new Exception(json_encode($template));
 
@@ -1346,15 +1330,18 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     }
                 }
 
-                if (isset($validated["trajets"])) {
-                    // Calcul du montant total
-                    $montantTotal = collect($validated["trajets"])->sum(
-                        "montant"
-                    );
+                if (isset($validated["libelles"])) {
 
-                    // Injecter dans les données du document
-                    $validated["montant"] = $montantTotal;
-                }
+    $montantTotal = collect($validated["libelles"])->sum(function ($ligne) {
+        $quantite = (int) ($ligne["quantite"] ?? 1);
+        $montant = (float) ($ligne["montant"] ?? 0);
+
+        return $quantite * $montant;
+    });
+
+    // Injecter dans les données du document
+    $validated["montant"] = $montantTotal;
+}
 
                 // return $validated;
 

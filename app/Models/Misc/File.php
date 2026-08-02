@@ -2,6 +2,7 @@
 
 namespace App\Models\Misc;
 
+use App\Models\FileSignature;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -21,4 +22,9 @@ class File extends Model
     {
         return $this->morphTo();
     }
+
+    public function signatures()
+{
+    return $this->hasMany(FileSignature::class);
+}
 }

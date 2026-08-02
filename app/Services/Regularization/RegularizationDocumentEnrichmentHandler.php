@@ -20,6 +20,8 @@ class RegularizationDocumentEnrichmentHandler
             $document->actor_id
         );
 
+       $document->dynamic_amount = $document->regularization_sheet->items->sum('planned_amount');
+
         return $document->toArray();
     }
 }

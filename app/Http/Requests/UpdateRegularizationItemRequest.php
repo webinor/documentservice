@@ -24,13 +24,13 @@ class UpdateRegularizationItemRequest extends FormRequest
                 'max:255',
             ],
 
-            'quantity' => [
+            'actual_quantity' => [
                 'sometimes',
                 // 'numeric',
                 'min:0',
             ],
 
-            'unit_price' => [
+            'actual_amount' => [
                 'sometimes',
                 // 'numeric',
                 'min:0',

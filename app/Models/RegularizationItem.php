@@ -11,21 +11,37 @@ class RegularizationItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'regularization_sheet_id',
-        'designation',
-        'quantity',
-        'unit_price',
+       
         'total_amount',
-        'receipt',
-        'comment',
         'sort_order',
-    ];
+            'regularization_sheet_id',
+    'designation',
 
-    protected $casts = [
-        // 'quantity' => 'decimal:2',
-        // 'unit_price' => 'decimal:2',
-        // 'total_amount' => 'decimal:2',
+    'planned_quantity',
+    'actual_quantity',
+
+    'unit_price',
+
+    'planned_amount',
+    'actual_amount',
+
+    'old_receipt',
+    'comment',
+    'sort_order',
     ];
+    
+
+   protected $casts = [
+    'planned_quantity' => 'integer',
+    'actual_quantity'  => 'integer',
+
+    'unit_price'       => 'integer',
+
+    'planned_amount'   => 'integer',
+    'actual_amount'    => 'integer',
+
+    'sort_order'       => 'integer',
+];
 
     /**
      * Fiche de régularisation parente.

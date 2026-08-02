@@ -10,6 +10,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentReferenceController;
 use App\Http\Controllers\DocumentReferenceTypeController;
+use App\Http\Controllers\DocumentSignatureController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
@@ -333,6 +334,11 @@ Route::get(
 
         Route::post("/{documentId}/missing-reference-types", [
             DocumentReferenceTypeController::class,
+            "missingForDocument",
+        ]);
+
+        Route::post("/{documentId}/missing-signature-types", [
+            DocumentSignatureController::class,
             "missingForDocument",
         ]);
 

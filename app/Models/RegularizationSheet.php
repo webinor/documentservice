@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\PayableDocumentInterface;
 use App\Models\Misc\Document;
+use App\Services\Regularization\RegularizationFinancialSummaryService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -126,9 +127,51 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     public function getSettlementAmount(
         string $transaction_type_code = ""
     ): float {
-          $actualAmount = (float) $this->items()->sum('total_amount');
+//"REGULARIZATION_ADVANCE","REGULARIZATION_SETTLEMENT"
+     if ($transaction_type_code == "REGULARIZATION_ADVANCE") {
+          
 
-    return ($actualAmount - (float) $this->amount);
+            return $actualAmount = (float) $this->items()->sum('planned_amount');
+        }
+
+    elseif($transaction_type_code == "REGULARIZATION_SETTLEMENT"){
+
+
+
+         $summary = app(RegularizationFinancialSummaryService::class)->build($this->document);
+
+        $totalRealExpenses = $summary["total_reel"];
+
+
+        $totalAdvances = $summary["total_advance"];
+
+    // throw new \Exception(($totalRealExpenses + $totalAllowances - $totalAdvances), 1);
+        
+
+        /**
+         * Résultat :
+         *
+         * > 0  => la caisse doit payer le missionnaire
+         * < 0  => le missionnaire doit rembourser
+         * = 0  => équilibré
+         */
+        return ((float) ($totalRealExpenses  - $totalAdvances));
+
+    }
+    else{
+
+
+      return $actualAmount = (float) $this->items()->sum('planned_amount');
+
+    } 
+    // return app(RegularizationFinancialSummaryService::class)->build($document);
+
+     
+          
+
+          
+
+  
     }
 
     public function getSettlementDetails(): array
