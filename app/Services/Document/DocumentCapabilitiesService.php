@@ -27,6 +27,9 @@ class DocumentCapabilitiesService
         array $user
     ): array {
 
+    // throw new \Exception($workflowContext['isReturnedForModificationnn'], 1);
+    
+
         if (
             $workflowContext['isReturnedForModification'] === true
             && $document['created_by'] == $user['id']

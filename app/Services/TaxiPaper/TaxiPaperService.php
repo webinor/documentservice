@@ -19,7 +19,13 @@ class TaxiPaperService implements DocumentTypeHandlerInterface
         
       $data = [
             "reason" => Str::upper($validated["titre"]) ?? null,
-            "rides" => $validated["libelles"] ?? null,
+           "rides" => isset($validated["libelles"])
+    ? array_map(function ($item) {
+        $item["trajet"] = $item["libelle"];
+        unset($item["libelle"]);
+        return $item;
+    }, $validated["libelles"])
+    : null,
             // "beneficiary" => $validated["beneficiaire"] ?? null,
         ];
 

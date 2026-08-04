@@ -22,14 +22,10 @@ class DocumentViewService
         );
 
         if ($response->successful()) {
-            return  $workflow = $response->json();
+            
+        return   $response->json();
 
-              return [
-            // 'document' => $document,
-            // 'financial_status' => $financial,
-            // 'workflow_status' => $workflow['current_step'] ?? null,
-            'transaction_types' => $workflow['transaction_types'] ?? [],
-        ];
+       
         } else {
 
 

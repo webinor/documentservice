@@ -1953,9 +1953,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         $workflowContext = $documentViewService->getWorkflowStatusStatus(
             $document->id
-        );       
+        );     
+        
+        // throw new Exception(json_encode($workflowContext), 1);
+        
 
         DocumentContext::setWorkflowStatus($document->id, $workflowContext);
+
 
 
         $enrichedDocument = $documentService->enrichDocument($document);
