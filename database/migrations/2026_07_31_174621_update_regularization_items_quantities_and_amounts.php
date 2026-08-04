@@ -8,18 +8,16 @@ class UpdateRegularizationItemsQuantitiesAndAmounts extends Migration
 {
     public function up()
     {
-    //      Schema::table('regularization_items', function (Blueprint $table) {
-    //     $table->renameColumn('quantity', 'planned_quantity');
-    // });
+         Schema::table('regularization_items', function (Blueprint $table) {
+        $table->renameColumn('quantity', 'planned_quantity');
+    });
 
     Schema::table('regularization_items', function (Blueprint $table) {
         $table->unsignedMediumInteger('actual_quantity')
             ->nullable()
             ->after('planned_quantity');
 
-        // $table->unsignedMediumInteger('actual_amount')
-        //     ->nullable()
-        //     ->after('planned_amount');
+   
     });
     }
 
@@ -28,7 +26,6 @@ class UpdateRegularizationItemsQuantitiesAndAmounts extends Migration
          Schema::table('regularization_items', function (Blueprint $table) {
         $table->dropColumn([
             'actual_quantity',
-            'actual_amount',
         ]);
     });
 
