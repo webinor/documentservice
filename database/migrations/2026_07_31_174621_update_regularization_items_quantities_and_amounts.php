@@ -18,9 +18,9 @@ class UpdateRegularizationItemsQuantitiesAndAmounts extends Migration
             ->nullable()
             ->after('planned_quantity');
 
-        $table->unsignedMediumInteger('actual_amount')
-            ->nullable()
-            ->after('planned_amount');
+        // $table->unsignedMediumInteger('actual_amount')
+        //     ->nullable()
+        //     ->after('planned_amount');
     });
     }
 
