@@ -4,71 +4,62 @@ namespace App\Services\TaxiPaper;
 
 use App\Contracts\SignerVisibilityPolicy;
 
-use function PHPUnit\Framework\isEmpty;
-
 class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
 {
     public function isVisible(array $participant): bool
     {
-        // return 
-
-        if ($participant['status'] != "APPROVED") {
-
-            
-        return false;
-        
-
+        // Le participant doit être validé
+        if (($participant['status'] ?? null) !== "APPROVED") {
+            return false;
         }
 
 
+        $sourceType = $participant['source_type'] ?? null;
+        $sourceValue = $participant['source_value'] ?? null;
 
-        // if (isEmpty($participant['user'])) {
-            
 
-        // throw new \Exception(json_encode($participant), 1);
+        // Récupération sécurisée des responsabilités
+        $responsibilities = $participant['user']['responsibilities'] ?? [];
 
-        
-        // }
-        $responsibilities = $participant['user']['responsibilities'];
-        
 
-        
-
-        if ($participant['source_type'] == "OWNER") {
-
-            
-        // return true;
-        
-
+        // Si jamais responsibilities arrive en null
+        if (!is_array($responsibilities)) {
+            $responsibilities = [];
         }
 
+
+        /**
+         * Cas propriétaire :
+         * visible uniquement si l'utilisateur possède une responsabilité
+         * permettant la signature
+         */
         if (
-    $participant['source_type'] == "OWNER" &&
-    !empty(array_intersect(
-        $responsibilities,
-        ["SIGNATORY", "HEAD_OF_DEPARTMENT"]
-    ))
-) {
-   
-
-
-            
+            $sourceType === "OWNER" &&
+            !empty(array_intersect(
+                $responsibilities,
+                [
+                    "SIGNATORY",
+                    "HEAD_OF_DEPARTMENT"
+                ]
+            ))
+        ) {
         throw new \Exception(json_encode($participant['user']['responsibilities']), 1);
 
-        return true;
-        
-
+            return true;
         }
 
-        if (in_array($participant['source_value'], [
+
+        /**
+         * Cas basé sur une valeur métier du participant
+         */
+        if (in_array($sourceValue, [
             'DIRECT_MANAGER',
             'HEAD_OF_DEPARTMENT',
             'SIGNATORY',
-        ])) {
-
-        return true;
-           
+        ], true)) {
+            return true;
         }
+
 
         return false;
     }
