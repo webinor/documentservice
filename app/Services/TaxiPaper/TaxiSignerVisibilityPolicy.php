@@ -29,7 +29,7 @@ class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         if (sizeof($responsibilities)>0) {
             
-        throw new \Exception(json_encode($responsibilities), 1);
+        // throw new \Exception(json_encode($responsibilities), 1);
 
         
         }
