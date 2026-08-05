@@ -27,6 +27,13 @@ class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
             $responsibilities = [];
         }
 
+        if (sizeof($responsibilities)>0) {
+            
+        throw new \Exception(json_encode($responsibilities), 1);
+
+        
+        }
+
 
         /**
          * Cas propriétaire :
@@ -43,7 +50,7 @@ class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
                 ]
             ))
         ) {
-        throw new \Exception(json_encode($participant['user']['responsibilities']), 1);
+        // throw new \Exception(json_encode($participant['user']['responsibilities']), 1);
 
             return true;
         }
