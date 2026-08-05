@@ -124,6 +124,8 @@ class DocumentController extends Controller
                     "actor_id" => $doc->actor_id,
                     "document_type" => $doc->document_type,
                     "document_type_id" => $doc->document_type_id,
+                    "document_type_slug" => $doc->document_type->slug,
+                    "document_type_version" => 1
                     // "type" => $doc->document_type->slug ?? null,
                 ];
             })
