@@ -1413,14 +1413,23 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                         $payload = [
                             "workflow_id" => $workflow["id"],
-                            "department_id" =>
-                                $validated["departement"] ?? null,
+
+                            "department_id" => $validated["departement"] ?? null,
+
                             "document_id" => $document->id,
                             "document_uuid" => $document->uuid,
+
+                            "document_type_id" => $documentType->id,
+                            "document_type_slug" => $documentType->slug,
+                            "document_type_version" => $documentType->version ?? 1,
+
                             "status" => "IN_PROGRESS",
+
                             "current_step_id" => $firstStep["id"] ?? null,
+
                             "created_by" => $user_connected,
-                            "steps" => $workflow["steps"], // tableau des étapes
+
+                            "steps" => $workflow["steps"],
                         ];
 
                         DB::commit();
