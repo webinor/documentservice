@@ -6,39 +6,94 @@ use App\Contracts\SignerVisibilityPolicy;
 
 class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
 {
+    /**
+     * Détermine si un participant doit apparaître comme signataire visible
+     *
+     * Règles métier :
+     * - Le participant doit être approuvé.
+     * - Un OWNER est visible uniquement s'il possède une responsabilité
+     *   permettant la signature.
+     * - Certaines sources métier peuvent directement donner un droit de signature.
+     */
     public function isVisible(array $participant): bool
     {
-        // Le participant doit être validé
+        /**
+         * Un participant non approuvé ne doit jamais être proposé
+         * comme signataire.
+         */
         if (($participant['status'] ?? null) !== "APPROVED") {
             return false;
         }
 
 
+        /**
+         * Type de source du participant.
+         *
+         * Exemple :
+         * OWNER
+         * DEPARTMENT
+         * ROLE
+         */
         $sourceType = $participant['source_type'] ?? null;
-        $sourceValue = $participant['source_value'] ?? null;
-
-
-        // Récupération sécurisée des responsabilités
-        $responsibilities = $participant['user']['responsibilities'] ?? [];
-
-
-        // Si jamais responsibilities arrive en null
-        if (!is_array($responsibilities)) {
-            $responsibilities = [];
-        }
-
-        if (sizeof($responsibilities)>0) {
-            
-        // throw new \Exception(json_encode($responsibilities), 1);
-
-        
-        }
 
 
         /**
-         * Cas propriétaire :
-         * visible uniquement si l'utilisateur possède une responsabilité
-         * permettant la signature
+         * Valeur métier associée au participant.
+         *
+         * Exemple :
+         * DIRECT_MANAGER
+         * HEAD_OF_DEPARTMENT
+         * SIGNATORY
+         */
+        $sourceValue = $participant['source_value'] ?? null;
+
+
+
+        /**
+         * Récupération des responsabilités utilisateur.
+         *
+         * Attention :
+         * L'API User retourne une structure :
+         *
+         * [
+         *    [
+         *       "id" => 12,
+         *       "code" => "SIGNATORY",
+         *       "label" => "Signataire"
+         *    ]
+         * ]
+         *
+         * Or les règles workflow utilisent uniquement les codes.
+         *
+         * On transforme donc en :
+         *
+         * [
+         *    "SIGNATORY"
+         * ]
+         */
+        $responsibilities = collect(
+            $participant['user']['responsibilities'] ?? []
+        )
+        ->pluck('code')
+        ->toArray();
+
+
+
+        /**
+         * Cas 1 :
+         *
+         * Le participant est le propriétaire du document.
+         *
+         * Un OWNER n'est pas forcément signataire.
+         * Il doit posséder une responsabilité permettant la signature.
+         *
+         * Exemple :
+         *
+         * Employé :
+         * - Responsable département
+         * - Signataire
+         *
+         * => Visible
          */
         if (
             $sourceType === "OWNER" &&
@@ -50,24 +105,45 @@ class TaxiSignerVisibilityPolicy implements SignerVisibilityPolicy
                 ]
             ))
         ) {
-        // throw new \Exception(json_encode($participant['user']['responsibilities']), 1);
-
             return true;
         }
+
 
 
         /**
-         * Cas basé sur une valeur métier du participant
+         * Cas 2 :
+         *
+         * Certaines sources métier représentent directement
+         * une personne habilitée à signer.
+         *
+         * Exemple :
+         *
+         * source_value = DIRECT_MANAGER
+         *
+         * Le manager direct doit être visible.
          */
-        if (in_array($sourceValue, [
-            'DIRECT_MANAGER',
-            'HEAD_OF_DEPARTMENT',
-            'SIGNATORY',
-        ], true)) {
+        if (
+            in_array(
+                $sourceValue,
+                [
+                    'DIRECT_MANAGER',
+                    'HEAD_OF_DEPARTMENT',
+                    'SIGNATORY',
+                ],
+                true
+            )
+        ) {
             return true;
         }
 
 
+
+        /**
+         * Par défaut :
+         *
+         * Le participant n'a aucune règle permettant
+         * de le considérer comme signataire.
+         */
         return false;
     }
 }
