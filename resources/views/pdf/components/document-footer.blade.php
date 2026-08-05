@@ -1,79 +1,67 @@
-<table style="margin-top:15px;">
+<table style="margin-top:10px; width:100%;">
     <tr>
+
         <td
-            align="center"
             style="
                 border:none;
                 font-size:12px;
                 color:#777;
-                line-height:14px;
+                line-height:12px;
+                vertical-align:middle;
+                width:85%;
             "
         >
+            <strong>
+                {{ $metadata['document_type'] ?? 'Document' }}
+            </strong>
 
+            N° :
+            <strong>
+                {{ $metadata['document_number'] ?? '-' }}
+            </strong>
 
-          <div>
-                Document  :
-                <strong>
-                    {{ $metadata['document_type'] ?? '-' }}
-                </strong>
-            </div>
+            , Version :
+            <strong>
+                {{ $metadata['version'] ?? '1.0' }}
+            </strong>
 
-            <div>
-                Document N° :
-                <strong>
-                    {{ $metadata['document_number'] ?? '-' }}
-                </strong>
-            </div>
+            , généré le :
+            <strong>
+                {{
+                    isset($metadata['generated_at'])
+                    ? $metadata['generated_at']->format('d/m/Y H:i')
+                    : '-'
+                }}
+            </strong>
 
-            <div>
-                Version :
-                <strong>
-                    {{ $metadata['version'] ?? '1.0' }}
-                </strong>
-            </div>
+            par :
+            <strong>
+                {{ $metadata['generated_by'] ?? 'CAS CONNECT' }}
+            </strong>
 
-            <div>
-                Date de génération :
-                <strong>
-                    {{ 
-                        isset($metadata['generated_at'])
-                        ? $metadata['generated_at']->format('d/m/Y à H:i')
-                        : '-'
-                    }}
-                </strong>
-            </div>
-
-            <div>
-                Généré par :
-                <strong>
-                    {{ $metadata['generated_by'] ?? 'CAS CONNECT' }}
-                </strong>
-            </div>
-
-            <div>
-                Référence de vérification :
-                <strong>
-                    {{ $metadata['verification_reference'] ?? '-' }}
-                </strong>
-            </div>
-
-            <td
-    width="25%"
-    align="center"
-    style="border:none;"
->
-
-<img
-    src="data:image/png;base64,{{ $metadata['qr_code'] }}"
-    width="80"
-/>
-
-<div style="font-size:8px;color:#777;">
-Scanner pour vérifier
-</div>
-
-</td>
+            , Référence :
+            <strong>
+                {{ $metadata['verification_reference'] ?? '-' }}
+            </strong>
 
         </td>
+
+
+        <td
+            align="right"
+            style="
+                border:none;
+                width:15%;
+                vertical-align:middle;
+            "
+        >
+            <img
+                src="data:image/png;base64,{{ $metadata['qr_code'] }}"
+                width="45"
+                height="45"
+                style="display:block;"
+            />
+        </td>
+
     </tr>
 </table>
