@@ -131,7 +131,7 @@ Route::middleware("jwt.check")
             Route::get("/{id}/details", "getDetails")->name(
                 "documents.details"
             );
-            Route::post("/notify-beneficiary", [
+            Route::post("/beneficiary/notify", [
                 DocumentController::class,
                 "notifyBeneficiary",
             ]);
