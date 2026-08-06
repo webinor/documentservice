@@ -35,7 +35,7 @@ class RegularizationService implements DocumentTypeHandlerInterface
 
             "actual_amount"  => null,
 
-            "old_receipt"    => $item["old_receipt"] ?? null,
+            // "old_receipt"    => $item["old_receipt"] ?? null,
             "comment"        => $item["comment"] ?? null,
             "sort_order"     => $index + 1,
         ]);
