@@ -1777,6 +1777,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         }
 
         $query = app(DocumentFilterService::class)->apply($query , $filters);
+        
+        
 
 
 
@@ -1907,9 +1909,31 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 );
             }
 
+
+
+        //      $canCancel = false;
+             
+        // $workflowContext = app(DocumentViewService::class)->getWorkflowStatusStatus(
+        //     $doc->id
+        // );   
+
+            // throw new Exception(json_encode($workflowContext), 1);
+
+
+
+        //   $canCancel = $workflowContext["canCancel"];// ?? false;
+
             // throw new Exception(json_encode($this->documentEnrichmentManager->enrich($doc, $base)), 1);
 
-            return $this->documentEnrichmentManager->enrich($doc, $base);
+            $enrichedDoc = $this->documentEnrichmentManager->enrich($doc, $base);
+
+            // $enrichedDoc['user_capabilities'] = [];
+            // $enrichedDoc['user_capabilities']['canCancel'] = $canCancel;
+
+            return $enrichedDoc;
+
+
+
         });
         // throw new Exception(json_encode($documentsEnrich), 1);
 
@@ -1962,7 +1986,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      $document = $documentService->getDoc($documentIdentifier);
 
 
-
+            
         $workflowContext = $documentViewService->getWorkflowStatusStatus(
             $document->id
         );     

@@ -24,15 +24,17 @@ class DocumentCapabilitiesService
         array $capabilities,
         $document,
         $workflowContext,
-        array $user
-    ): array {
+        array $currentUser
+        ): array {
 
     // throw new \Exception($workflowContext['isReturnedForModificationnn'], 1);
     
+        $cancalable = $workflowContext["cancalable"] ?? false;
+
 
         if (
             $workflowContext['isReturnedForModification'] === true
-            && $document['created_by'] == $user['id']
+            && $document['created_by'] == $currentUser['id']
         ) {
             $capabilities['mode'] = "edit";
             $capabilities['show_timeline'] = false;
@@ -43,6 +45,8 @@ class DocumentCapabilitiesService
             $capabilities['show_timeline'] = true;
 
         }
+
+        $capabilities['can_cancel'] = $cancalable && ( $currentUser['id'] == $document['created_by'] );
 
 
         return $capabilities;
