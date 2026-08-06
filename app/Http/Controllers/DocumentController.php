@@ -124,7 +124,7 @@ class DocumentController extends Controller
                     "actor_id" => $doc->actor_id,
                     "document_type" => $doc->document_type,
                     "document_type_id" => $doc->document_type_id,
-                    "document_type_slug" => $doc->document_type->slug,
+                    "document_type_relation_name" => $doc->document_type->relation_name,
                     "document_type_version" => 1
                     // "type" => $doc->document_type->slug ?? null,
                 ];
@@ -1420,7 +1420,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             "document_uuid" => $document->uuid,
 
                             "document_type_id" => $documentType->id,
-                            "document_type_slug" => $documentType->slug,
+                            "document_type_relation_name" => $documentType->relation_name,
                             "document_type_version" => $documentType->version ?? 1,
 
                             "status" => "IN_PROGRESS",
