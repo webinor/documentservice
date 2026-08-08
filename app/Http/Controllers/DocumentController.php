@@ -374,13 +374,14 @@ class DocumentController extends Controller
             })
             ->merge(
                 collect($business_signatures)->map(function ($s) {
-                    // throw new Exception(json_encode(($s['actor']['user']['signature'])), 1);
+
+                    // throw new Exception(json_encode(($s['actor']['active_position']['position']['name'])), 1);
 
                     return [
                         "type_block" => "RECEPTION",
                         "user" => $s["actor_name"] ?? null,
                         // "role" => $s["actor_role"] ?? null,
-                        "display_job_title" => $s['actor']['active_position']['display_job_title'] ?? $item['actor']['active_position']['position']['name'] ?? 'Position inconue',
+                        "display_job_title" => $s['actor']['active_position']['display_job_title'] ?? $s['actor']['active_position']['position']['name'] ?? 'Position inconue',
                         "signature_type" => $s["signature_type"]["name"] ?? "",
                         "date" => $s["signed_at"] ?? null,
                         "signatureUrl" =>
