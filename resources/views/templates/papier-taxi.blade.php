@@ -287,9 +287,9 @@ SIGNATURES
                     {{ $item['user']['name'] ?? $item['user'] }}
                 </div>
 
-                {{-- Rôle --}}
+                {{-- display_job_title --}}
                 <div style="font-size:10px;color:#666;">
-                    {{ $item['role'] }}
+                    {{ $item['display_job_title'] }}
                 </div>
 
                 @if (!empty($item['signature_type']))

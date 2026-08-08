@@ -4,9 +4,9 @@
         <td
             style="
                 border:none;
-                font-size:12px;
+                font-size:11px;
                 color:#777;
-                line-height:12px;
+                line-height:10px;
                 vertical-align:middle;
                 width:85%;
             "
@@ -39,7 +39,7 @@
                 {{ $metadata['generated_by'] ?? 'CAS CONNECT' }}
             </strong>
 
-            , Référence :
+            , Réf :
             <strong>
                 {{ $metadata['verification_reference'] ?? '-' }}
             </strong>

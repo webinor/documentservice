@@ -328,7 +328,8 @@ class DocumentController extends Controller
 
         // throw new Exception(json_encode((collect($participants))), 1);
         // throw new Exception(json_encode((collect($participants)->pluck('source_value'))), 1);
-        // throw new Exception(json_encode((collect($business_signatures))), 1);
+        // throw new Exception(json_encode((collect($participants))), 1);
+        // Log::info(json_encode($participants));
 
         $policy = SignerVisibilityPolicyFactory::make(
             $document["document_type"]["slug"]
@@ -365,7 +366,8 @@ class DocumentController extends Controller
                 return [
                     "type_block" => "VALIDATION",
                     "user" => $p["user"] ?? null,
-                    "role" => $p["user"]["role"] ?? "",
+                    // "role" => $p["user"]["role"] ?? "",
+                    "display_job_title" => $p["user"]['active_position']['display_job_title'] ?? $p['user']['active_position']['position']['name'] ?? 'Position inconue',
                     "date" => $p["validated_at"] ?? null,
                     "signatureUrl" => $p["user"]["signatureUrl"] ?? null,
                 ];
@@ -377,7 +379,8 @@ class DocumentController extends Controller
                     return [
                         "type_block" => "RECEPTION",
                         "user" => $s["actor_name"] ?? null,
-                        "role" => $s["actor_role"] ?? null,
+                        // "role" => $s["actor_role"] ?? null,
+                        "display_job_title" => $s['actor']['active_position']['display_job_title'] ?? $item['actor']['active_position']['position']['name'] ?? 'Position inconue',
                         "signature_type" => $s["signature_type"]["name"] ?? "",
                         "date" => $s["signed_at"] ?? null,
                         "signatureUrl" =>
