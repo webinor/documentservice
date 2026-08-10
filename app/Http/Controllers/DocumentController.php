@@ -6,7 +6,7 @@ use App\Exports\DocumentsExport;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
-use App\Managers\DocumentCreationManager;
+use App\Managers\DocumentDataManager;
 use App\Managers\DocumentEnrichmentManager;
 use App\Models\DocumentStatus;
 use App\Models\Finance\InvoiceProvider;
@@ -1235,7 +1235,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      */
     public function store(
         StoreDocumentRequest $request,
-        DocumentCreationManager $documentCreationManager
+        DocumentDataManager $documentDataManager
     ) {
         try {
             DB::beginTransaction();
@@ -1381,9 +1381,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 $documentType = $document->document_type()->first(); // Objet avec class_name, relation_name et type
 
-                // return(get_class($documentCreationManager));
+                // return(get_class($documentDataManager));
 
-                $documentCreationManager->create($document, $validated);
+                $documentDataManager->create($document, $validated);
 
                 // Si on veut gérer des fichiers uploadés
                 if ($request->hasFile("facture")) {
@@ -1560,7 +1560,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
     ) {
         // Choix du traitement workflow selon le mode de réception
         if ($documentType->reception_mode === "AUTO_BY_ROLE") {
-            $workflowInstance = $this->processAutoByRoleWorkflow(
+            $workflowInstance = 
+            $this->processAutoByRoleWorkflow(
                 $validated,
                 $document,
                 $user_connected,
@@ -1982,7 +1983,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         DocumentService $documentService,
         DocumentCapabilitiesService $documentCapabilitiesService,
         DocumentContextService $documentContextService,
-        $documentIdentifier
+        string $documentIdentifier
     ) {
       
     
@@ -2064,9 +2065,183 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      * @param  \App\Models\Misc\Document  $document
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateDocumentRequest $request, Document $document)
-    {
-        //
+    public function update(UpdateDocumentRequest $request, 
+     DocumentService $documentService,
+     DocumentDataManager $documentDataManager,
+    string $document_uuid
+    )
+    {   
+        // return
+        $document = $documentService->getDoc($document_uuid);
+
+         try {
+            DB::beginTransaction();
+
+            // Récupérer les données validées par le FormRequest
+            // return
+            $validated = $request->validated();
+            $user_connected = $request->get("user"); // récupéré du user-service
+            $documentType = $document->document_type;// DocumentType::find($validated["document_type_id"]);
+
+            // return $validated;
+
+            //on recupere le workflow
+
+            // if ($documentType->reception_mode == "AUTO_BY_ROLE") {
+                
+            // } else {
+                
+                //lié a un workflow
+                // 🔹 Appel au microservice workflow
+                $workflowServiceUrl = config(
+                    "services.workflow_service.base_url"
+                ); // ex: http://workflow-service/api
+                
+
+                
+                
+
+                if (
+                    isset($validated["prestataire"]) &&
+                    $validated["prestataire"]
+                ) {
+                    $supplier = getSupplierInfo($validated["prestataire"]);
+
+                    if ($supplier) {
+                        $validated["dueDate"] = isset($supplier["dueDate"])
+                            ? now()->addDays($supplier["dueDate"])
+                            : null;
+                        $validated["provider_name"] = $supplier["name"] ?? null;
+                    }
+                }
+
+                if (isset($validated["libelles"])) {
+
+    $montantTotal = collect($validated["libelles"])->sum(function ($ligne) {
+        $quantite = (int) ($ligne["quantite"] ?? 1);
+        $montant = (float) ($ligne["montant"] ?? 0);
+
+        return $quantite * $montant;
+    });
+
+    // Injecter dans les données du document
+    $validated["montant"] = $montantTotal;
+}
+
+                // return $validated;
+
+                // $reference = $this->generateUniqueReference(6); // ex: longueur 6
+                // return
+                // Créer le document
+                 $document->update([
+                    "title" => $validated["titre"],
+
+                    // "status" => $this->get_initial_status(
+                    //     $document->document_type->id
+                    // ),
+                    // "date_due" => $validated["dueDate"] ?? null,
+                    "amount" => $validated["montant"] ?? null,
+                    "prestataire_name" => $validated["provider_name"] ?? null,
+
+                    "department_id" => $validated["departement"] ?? null, // ✅ optionnel,
+                    "updated_at" => now(),
+                    "actor_type" => "EMPLOYEE",
+                    "actor_id" =>  $validated["actor"] ?? $validated["actor_collaborator"] ??  $validated["beneficiaire"] ?? 0,
+                    // autres champs génériques...
+                ]);
+
+                $documentType = $document->document_type()->first(); // Objet avec class_name, relation_name et type
+
+
+                $documentDataManager->update($document, $validated);
+
+                // Si on veut gérer des fichiers uploadés
+                if ($request->hasFile("facture")) {
+                    $document->save();
+                    $this->handleUploadedFile(
+                        $request,
+                        $document,
+                        $user_connected,
+                        "facture",
+                        "facture-originale"
+                    );
+                }
+
+                //Si la reference de l'engagement correspond a un document dans le systeme, on associe directement a la facture
+                if (isset($validated["linkedDocument"])) {
+                    $this->handleLinkedDocument(
+                        $validated,
+                        $document,
+                        $user_connected
+                    );
+                }
+
+                // 3️⃣ Création de l’instance de workflow
+                //  $workflowInstanceUrl = config('services.workflow.base_url') . "/api/workflow-instances";
+// return
+                // $workflow = $workflowResponse->json();
+
+                    // if ($workflow) {
+                        // $firstStep = $workflow["steps"][0];
+
+                        $payload = [
+                            // "workflow_id" => $workflow["id"],
+
+                            // "department_id" => $validated["departement"] ?? null,
+
+                            "document_id" => $document->id,
+
+                            "document_uuid" => $document->uuid,
+
+                            // "steps" => $workflow["steps"],
+                        ];
+
+                        DB::commit();
+
+                        // return
+
+                        $instanceResponse = Http::withToken(
+                            $request->bearerToken()
+                        )
+                            ->acceptJson()
+                            ->post(
+                                $workflowServiceUrl . "/workflow-instances/{$document->uuid}/continue",
+                                $payload
+                            );
+
+                        if ($instanceResponse->failed()) {
+                            DB::rollBack();
+                       
+                            return response()->json(
+                                [
+                                    "message" =>
+                                        "Échec de l’initialisation du workflow. Modification Document annulée.",
+                                    "backend-message" => $instanceResponse->body(),
+                                ],
+                                500
+                            );
+                        }
+
+// return
+                        
+                        $workflowInstance = $instanceResponse->json();
+
+                        return response()->json(
+                            [
+                                "success" => true,
+                                "message" =>
+                                "Document modifié avec succès et workflow démarré",
+                                "document" => $document,
+                                "workflow_instance" => $workflowInstance,
+                            ],
+                            200
+                        );
+                    // }
+            // }
+        } catch (\Throwable $th) {
+            DB::rollback();
+            throw $th;
+        }
     }
 
     /**

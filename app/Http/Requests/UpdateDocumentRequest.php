@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Misc\Document;
+use App\Services\Document\DocumentValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateDocumentRequest extends FormRequest
@@ -13,7 +15,7 @@ class UpdateDocumentRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,9 +24,23 @@ class UpdateDocumentRequest extends FormRequest
      * @return array
      */
     public function rules()
-    {
-        return [
-            //
-        ];
-    }
+{
+
+
+
+    $document = Document::where(
+        'uuid',
+        $this->route('document')
+    )->firstOrFail();
+
+    // throw new \Exception(json_encode($document), 1);
+
+    // throw new \Exception(json_encode($this->all()), 1);
+
+
+    return DocumentValidationRules::for(
+        $document->document_type->slug,
+        $this
+    );
+}
 }

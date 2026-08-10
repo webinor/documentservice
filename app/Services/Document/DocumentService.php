@@ -49,12 +49,32 @@ class DocumentService
      public function getDoc($identifier) : Document {
 
 
-    if (Str::isUuid($identifier)) {
-    $document = Document::where('uuid', $identifier)->firstOrFail();
-} else {
-    $document = Document::findOrFail($identifier);
+//      throw new \Exception(json_encode([
+//     'identifier' => $identifier,
+//     'is_uuid' => Str::isUuid($identifier),
+// ]));
 
+     
+    if (Str::isUuid($identifier)) {
+    $document = Document::with(['document_type'])->where('uuid', $identifier)->firstOrFail();
+
+//     throw new \Exception(json_encode([
+//     'identifier' => $identifier,
+//     'document' => $document,
+// ]));
+
+    // throw new \Exception(json_encode('$document'), 1);
+
+
+} else {
+
+    
+    $document = Document::with(['document_type'])->findOrFail($identifier);
+    
 }
+
+    
+
 
 return $document;
         
