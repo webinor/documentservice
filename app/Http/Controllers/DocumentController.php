@@ -2074,14 +2074,14 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $document = $documentService->getDoc($document_uuid);
         
         
-         return response()->json(
-                            [
-                                "success" => true,
-                                "message" =>"Document modifié avec succès et workflow démarré",
-                                "document" => $document,
-                            ],
-                            200
-                        );
+        //  return response()->json(
+        //                     [
+        //                         "success" => true,
+        //                         "message" =>"Document modifié avec succès et workflow démarré",
+        //                         "document" => $document,
+        //                     ],
+        //                     200
+        //                 );
 
          try {
             DB::beginTransaction();
