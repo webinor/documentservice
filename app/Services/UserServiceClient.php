@@ -21,6 +21,49 @@ class UserServiceClient
             ->baseUrl($url);
     }
 
+    public function hasBypassPermission(
+    array $document,
+    array $user,
+    array $actions
+): bool {
+
+    $userServiceUrl = config(
+        "services.user_service.base_url"
+    );
+
+    $response = Http::withToken(
+        request()->bearerToken()
+    )
+    ->acceptJson()
+    ->post(
+        $userServiceUrl . "/permissions/check-batch",
+        [
+            "userId" => $user["id"],
+
+            "documents" => [
+                [
+                    "id" => $document["document_type_id"],
+                    "type" => $document["document_type"]["name"],
+                ]
+            ],
+
+            "actions" => $actions,
+        ]
+    );
+
+    if ($response->failed()) {
+        return false;
+    }
+
+    $result = $response->json();
+
+    return data_get(
+        $result,
+        "0.permissions.bypass",
+        false
+    );
+}
+
 
     public function getUser(int $userId)
     {

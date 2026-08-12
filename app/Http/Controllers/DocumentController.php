@@ -1932,7 +1932,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
             $enrichedDoc = $this->documentEnrichmentManager->enrich($doc, $base);
 
-            // $enrichedDoc['user_capabilities'] = [];
+            // $enrichedDoc['user_capabilities'] = []; 
             // $enrichedDoc['user_capabilities']['canCancel'] = $canCancel;
 
             return $enrichedDoc;

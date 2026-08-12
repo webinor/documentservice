@@ -3,9 +3,15 @@
 namespace App\Services\Document;
 
 use App\Models\Misc\Document;
+use App\Services\UserServiceClient;
 
 class DocumentCapabilitiesService
 {
+    protected UserServiceClient $user_service_client;
+
+    public function __construct(UserServiceClient $user_service_client) {
+        $this->user_service_client = $user_service_client;
+    }
     public function resolve( $document, $workflowContext, array $user): array
     {
         $resolver = DocumentCapabilitiesResolverFactory::make($document);
@@ -46,9 +52,40 @@ class DocumentCapabilitiesService
 
         }
 
+
+    // throw new \Exception($workflowContext, 1);
+
+
+          $capabilities["can_bypass"] = $this->canBypass(
+        $workflowContext,
+        $currentUser,
+        $document
+    );
+
+    $capabilities["workflowContext"] = $workflowContext;
+
         $capabilities['can_cancel'] = $cancalable && ( $currentUser['id'] == $document['created_by'] );
 
 
         return $capabilities;
     }
+
+
+    public function canBypass(
+    array $workflowContext,
+    array $user,
+    array $document
+): bool {
+
+    if (!($workflowContext["is_bypassable"] ?? false)) {
+        return false;
+    }
+
+    if (!$workflowContext["is_active"]) {
+        return false;
+    }
+
+    return $this->user_service_client->hasBypassPermission($document , $user ,  ["bypass"]);
+}
+
 }
