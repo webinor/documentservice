@@ -10,4 +10,9 @@ interface DocumentTypeHandlerInterface
         Document $document,
         array $data
     );
+
+     public function update(
+        Document $document,
+        array $data
+    );
 }

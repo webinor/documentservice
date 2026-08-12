@@ -2,7 +2,6 @@
 
 namespace App\Services\FeeNote;
 
-
 use App\Models\Misc\Document;
 use App\Services\DocumentType\DocumentTypeHandlerInterface;
 
@@ -12,16 +11,25 @@ class FeeNoteDocumentHandler implements DocumentTypeHandlerInterface
 
     public function __construct(
         FeeNoteService $feeNoteService
-    ){
+    ) {
         $this->feeNoteService = $feeNoteService;
     }
 
     public function create(
         Document $document,
         array $data
-    ): void
-    {
+    ): void {
         $this->feeNoteService->create(
+            $document,
+            $data
+        );
+    }
+
+    public function update(
+        Document $document,
+        array $data
+    ): void {
+        $this->feeNoteService->update(
             $document,
             $data
         );
