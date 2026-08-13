@@ -252,10 +252,10 @@ Route::prefix('leave-balances')->group(function () {
             "show",
         ]);
 
-         Route::get("/{document}/financial-summary", [
-            MissionFinancialSummaryController::class,
-            "show",
-        ]);
+        //  Route::get("/{document}/financial-summary", [
+        //     MissionFinancialSummaryController::class,
+        //     "show",
+        // ]);
 
         Route::get(
     '/{document}/financial-report',

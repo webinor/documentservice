@@ -312,7 +312,7 @@ class DocumentController extends Controller
     $doc = Document::findOrFail($documentIdentifier);
 }
 
-        $doc->load("document_type");
+        $doc->load(["document_type","document_references.documentReferenceType"]);
 
         $document = $documentEnrichmentManager->enrich($doc);
 
