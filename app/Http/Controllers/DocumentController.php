@@ -372,7 +372,7 @@ class DocumentController extends Controller
                     "user" => $p["user"] ?? null,
                     // "role" => $p["user"]["role"] ?? "",
                     "display_job_title" => $p["user"]['active_position']['display_job_title'] ?? $p['user']['active_position']['position']['name'] ?? 'Position inconue',
-                    "date" => $p["validated_at"] ?? null,
+                    "date" => $p["decided_at"] ?? null,
                     // "signatureUrl" => $p["user"]["signatureUrl"] ?? null,
                        "signatureUrl" =>
                         isset( $p["user"]

@@ -358,7 +358,7 @@ style="font-size:9px;color:#666;margin-top:4px;">
                 <div style="font-size:9px;color:#999;margin-top:3px;">
                     {{ $item['date']
                         ? \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i')
-                        : '' }}
+                        : '--' }}
                 </div>
 
             </td>
