@@ -141,7 +141,8 @@ N° Pièce
 
 <td>
 {{-- {{ $document['actor_details']['matricule'] ?? '-' }} --}}
-{{ $document['numero_piece'] ?? '-' }}
+{{-- {{ $document['numero_piece'] ?? '-' }} --}}
+{{ $accounting_reference ?? '-' }}
 </td>
 
 </tr>
@@ -257,7 +258,7 @@ SIGNATURES
 
 <tr>
 
-@foreach($allSignatures as $item)
+{{-- @foreach($allSignatures as $item)
 
 <td
 width="{{ floor(100 / max(count($allSignatures),1)) }}%"
@@ -310,7 +311,59 @@ style="font-size:9px;color:#666;margin-top:4px;">
 
 </td>
 
-@endforeach
+@endforeach --}}
+
+ @foreach($allSignatures as $item)
+
+            <td width="{{ floor(100 / count($allSignatures)) }}%"
+                align="center"
+                valign="top"
+                style="padding:8px;">
+
+                {{-- Badge type --}}
+                <div style="font-size:10px;margin-bottom:5px;">
+                    @if($item['type_block'] === 'VALIDATION')
+                        {{-- 🔵 Validation --}}
+                    @else
+                        {{-- 🟢 Réception --}}
+                    @endif
+                </div>
+
+                {{-- Signature --}}
+                <div style="height:55px;">
+                    @if(!empty($item['signatureUrl']))
+                        <img src="{{ $item['signatureUrl'] }}"
+                             style="max-width:120px; max-height:55px;">
+                    @endif
+                </div>
+
+                {{-- Nom --}}
+                <div style="font-weight:bold;margin-top:5px;font-size:11px;">
+                    {{ $item['user']['name'] ?? $item['user'] }}
+                </div>
+
+                {{-- display_job_title --}}
+                <div style="font-size:10px;color:#666;">
+                    {{ $item['display_job_title'] }}
+                </div>
+
+                @if (!empty($item['signature_type']))
+                     {{-- Signature type --}}
+                <div style="font-size:10px;color:#666;">
+                    {{ $item['signature_type'] }}
+                </div>
+                @endif
+
+                {{-- Date --}}
+                <div style="font-size:9px;color:#999;margin-top:3px;">
+                    {{ $item['date']
+                        ? \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i')
+                        : '' }}
+                </div>
+
+            </td>
+
+        @endforeach
 
 </tr>
 
