@@ -400,8 +400,12 @@ class DocumentController extends Controller
 
           $metadata = $metadataService->build($document);
 
-          $jobTitle = data_get($document, 'position.display_job_title')
-    ?: data_get($document, 'position.position.name');
+          $jobTitle = data_get($document, 'actor_details.organization.position.display_job_title')
+    ?: data_get($document, 'actor_details.organization.position.position.name');
+
+
+        // throw new Exception(json_encode(data_get($document, 'actor_details.organization.position.display_job_title')), 1);
+
 
         $pdf = Pdf::loadView("templates.$template", [
             "document" => $document,
