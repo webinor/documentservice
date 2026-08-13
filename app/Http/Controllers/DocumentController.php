@@ -396,9 +396,12 @@ class DocumentController extends Controller
             ->values();
 
         // throw new Exception(json_encode($allSignatures->count()), 1);
-        // throw new Exception(json_encode($document), 1);
+        // throw new Exception(json_encode($document['actor_details']['organization']), 1);
 
           $metadata = $metadataService->build($document);
+
+          $jobTitle = data_get($document, 'position.display_job_title')
+    ?: data_get($document, 'position.position.name');
 
         $pdf = Pdf::loadView("templates.$template", [
             "document" => $document,
@@ -406,6 +409,7 @@ class DocumentController extends Controller
             ->firstWhere('reference_type_code', 'ACCOUNTING_ENTRY')
     )['reference'],
             "signatureDonneur" => $signatureDonneur,
+            "jobTitle" => $jobTitle,
             "signatureBeneficiaire" => $signatureBeneficiaire,
             "participants" => $visibleParticipants,
             "business_signatures" => $business_signatures,
