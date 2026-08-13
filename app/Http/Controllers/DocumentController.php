@@ -359,9 +359,13 @@ class DocumentController extends Controller
 
         $allSignatures = collect($visibleParticipants)
             ->map(function ($p) {
-                if ($p["user"]["signatureUrl"]) {
+                if ($p["user"]["signature"]) {
                     //  throw new Exception(json_encode($p['user']['signatureUrl']), 1);
+                    // throw new Exception(json_encode(($p["user"]["signature"])), 1);
+
                 }
+
+                
 
                 return [
                     "type_block" => "VALIDATION",
@@ -369,13 +373,19 @@ class DocumentController extends Controller
                     // "role" => $p["user"]["role"] ?? "",
                     "display_job_title" => $p["user"]['active_position']['display_job_title'] ?? $p['user']['active_position']['position']['name'] ?? 'Position inconue',
                     "date" => $p["validated_at"] ?? null,
-                    "signatureUrl" => $p["user"]["signatureUrl"] ?? null,
+                    // "signatureUrl" => $p["user"]["signatureUrl"] ?? null,
+                       "signatureUrl" =>
+                        isset( $p["user"]
+                        ["signature"])
+                            ? 
+                            "http://localhost:8088/storage/" .$p["user"]["signature"] : null,
                 ];
             })
             ->merge(
                 collect($business_signatures)->map(function ($s) {
 
                     // throw new Exception(json_encode(($s['actor']['active_position']['position']['name'])), 1);
+                    // throw new Exception(json_encode(($s["actor"]["signature"])), 1);
 
                     return [
                         "type_block" => "RECEPTION",
@@ -384,12 +394,14 @@ class DocumentController extends Controller
                         "display_job_title" => $s['actor']['active_position']['display_job_title'] ?? $s['actor']['active_position']['position']['name'] ?? 'Position inconue',
                         "signature_type" => $s["signature_type"]["name"] ?? "",
                         "date" => $s["signed_at"] ?? null,
+    //                     "signatureUrl" => $employee->authentication
+    // ? Storage::url($employee->authentication->signature_image)
+    // : null,
                         "signatureUrl" =>
                         isset( $s["actor"]
-                        ["user"]
                         ["signature"])
                             ? 
-                            "http://localhost:8088/storage/" .$s["actor"]["user"]["signature"] : null,
+                            "http://localhost:8088/storage/" .$s["actor"]["signature"] : null,
                     ];
                 })
             )
