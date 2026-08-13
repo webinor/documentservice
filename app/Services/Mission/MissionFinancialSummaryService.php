@@ -3,6 +3,7 @@
 namespace App\Services\Mission;
 
 use App\Models\Misc\Document;
+use App\Services\Regularization\NoteFinancialSummaryService;
 use App\Services\Regularization\RegularizationFinancialSummaryService;
 use App\Services\Regularization\TaxiFinancialSummaryService;
 use Exception;
@@ -46,7 +47,7 @@ class MissionFinancialSummaryService
 
         if ($document->document_type->slug == "note-de-frais") {
                       
-        return app(TaxiFinancialSummaryService::class)->build($document);
+        return app(NoteFinancialSummaryService::class)->build($document);
         // throw new Exception("Document is a regularization.");
 
         }
