@@ -20,18 +20,18 @@
                 {{ $metadata['document_number'] ?? '-' }}
             </strong>
 
-            , Version :
+            , Ver :
             <strong>
                 {{ $metadata['version'] ?? '1.0' }}
             </strong>
 
             , généré le :
             <strong>
-                {{
-                    isset($metadata['generated_at'])
-                    ? $metadata['generated_at']->format('d/m/Y H:i')
-                    : '-'
-                }}
+            {{
+                isset($metadata['generated_at'])
+                ? $metadata['generated_at']->format('d/m/Y H:i')
+                : '-'
+            }}
             </strong>
 
             par :
