@@ -11,18 +11,27 @@ class RegularizationDocumentHandler implements DocumentTypeHandlerInterface
 
     public function __construct(
         RegularizationService $regularizationService
-    ){
+    ) {
         $this->regularizationService = $regularizationService;
     }
 
-
-     public function create(Document $document,array $data)
-    {
+    public function create(
+        Document $document,
+        array $data
+    ): void {
         $this->regularizationService->create(
             $document,
             $data
         );
     }
-   
 
+    public function update(
+        Document $document,
+        array $data
+    ): void {
+        $this->regularizationService->update(
+            $document,
+            $data
+        );
+    }
 }
