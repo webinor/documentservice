@@ -404,6 +404,7 @@ class DocumentController extends Controller
     ?: data_get($document, 'actor_details.organization.position.position.name');
 
 
+        throw new Exception(json_encode($document['actor_details']['organization']), 1);
         // throw new Exception(json_encode(data_get($document, 'actor_details.organization.position.display_job_title')), 1);
 
 
