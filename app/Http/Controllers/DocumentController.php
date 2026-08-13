@@ -404,7 +404,7 @@ class DocumentController extends Controller
             "document" => $document,
                 'accounting_reference' => optional($document['document_references']
             ->firstWhere('reference_type_code', 'ACCOUNTING_ENTRY')
-    )->reference,
+    )['reference'],
             "signatureDonneur" => $signatureDonneur,
             "signatureBeneficiaire" => $signatureBeneficiaire,
             "participants" => $visibleParticipants,
