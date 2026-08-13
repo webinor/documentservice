@@ -402,6 +402,9 @@ class DocumentController extends Controller
 
         $pdf = Pdf::loadView("templates.$template", [
             "document" => $document,
+                'accounting_reference' => optional($document['document_references']
+            ->firstWhere('reference_type_code', 'ACCOUNTING_ENTRY')
+    )->reference,
             "signatureDonneur" => $signatureDonneur,
             "signatureBeneficiaire" => $signatureBeneficiaire,
             "participants" => $visibleParticipants,
