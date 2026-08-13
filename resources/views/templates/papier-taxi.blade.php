@@ -116,7 +116,9 @@ N° Pièce
 
 <td>
 {{-- {{ $document['numero_piece']['attachment_number'] ?? '-' }} --}}
-{{ $document['numero_piece'] ?? '-' }}
+{{-- {{ $document['numero_piece'] ?? '-' }} --}}
+{{ $accounting_reference ?? '-' }}
+
 </td>
 
 </tr>
