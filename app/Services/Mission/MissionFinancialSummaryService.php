@@ -44,6 +44,13 @@ class MissionFinancialSummaryService
 
         }
 
+        if ($document->document_type->slug == "note-de-frais") {
+                      
+        return app(TaxiFinancialSummaryService::class)->build($document);
+        // throw new Exception("Document is a regularization.");
+
+        }
+
         if ($document->document_type->slug !== "mission") {
             throw new Exception("Document is not a mission.");
         }
