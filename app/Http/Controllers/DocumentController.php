@@ -1728,6 +1728,15 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $documentTypes = $request->input("documentTypes", ["invoice_provider"]);
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
         // $filters = $request->query('filters', $request->input('filters', []));
+           $shouldEnrich = filter_var(
+        $request->input("shouldEnrich", true),
+        FILTER_VALIDATE_BOOLEAN
+    );
+
+     $isStat = filter_var(
+        $request->input("isStat", true),
+        FILTER_VALIDATE_BOOLEAN
+    );
 
 
       
@@ -1900,13 +1909,20 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         // Charger les relations
         $query->with(array_merge(["document_type"], $documentTypes));
 
+        
+
+        if ($isStat) {
+            return  $query->count();
+        }
+
         $documents = $query->orderByDesc("id")->get();
 
         // throw new Exception(json_encode($documents), 1);
 
         $documentsEnrich = $documents->map(function ($doc) use (
             $documentTypes,
-            $DOC_CONFIG
+            $shouldEnrich
+
         ) {
             $type = $doc->document_type;
 
@@ -1928,6 +1944,10 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                 "created_by" => $doc->created_by,
             ];
 
+                  if (!$shouldEnrich) {
+        return $base;
+    }
+
             if (!$handlerClass) {
                 throw new Exception("Aucun enricher pour $type", 1);
 
@@ -1939,7 +1959,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             }
 
 
-
+          
         //      $canCancel = false;
              
         // $workflowContext = app(DocumentViewService::class)->getWorkflowStatusStatus(
@@ -1974,12 +1994,25 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
       $ids = $request->input("ids", []);
       $from = $request->input("from", null);
+          $isStat = filter_var(
+        $request->input("isStat", false),
+        FILTER_VALIDATE_BOOLEAN);
 
         if ($from == "command" ) {
              $query = Document::query();
              $query->whereIn("id", $ids);
             return  $query->get();
         }
+
+           $documents = $this->getFilteredDocuments(
+        $request
+    );
+
+            if ($isStat) {
+        return response()->json([
+             $documents
+        ]);
+    }
 
         $formatRules = [
             "amount" => fn($v) => number_format($v, 0, ",", "."), // 500000 → 500.000
@@ -1988,7 +2021,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             ),
         ];
 
-        $formattedDocuments = $this->getFilteredDocuments($request)->map(
+
+
+        $formattedDocuments = $documents->map(
             fn($doc) => $this->formatRecursive($doc, $formatRules)
         );
 
