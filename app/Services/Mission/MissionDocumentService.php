@@ -57,13 +57,19 @@ class MissionDocumentService
     );
 
          return [
-        'path' => storage_path('app/public/' . $path),
-        'filename' => $filename,
-        'document_id' => $mission->document->id,
-        'mission_id' => $mission->id,
-        'mime' => 'application/pdf',
-        'size' => Storage::disk('public')->size($path),
-    ];
+                    'path' => storage_path('app/public/' . $path),
+
+                    'filename' => $filename,
+
+                    'document_id' => $mission->document->id,
+
+                    'mission_id' => $mission->id,
+
+                    'mime' => 'application/pdf',
+                    
+                    'size' => Storage::disk('public')->size($path),  
+                ];
+
     }
 
     /**
