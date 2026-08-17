@@ -336,7 +336,7 @@ class DocumentController extends Controller
         );
 
         $visibleParticipants = collect($participants)
-            ->filter(fn($p) => $policy->isVisible($p))
+            ->filter(fn($p) => $policy->isVisible($p , $document))
             ->values()
             ->toArray();
 
@@ -1267,6 +1267,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             // Récupérer les données validées par le FormRequest
             // return
             $validated = $request->validated();
+            
+            // return
+
             $user_connected = $request->get("user"); // récupéré du user-service
             $documentType = DocumentType::find($validated["document_type_id"]);
 
@@ -1394,6 +1397,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "department_id" => $validated["departement"] ?? null, // ✅ optionnel,
                     "workflow_id" => $workflowId,
                     "created_by" => $user_connected["id"], // si tu veux stocker l’utilisateur connecté
+                    "creator_employee_id" => $user_connected["employee_id"], // identifiant de l'employee qui cree le papier taxi
                     "created_at" => now(),
                     "updated_at" => now(),
                     "reference" => $reference,

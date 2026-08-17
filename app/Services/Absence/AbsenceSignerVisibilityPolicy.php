@@ -7,7 +7,7 @@ use App\Contracts\SignerVisibilityPolicy;
 
 class AbsenceSignerVisibilityPolicy implements SignerVisibilityPolicy
 {
-    public function isVisible(array $participant): bool
+    public function isVisible(array $participant, array $documentData = []): bool
     {
         // return 
 

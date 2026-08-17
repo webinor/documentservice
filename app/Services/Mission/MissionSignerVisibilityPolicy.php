@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class MissionSignerVisibilityPolicy implements SignerVisibilityPolicy
 {
-    public function isVisible(array $participant): bool
+    public function isVisible(array $participant, array $documentData = []): bool
     {
         if ($participant["status"] != "APPROVED") {
             return false;

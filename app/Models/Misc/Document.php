@@ -34,6 +34,7 @@ class Document extends Model
         "department_id",
         "workflow_id",
         "created_by",
+        "creator_employee_id",
         "actor_type",
         "actor_id",
         "reference",

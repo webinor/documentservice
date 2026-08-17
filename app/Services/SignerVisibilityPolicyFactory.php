@@ -19,10 +19,22 @@ class SignerVisibilityPolicyFactory
         'fiche-a-regulariser' => RegulatizationSignerVisibilityPolicy::class,
     ];
 
-    public static function make(string $documentType): SignerVisibilityPolicy
-    {
-        $policyClass = self::$policies[$documentType]?? null;//            ?? DefaultSignerVisibilityPolicy::class;
+    // public static function make(string $documentType): SignerVisibilityPolicy
+    // {
+    //     $policyClass = self::$policies[$documentType]?? null;//            ?? DefaultSignerVisibilityPolicy::class;
 
-        return new $policyClass();
+    //     return new $policyClass();
+    // }
+    public static function make(string $documentType): SignerVisibilityPolicy
+{
+    $policyClass = self::$policies[$documentType] ?? null;
+
+    if (!$policyClass) {
+        throw new \InvalidArgumentException(
+            "Aucune SignerVisibilityPolicy définie pour le type de document : {$documentType}"
+        );
     }
+
+    return app($policyClass);
+}
 }
