@@ -51,13 +51,13 @@ Route::post('/settlements/mark-paid', [SettlementController::class, 'markAsPaid'
     ->name('attachments.download');
 
         Route::get(
-    '/regularization-items/view/{path}',
+    '/regularization-items/{path}/view',
     [RegularizationItemController::class, 'view']
 )->where('path', '.*')->name('regularization-items.view');;
 
 
 Route::get(
-    '/regularization-items/download/{path}',
+    '/regularization-items/{path}/download',
     [RegularizationItemController::class, 'download']
 )->where('path', '.*')->name('regularization-items.download');
 
