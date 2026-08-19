@@ -190,11 +190,11 @@ public function getRegularizationItems($documentIdentifier)
                 : null,
 
             'view_url' => $item->receipt
-                ? "{$baseUrl}/api/documents/regularization-items/view/{$item->receipt->path}"
+                ? "{$baseUrl}/api/documents/regularization-items/{$item->receipt->path}/view"
                 : null,
 
             'download_url' => $item->receipt
-                ? "{$baseUrl}/api/documents/regularization-items/download/{$item->receipt->path}"
+                ? "{$baseUrl}/api/documents/regularization-items/{$item->receipt->path}/download"
                 : null,
 
             'created_at' => $item->created_at,
