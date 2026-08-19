@@ -13,6 +13,7 @@ use App\Services\CheckPermissionsService;
 
 use App\Http\Requests\StoreDocumentTypeRequest;
 use App\Http\Requests\UpdateDocumentTypeRequest;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class DocumentTypeController extends Controller
@@ -350,17 +351,17 @@ class DocumentTypeController extends Controller
             $documents
         );
 
-        //dd($permissionsMap);
-
+        throw new Exception(json_encode($permissionsMap), 1);
+        
         $documentsWithPermissions = $department_document_types->map(function (
             $item
         ) use ($permissionsMap) {
-            $documentId = $item->document_type->id;
+            $documentTypeId = $item->document_type->id;
 
             return [
-                "id" => $documentId,
+                "id" => $documentTypeId,
                 "name" => $item->document_type->name,
-                "permissions" => $permissionsMap[$documentId] ?? [], // permissions correspondantes
+                "permissions" => $permissionsMap[$documentTypeId] ?? [], // permissions correspondantes
             ];
         });
 
