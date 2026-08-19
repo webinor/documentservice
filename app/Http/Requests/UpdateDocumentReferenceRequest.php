@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\DocumentReference;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateDocumentReferenceRequest extends FormRequest
 {
@@ -14,13 +14,15 @@ class UpdateDocumentReferenceRequest extends FormRequest
 
     public function rules()
     {
-        $referenceId = $this->route('document_reference')
-            ?? $this->route('documentReference')->id;
+        $documentReference = $this->route('document_reference')
+            ?? $this->route('documentReference');
 
-            // throw new \Exception("$referenceId", 1);
-            
+        $referenceId = is_object($documentReference)
+            ? $documentReference->id
+            : $documentReference;
 
         return [
+
             'document_reference_type_id' => [
                 'required',
                 'exists:document_reference_types,id',
@@ -29,15 +31,50 @@ class UpdateDocumentReferenceRequest extends FormRequest
             'reference' => [
                 'required',
                 'string',
-                "regex:/^[0-9]{1,4}$/",
-                Rule::unique('document_references', 'reference')
-                    ->ignore($referenceId),
+                'regex:/^[0-9]{1,4}$/',
+
+                function ($attribute, $value, $fail) use ($referenceId) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Référence saisie
+                    |--------------------------------------------------------------------------
+                    |
+                    | Exemple :
+                    | 0203
+                    |
+                    |--------------------------------------------------------------------------
+                    | Référence réellement stockée
+                    |--------------------------------------------------------------------------
+                    |
+                    | 260203
+                    |
+                    */
+
+                    $fullReference = date('y') . str_pad(
+                        $value,
+                        4,
+                        '0',
+                        STR_PAD_LEFT
+                    );
+
+                    $exists = DocumentReference::where(
+                        'reference',
+                        $fullReference
+                    )
+                    ->where('id', '!=', $referenceId)
+                    ->exists();
+
+                    if ($exists) {
+                        $fail('Cette référence existe déjà.');
+                    }
+                },
             ],
 
             'attachment' => [
                 'nullable',
                 'file',
-                'max:10240', // 10 Mo
+                'max:10240',
             ],
 
             'metadata' => [
@@ -50,14 +87,24 @@ class UpdateDocumentReferenceRequest extends FormRequest
     public function messages()
     {
         return [
-            'document_reference_type_id.required' => 'Le type de référence est obligatoire.',
-            'document_reference_type_id.exists'   => 'Le type de référence est invalide.',
 
-            'reference.required' => 'La référence est obligatoire.',
-            'reference.unique'   => 'Cette référence existe déjà.',
+            'document_reference_type_id.required' =>
+                'Le type de référence est obligatoire.',
 
-            'attachment.file' => 'Le fichier est invalide.',
-            'attachment.max'  => 'Le fichier ne doit pas dépasser 10 Mo.',
+            'document_reference_type_id.exists' =>
+                'Le type de référence est invalide.',
+
+            'reference.required' =>
+                'La référence est obligatoire.',
+
+            'reference.regex' =>
+                'La référence doit contenir uniquement des chiffres (1 à 4 chiffres).',
+
+            'attachment.file' =>
+                'Le fichier est invalide.',
+
+            'attachment.max' =>
+                'Le fichier ne doit pas dépasser 10 Mo.',
         ];
     }
 }
