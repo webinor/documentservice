@@ -351,7 +351,7 @@ class DocumentTypeController extends Controller
             $documents
         );
 
-        throw new Exception(json_encode($permissionsMap), 1);
+        // throw new Exception(json_encode($permissionsMap), 1);
         
         $documentsWithPermissions = $department_document_types->map(function (
             $item
