@@ -21,7 +21,7 @@ class TaxiPaperService implements DocumentTypeHandlerInterface
             "reason" => Str::upper($validated["titre"]) ?? null,
            "rides" => isset($validated["libelles"])
     ? array_map(function ($item) {
-        $item["trajet"] = $item["libelle"];
+        $item["trajet"] = Str::upper($item["libelle"]);
         unset($item["libelle"]);
         return $item;
     }, $validated["libelles"])
