@@ -23,6 +23,13 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     )->orderBy('sort_order');
 }
 
+public function receipts()
+{
+    return $this->hasMany(
+        RegularizationReceipt::class
+    );
+}
+
     public function createSettlementRecord(
         string $transactionTypeCode,
         string $transactionCode
@@ -130,8 +137,11 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
 //"REGULARIZATION_ADVANCE","REGULARIZATION_SETTLEMENT"
      if ($transaction_type_code == "REGULARIZATION_ADVANCE") {
           
-
-            return $actualAmount = (float) $this->items()->sum('planned_amount');
+   
+     return (float) $this->items->sum(function ($item) {
+    return (float) $item->planned_amount
+        * (float) ($item->planned_quantity ?? 1);
+});
         }
 
     elseif($transaction_type_code == "REGULARIZATION_SETTLEMENT"){
@@ -161,7 +171,10 @@ class RegularizationSheet extends Model implements PayableDocumentInterface
     else{
 
 
-      return $actualAmount = (float) $this->items()->sum('planned_amount');
+                    return (float) $this->items->sum(function ($item) {
+    return (float) $item->planned_amount
+        * (float) ($item->planned_quantity ?? 1);
+});
 
     } 
     // return app(RegularizationFinancialSummaryService::class)->build($document);

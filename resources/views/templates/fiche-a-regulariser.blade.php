@@ -3,56 +3,60 @@
 
 <head>
     <meta charset="utf-8">
-    <title>FICHE A REGULARISER - {{ $document['reference'] }}</title>
+
+    <title>
+        FICHE A REGULARISER - {{ $document['reference'] }}
+    </title>
 
     <style>
 
-        body{
+        body {
             font-family: helvetica;
-            font-size:10px;
+            font-size: 10px;
         }
 
-        table{
-            width:100%;
-            border-collapse:collapse;
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        td,th{
-            border:1px solid #555;
-            padding:6px;
+        td,
+        th {
+            border: 1px solid #555;
+            padding: 6px;
         }
 
-        .header{
-            background:#7c3aed;
-            color:#fff;
-            font-size:16px;
-            font-weight:bold;
+        .header {
+            background: #7c3aed;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
         }
 
-        .section{
-            background:#eeeeee;
-            font-weight:bold;
-            font-size:13px;
+        .section {
+            background: #eeeeee;
+            font-weight: bold;
+            font-size: 13px;
         }
 
-        .label{
-            font-weight:bold;
-            font-size:12px;
+        .label {
+            font-weight: bold;
+            font-size: 12px;
         }
 
-        .sub-label{
-            font-weight:lighter;
-            font-size:12px;
+        .sub-label {
+            font-weight: lighter;
+            font-size: 12px;
         }
 
-        .signature{
-            height:80px;
+        .signature {
+            height: 80px;
         }
 
-        .total{
-            text-align:right;
-            font-weight:bold;
-            font-size:11px;
+        .total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 11px;
         }
 
     </style>
@@ -61,27 +65,34 @@
 
 <body>
 
+<!-- ====================================================== -->
+<!-- EN-TÊTE -->
+<!-- ====================================================== -->
+
 <table>
 
-<tr>
+    <tr>
 
-<td width="20%" align="center">
+        <td width="20%" align="center">
 
-@if(file_exists(public_path('assets/img/LOGO_CAMEROUN_ASSIST.png')))
-<img
-src="{{ public_path('assets/img/LOGO_CAMEROUN_ASSIST.png') }}"
-width="70">
-@endif
+            @if(file_exists(public_path('assets/img/LOGO_CAMEROUN_ASSIST.png')))
 
-</td>
+                <img
+                    src="{{ public_path('assets/img/LOGO_CAMEROUN_ASSIST.png') }}"
+                    width="70"
+                >
 
-<td width="80%" align="center" class="header">
+            @endif
 
-FICHE À RÉGULARISER
+        </td>
 
-</td>
+        <td width="80%" align="center" class="header">
 
-</tr>
+            FICHE À RÉGULARISER
+
+        </td>
+
+    </tr>
 
 </table>
 
@@ -93,302 +104,321 @@ FICHE À RÉGULARISER
 
 <table>
 
-<tr class="sub-label">
+    <tr class="sub-label">
 
-<td colspan="4" class="section">
-INFORMATIONS GÉNÉRALES
-</td>
+        <td colspan="4" class="section">
+            INFORMATIONS GÉNÉRALES
+        </td>
 
-</tr>
+    </tr>
 
-<tr class="sub-label">
+    <tr class="sub-label">
 
-<td class="label">
-Référence
-</td>
+        <td class="label">
+            Référence
+        </td>
 
-<td>
-{{ $document['reference'] }}
-</td>
+        <td>
+            {{ $document['reference'] }}
+        </td>
 
-<td class="label">
-Date
-</td>
+        <td class="label">
+            Date
+        </td>
 
-<td>
-{{ $document['created_at'] }}
-</td>
+        <td>
+            {{ $document['created_at'] }}
+        </td>
 
-</tr>
+    </tr>
 
-<tr class="sub-label">
+    <tr class="sub-label">
 
-<td class="label">
-Collaborateur
-</td>
+        <td class="label">
+            Collaborateur
+        </td>
 
-<td>
-{{ $document['actor_details']['nom'] ?? '-' }}
-</td>
+        <td>
+            {{ $document['actor_details']['nom'] ?? '-' }}
+        </td>
 
-<td class="label">
-N° Pièce
-</td>
+        <td class="label">
+            N° Pièce
+        </td>
 
-<td>
-{{-- {{ $document['actor_details']['matricule'] ?? '-' }} --}}
-{{ $document['numero_piece'] ?? '-' }}
-</td>
+        <td>
+            {{ $document['numero_piece'] ?? '-' }}
+        </td>
 
-</tr>
+    </tr>
 
-<tr class="sub-label">
+    <tr class="sub-label">
 
-<td class="label">
-Département
-</td>
+        <td class="label">
+            Département
+        </td>
 
-<td>
-{{ $document['actor_details']['organization']['position']['department']['name'] ?? '-' }}
-</td>
+        <td>
+            {{ $document['actor_details']['organization']['position']['department']['name'] ?? '-' }}
+        </td>
 
-<td class="label">
-Poste
-</td>
+        <td class="label">
+            Poste
+        </td>
 
-<td>
-{{ $document['actor_details']['organization']['position']['position']['name'] ?? '-' }}
-</td>
+        <td>
+            {{ $document['actor_details']['organization']['position']['position']['name'] ?? '-' }}
+        </td>
 
-</tr>
+    </tr>
 
 </table>
 
 <br>
 
 <!-- ====================================================== -->
-<!-- NOTE DE FRAIS -->
+<!-- DÉPENSES À RÉGULARISER -->
 <!-- ====================================================== -->
+
+@php
+    $total = 0;
+@endphp
 
 <table>
 
-<tr class="sub-label">
-    <td colspan="5" class="section">
-        DÉPENSES À RÉGULARISER
-    </td>
-</tr>
+    <tr class="sub-label">
 
-<tr class="sub-label">
-    <td width="40%" class="label">Désignation</td>
-    <td width="15%" class="label" align="center">Qté</td>
-    <td width="20%" class="label" align="right">Prix unitaire</td>
-    <td width="25%" class="label" align="right">Total</td>
-</tr>
+        <td colspan="4" class="section">
+            DÉPENSES À RÉGULARISER
+        </td>
 
-@php
-$total = 0;
-@endphp
+    </tr>
 
-@foreach($document['regularization_sheet']['items'] ?? [] as $item)
+    <tr class="sub-label">
 
-@php
-$total += $item['total_amount'];
-@endphp
+        <td width="45%" class="label">
+            Désignation
+        </td>
 
-<tr class="sub-label">
+        <td width="15%" class="label" align="center">
+            Quantité prévue
+        </td>
 
-    <td>
-        {{ $item['designation'] }}
-    </td>
+        <td width="20%" class="label" align="right">
+            Prix unitaire prévu
+        </td>
 
-    <td align="center">
-        {{ $item['quantity'] }}
-    </td>
+        <td width="20%" class="label" align="right">
+            Total prévu
+        </td>
 
-    <td align="right">
-        {{ number_format($item['unit_price'],0,","," ") }}
-    </td>
+    </tr>
 
-    <td align="right">
-        {{ number_format($item['total_amount'],0,","," ") }}
-    </td>
+    @foreach($document['regularization_sheet']['items'] ?? [] as $item)
 
-</tr>
+        @php
 
-@endforeach
+            $plannedQuantity = $item['planned_quantity'] ?? 0;
+
+            $plannedAmount = $item['planned_amount'] ?? 0;
+
+            $lineTotal = $plannedQuantity * $plannedAmount;
+
+            $total += $lineTotal;
+
+        @endphp
+
+        <tr class="sub-label">
+
+            <td>
+                {{ $item['designation'] ?? '-' }}
+            </td>
+
+            <td align="center">
+                {{ $plannedQuantity }}
+            </td>
+
+            <td align="right">
+                {{ number_format($plannedAmount, 0, ",", " ") }}
+            </td>
+
+            <td align="right">
+                {{ number_format($lineTotal, 0, ",", " ") }}
+            </td>
+
+        </tr>
+
+    @endforeach
+
+    <tr class="sub-label">
+
+        <td class="label">
+            TOTAL
+        </td>
+
+        <td></td>
+
+        <td></td>
+
+        <td align="right" class="label">
+            {{ number_format($total, 0, ",", " ") }}
+        </td>
+
+    </tr>
 
 </table>
 
 <br>
 
-<table>
+<!-- ====================================================== -->
+<!-- RÉSUMÉ FINANCIER -->
+<!-- ====================================================== -->
 
-<tr class="sub-label">
-    <td colspan="2" class="section">
-        RÉSUMÉ FINANCIER
-    </td>
-</tr>
+{{-- <table>
 
-<tr class="sub-label">
-    <td class="label">
-        Montant reçue
-    </td>
+    <tr class="sub-label">
 
-    <td align="right">
-        {{ number_format($document['regularization_sheet']['amount'],0,","," ") }} FCFA
-    </td>
-</tr>
+        <td colspan="2" class="section">
+            RÉSUMÉ FINANCIER
+        </td>
 
-<tr class="sub-label">
-    <td class="label">
-        Dépenses réelles
-    </td>
+    </tr>
 
-    <td align="right">
-        {{ number_format($total,0,","," ") }} FCFA
-    </td>
-</tr>
+    <tr class="sub-label">
 
-@php
-$balance = $total - ($document['regularization_sheet']['amount'] ?? 0);
-@endphp
+        <td class="label">
+            Montant total prévu
+        </td>
 
-<tr class="sub-label">
+        <td align="right">
 
-    <td class="label">
+            <b>
+                {{ number_format($total, 0, ",", " ") }}
+                FCFA
+            </b>
 
-        @if($balance > 0)
+        </td>
 
-            Solde à rembourser au collaborateur
+    </tr>
 
-        @elseif($balance < 0)
-
-            Montant à restituer à la caisse
-
-        @else
-
-            Solde
-
-        @endif
-
-    </td>
-
-    <td align="right">
-
-        <b>
-
-            {{ number_format(abs($balance),0,","," ") }}
-
-            FCFA
-
-        </b>
-
-    </td>
-
-</tr>
-
-</table>
+</table> --}}
 
 @if(!empty($document['regularization_sheet']['comment']))
 
-<br>
+    <br>
 
-<table>
+    <!-- ====================================================== -->
+    <!-- OBSERVATIONS -->
+    <!-- ====================================================== -->
 
-<tr class="sub-label">
-    <td class="section">
-        OBSERVATIONS
-    </td>
-</tr>
+    <table>
 
-<tr class="sub-label">
-    <td>
+        <tr class="sub-label">
 
-        {{ $document['regularization_sheet']['comment'] }}
+            <td class="section">
+                OBSERVATIONS
+            </td>
 
-    </td>
-</tr>
+        </tr>
 
-</table>
+        <tr class="sub-label">
+
+            <td>
+                {{ $document['regularization_sheet']['comment'] }}
+            </td>
+
+        </tr>
+
+    </table>
 
 @endif
 
 <br>
+
 <!-- ====================================================== -->
 <!-- SIGNATURES -->
 <!-- ====================================================== -->
 
 <table>
 
-<tr>
+    <tr>
 
-<td colspan="{{ count($allSignatures) }}"
-class="section">
+        <td
+            colspan="{{ count($allSignatures) }}"
+            class="section"
+        >
+            SIGNATURES
+        </td>
 
-SIGNATURES
+    </tr>
 
-</td>
+    <tr>
 
-</tr>
+        @foreach($allSignatures as $item)
 
-<tr>
+            <td
+                width="{{ floor(100 / max(count($allSignatures), 1)) }}%"
+                align="center"
+                valign="top"
+                style="padding:8px;"
+            >
 
-@foreach($allSignatures as $item)
+                <div style="height:55px;">
 
-<td
-width="{{ floor(100 / max(count($allSignatures),1)) }}%"
-align="center"
-valign="top"
-style="padding:8px;">
+                    @if(!empty($item['signatureUrl']))
 
-<div style="height:55px;">
+                        <img
+                            src="{{ $item['signatureUrl'] }}"
+                            style="max-width:120px;max-height:55px;"
+                        >
 
-@if(!empty($item['signatureUrl']))
-<img
-src="{{ $item['signatureUrl'] }}"
-style="max-width:120px;max-height:55px;">
-@endif
+                    @endif
 
-</div>
+                </div>
 
-<div style="font-size:11px;font-weight:bold;">
+                <div style="font-size:11px;font-weight:bold;">
 
-{{ $item['user']['name'] ?? $item['user'] }}
+                    {{ $item['user']['name'] ?? $item['user'] }}
 
-</div>
+                </div>
 
-<div style="font-size:10px;">
+                <div style="font-size:10px;">
 
-{{ $item['role'] }}
+                    {{ $item['role'] }}
 
-</div>
+                </div>
 
-@if(!empty($item['signature_type']))
+                @if(!empty($item['signature_type']))
 
-<div style="font-size:10px;">
+                    <div style="font-size:10px;">
 
-{{ $item['signature_type'] }}
+                        {{ $item['signature_type'] }}
 
-</div>
+                    </div>
 
-@endif
+                @endif
 
-@if(!empty($item['date']))
+                @if(!empty($item['date']))
 
-<div
-style="font-size:9px;color:#666;margin-top:4px;">
+                    <div
+                        style="
+                            font-size:9px;
+                            color:#666;
+                            margin-top:4px;
+                        "
+                    >
 
-{{ \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i') }}
+                        {{ \Carbon\Carbon::parse($item['date'])->format('d/m/Y H:i') }}
 
-</div>
+                    </div>
 
-@endif
+                @endif
 
-</td>
+            </td>
 
-@endforeach
+        @endforeach
 
-</tr>
+    </tr>
 
 </table>
 
@@ -399,22 +429,6 @@ style="font-size:9px;color:#666;margin-top:4px;">
 <!-- ====================================================== -->
 
 @include('pdf.components.document-footer')
-
-{{-- <table>
-
-<tr>
-
-<td
-align="center"
-style="border:none;font-size:9px;color:#777;">
-
-Document généré automatiquement par la GED Cameroun Assistance
-
-</td>
-
-</tr>
-
-</table> --}}
 
 </body>
 

@@ -56,10 +56,20 @@ class RegularizationItem extends Model
     return $this->morphMany(File::class, 'model');
 }
 
-public function receipt()
+// public function receipt()
+// {
+//     return $this->morphOne(File::class, 'model')
+//         ->where('type', 'RECEIPT');
+// }
+
+public function receipts()
 {
-    return $this->morphOne(File::class, 'model')
-        ->where('type', 'RECEIPT');
+    return $this->belongsToMany(
+        RegularizationReceipt::class,
+        'regularization_item_receipt',
+        'regularization_item_id',
+        'regularization_receipt_id'
+    )->withPivot('allocated_amount');
 }
 
     protected static function booted()

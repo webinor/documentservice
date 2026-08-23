@@ -25,6 +25,7 @@ use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\RegularizationItemController;
+use App\Http\Controllers\RegularizationReceiptController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\TestThumbnailController;
 use App\Models\AbsenceRequest;
@@ -213,15 +214,35 @@ Route::prefix('leave-balances')->group(function () {
             "getRegularizationItems",
         ]);
 
-           Route::post("/{document}/regularization-expenses", [
+         Route::get("{document}/regularization-receipts", [
+            RegularizationReceiptController::class,
+            "getRegularizationReceipts",
+        ]);
+
+        Route::post("/{document}/regularization-expenses", [
             RegularizationItemController::class,
             "store",
         ]);
 
-             Route::match(['put', 'post'], "/{document}/regularization-expenses/{item}", [
+        Route::post("/{document}/regularization-receipts", [
+            RegularizationReceiptController::class,
+            "store",
+        ]);
+
+        Route::match(['put', 'post'], "/{document}/regularization-expenses/{item}", [
             RegularizationItemController::class,
             "updateItem",
         ]); 
+
+         Route::match(['put', 'post'], "/{document}/regularization-receipts/{receipt}/items", [
+            RegularizationReceiptController::class,
+            "syncItems",
+        ]); 
+
+        Route::delete(
+    '/{document}/regularization-receipts/{receipt}',
+    [RegularizationReceiptController::class, 'destroy']
+);
 
 
           Route::delete("/{document}/regularization-expenses/{item}", [

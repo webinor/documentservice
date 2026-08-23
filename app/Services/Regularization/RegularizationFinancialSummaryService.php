@@ -33,11 +33,11 @@ class RegularizationFinancialSummaryService
          * Montant demandé sur la fiche
          */
         $requestedAmount =  (float) $sheet->items->sum(function ($item) {
-    return ($item->planned_quantity ?? 0) * ($item->planned_amount ?? 0);
+    return ($item->planned_quantity ?? 1) * ($item->planned_amount ?? 0);
 });
 
 $totalReel = (float) $sheet->items->sum(function ($item) {
-    return ($item->actual_quantity ?? 0) * ($item->actual_amount ?? 0);
+    return ($item->actual_quantity ?? 1) * ($item->actual_amount ?? 0);
 });
 
            /**

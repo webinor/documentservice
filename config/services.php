@@ -54,4 +54,6 @@ return [
         'base_url' => env('FRONTEND_SERVICE_BASE_URL', 'http://localhost:5173'),
     ],
 
+    'app_url' =>  rtrim(config('app.url'), '/')
+
 ];

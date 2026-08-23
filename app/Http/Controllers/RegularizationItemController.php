@@ -67,87 +67,6 @@ class RegularizationItemController extends Controller
 
 
 
-// public function getRegularizationItems( $documentIdentifier)
-// {
-
-//  if (Str::isUuid($documentIdentifier)) {
-//     $document = Document::where('uuid', $documentIdentifier)->firstOrFail();
-// } else {
-//     $document = Document::findOrFail($documentIdentifier);
-// }
-
-  
-
-   
-//    $document->load('regularization_sheet.items.receipt');
-
-//     if (!$document->regularization_sheet) {
-    
-//     return [];
-//    }
-
-//    $baseUrl = rtrim(config('app.url'), '/');
-// // return $document->regularization_sheet->items;
-//     $items = $document->regularization_sheet->items->map(function ($item) use ($baseUrl) {
-
-//         return [
-
-//             'id' => $item->id,
-
-//             // 'app_url' => config('app.url'),
-//             // 'url' => url('/'),
-
-
-//             'designation' => $item->designation,
-
-//             'quantity' => $item->quantity,
-
-//             'unit_price' => $item->unit_price,
-
-//             'total' => (float) $item->quantity * (float) $item->unit_price,
-
-//             'receipt' => $item->receipt,
-
-//             'receipt_url' => $item->receipt
-//                 ? Storage::url($item->receipt->path)
-//                 : null,
-
-
-//                 'view_url' => $item->receipt
-//     ? "{$baseUrl}/api/documents/regularization-items/view/{$item->receipt->path}"
-//     : null,
-
-// 'download_url' => $item->receipt
-//     ? "{$baseUrl}/api/documents/regularization-items/download/{$item->receipt->path}"
-//     : null,
-// // 'view_url' => $item->receipt
-// //     ? "{$baseUrl}/regularization-items/{$item->receipt->path}/view"
-// //     : null,
-
-// // 'download_url' => $item->receipt
-// //     ? "{$baseUrl}/regularization-items/{$item->receipt->path}/download"
-// //     : null,
-
-//         //     'view_url' =>$item->receipt ? route(
-//         //     'regularization-items.view',
-//         //     $item->receipt->path 
-//         // ) : null,
-
-//         // 'download_url' => $item->receipt ? route(
-//         //     'regularization-items.download',
-//         //     $item->receipt->path 
-//         // ) : null,
-
-//             'created_at' => $item->created_at,
-//             'updated_at' => $item->updated_at,
-//         ];
-//     });
-
-//     return response()->json([
-//         'success' => true,
-//         'items' => $items,
-//     ]);
-// }
 
 public function getRegularizationItems($documentIdentifier)
 {
@@ -155,7 +74,7 @@ public function getRegularizationItems($documentIdentifier)
         ? Document::where('uuid', $documentIdentifier)->firstOrFail()
         : Document::findOrFail($documentIdentifier);
 
-    $document->load('regularization_sheet.items.receipt');
+    $document->load('regularization_sheet.items');
 
     if (! $document->regularization_sheet) {
         return response()->json([
@@ -164,43 +83,11 @@ public function getRegularizationItems($documentIdentifier)
         ]);
     }
 
-    $baseUrl = rtrim(config('app.url'), '/');
+    $baseUrl =  config('services.app_url');// rtrim(config('app.url'), '/');
 
-    $items = $document->regularization_sheet->items->map(function ($item) use ($baseUrl) {
-        return [
-            'id' => $item->id,
 
-            'designation' => $item->designation,
-
-            // Prévisionnel
-            'planned_quantity' => $item->planned_quantity,
-            'planned_amount'   => $item->planned_amount,
-            'planned_total'    => $item->planned_quantity * $item->planned_amount,
-
-            // Réel
-            'actual_quantity'  => $item->actual_quantity,
-            'actual_amount'    => $item->actual_amount,
-            'actual_total'     =>  $item->actual_quantity * $item->actual_amount,
-
-            // Justificatif
-            'receipt' => $item->receipt,
-
-            'receipt_url' => $item->receipt
-                ? Storage::url($item->receipt->path)
-                : null,
-
-            'view_url' => $item->receipt
-                ? "{$baseUrl}/api/documents/regularization-items/{$item->receipt->path}/view"
-                : null,
-
-            'download_url' => $item->receipt
-                ? "{$baseUrl}/api/documents/regularization-items/{$item->receipt->path}/download"
-                : null,
-
-            'created_at' => $item->created_at,
-            'updated_at' => $item->updated_at,
-        ];
-    });
+    $items = $document->regularization_sheet->items
+    ->map(fn ($item) => $this->formatRegularizationItem($item, $baseUrl));
 
     $summary = [
     'planned_quantity' => $items->sum('planned_quantity'),
@@ -292,15 +179,15 @@ public function updateItem(
         /**
          * Upload du justificatif
          */
-         if ($request->hasFile('receipt')) {
+        //  if ($request->hasFile('receipt')) {
 
-            $fileManager->replace(
-                $item,
-                'RECEIPT',
-                $request->file('receipt')
-            );
+        //     $fileManager->replace(
+        //         $item,
+        //         'RECEIPT',
+        //         $request->file('receipt')
+        //     );
 
-        }
+        // }
 
 
         /**
@@ -317,10 +204,14 @@ public function updateItem(
 
         $item->save();
 
+        // $item->load('receipt');
+
+        $baseUrl = config('app_url');
+
 
         return response()->json([
             'message' => 'Ligne mise à jour avec succès.',
-            'data' => $item->fresh('receipt'),
+            'data' => $this->formatRegularizationItem($item, $baseUrl)
         ]);
 
     });
@@ -352,6 +243,41 @@ public function download($path)
     );
 
     return Storage::disk('public')->download($path);
+}
+
+
+private function formatRegularizationItem($item, $baseUrl)
+{
+    return [
+        'id' => $item->id,
+
+        'designation' => $item->designation,
+
+        'planned_quantity' => $item->planned_quantity,
+        'planned_amount'   => $item->planned_amount,
+        'planned_total'    => $item->planned_quantity * $item->planned_amount,
+
+        'actual_quantity' => $item->actual_quantity,
+        'actual_amount'   => $item->actual_amount,
+        'actual_total'    => $item->actual_quantity * $item->actual_amount,
+
+        'receipt' => $item->receipt,
+
+        'receipt_url' => $item->receipt
+            ? Storage::url($item->receipt->path)
+            : null,
+
+        'view_url' => $item->receipt
+            ? "{$baseUrl}/api/documents/regularization-items/{$item->receipt->path}/view"
+            : null,
+
+        'download_url' => $item->receipt
+            ? "{$baseUrl}/api/documents/regularization-items/{$item->receipt->path}/download"
+            : null,
+
+        'created_at' => $item->created_at,
+        'updated_at' => $item->updated_at,
+    ];
 }
 
 
