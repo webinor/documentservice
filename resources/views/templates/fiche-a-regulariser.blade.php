@@ -384,7 +384,7 @@
 
                 <div style="font-size:10px;">
 
-                    {{ $item['role'] }}
+                    {{ $item['display_job_title'] }}
 
                 </div>
 
