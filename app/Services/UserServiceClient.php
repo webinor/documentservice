@@ -70,6 +70,22 @@ class UserServiceClient
         return $this->client()->get("/{$userId}");
     }
 
+    public function getEmployeeIdByUser(int $userId): ?int
+{
+    $response = $this->getUser($userId);
+
+    if ($response->failed()) {
+        return null;
+    }
+
+    $data = $response->json();
+
+    return data_get($data, 'employee_id')
+        ?? data_get($data, 'user.employee_id')
+        ?? data_get($data, 'data.employee_id')
+        ?? data_get($data, 'data.user.employee_id');
+}
+
 
     public function employeesByDepartment(int $departmentId): array
     {
