@@ -11,6 +11,7 @@ use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentReferenceController;
 use App\Http\Controllers\DocumentReferenceTypeController;
 use App\Http\Controllers\DocumentSignatureController;
+use App\Http\Controllers\DocumentSignaturePositionController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
@@ -176,6 +177,30 @@ Route::prefix('leave-balances')->group(function () {
     );
 
 });
+
+        Route::prefix('/{documentUuid}/files/{fileId}')
+    ->group(function () {
+
+        Route::get(
+            'signature-positions',
+            [DocumentSignaturePositionController::class, 'index']
+        );
+
+        Route::post(
+            'signature-positions',
+            [DocumentSignaturePositionController::class, 'store']
+        );
+
+        Route::put(
+            'signature-positions',
+            [DocumentSignaturePositionController::class, 'update']
+        );
+
+        Route::delete(
+            'signature-positions/{positionId}',
+            [DocumentSignaturePositionController::class, 'destroy']
+        );
+    });
 
         Route::get("/expense-categories", [
             ExpenseCategoryController::class,

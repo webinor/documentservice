@@ -21,7 +21,7 @@ class UserServiceClient
             ->baseUrl($url);
     }
 
-    public function hasBypassPermission(
+    public function OldhasPermissions(
     array $document,
     array $user,
     array $actions
@@ -64,11 +64,107 @@ class UserServiceClient
     );
 }
 
+public function hasPermissions(
+    array $document,
+    array $user,
+    array $actions,
+    string $mode = 'all'
+): bool {
+
+    if (empty($actions)) {
+        return false;
+    }
+
+    if (!in_array($mode, ['all', 'any'], true)) {
+        throw new \InvalidArgumentException(
+            "Permission mode must be 'all' or 'any'."
+        );
+    }
+
+    $userServiceUrl = config(
+        "services.user_service.base_url"
+    );
+
+    $response = Http::withToken(
+        request()->bearerToken()
+    )
+    ->acceptJson()
+    ->post(
+        $userServiceUrl . "/permissions/check-batch",
+        [
+            "userId" => $user["id"],
+
+            "documents" => [
+                [
+                    "id" => $document["document_type_id"],
+                    "type" => $document["document_type"]["name"],
+                ]
+            ],
+
+            "actions" => $actions,
+        ]
+    );
+
+    if ($response->failed()) {
+        return false;
+    }
+
+    $permissions = data_get(
+        $response->json(),
+        "0.permissions",
+        []
+    );
+
+    if ($mode === 'all') {
+        foreach ($actions as $action) {
+            if (!($permissions[$action] ?? false)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // any
+    foreach ($actions as $action) {
+        if ($permissions[$action] ?? false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
     public function getUser(int $userId)
     {
         return $this->client()->get("/{$userId}");
     }
+
+    public function getUsersSignatures(array $userIds): array
+{
+    if (empty($userIds)) {
+        return [];
+    }
+
+    $response = $this->client()->post(
+        '/signatures/batch',
+        [
+            'user_ids' => array_values(
+                array_unique($userIds)
+            ),
+        ]
+    );
+
+    if ($response->failed()) {
+        throw new \Exception(
+            'UserService unavailable: ' .
+            $response->body()
+        );
+    }
+
+    return $response->json('data') ?? [];
+}
 
     public function getEmployeeIdByUser(int $userId): ?int
 {

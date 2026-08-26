@@ -9,83 +9,161 @@ class DocumentCapabilitiesService
 {
     protected UserServiceClient $user_service_client;
 
-    public function __construct(UserServiceClient $user_service_client) {
+    public function __construct(UserServiceClient $user_service_client)
+    {
         $this->user_service_client = $user_service_client;
     }
-    public function resolve( $document, $workflowContext, array $user): array
+
+    public function resolve($document, $workflowContext, array $user): array
     {
         $resolver = DocumentCapabilitiesResolverFactory::make($document);
 
-        $capabilities = $resolver->resolve($document, $workflowContext, $user);
+        $capabilities = $resolver->resolve(
+            $document,
+            $workflowContext,
+            $user
+        );
 
-          return $this->applyWorkflowCapabilities(
-        $capabilities,
-        $document,
-        $workflowContext,
-        $user
-    );
+        return $this->applyWorkflowCapabilities(
+            $capabilities,
+            $document,
+            $workflowContext,
+            $user
+        );
     }
 
-      protected function applyWorkflowCapabilities(
+    protected function applyWorkflowCapabilities(
         array $capabilities,
         $document,
         $workflowContext,
         array $currentUser
-        ): array {
+    ): array {
 
-    // throw new \Exception($workflowContext['isReturnedForModificationnn'], 1);
-    
         $cancalable = $workflowContext["cancalable"] ?? false;
 
-
         if (
-            $workflowContext['isReturnedForModification'] === true
+            ($workflowContext['isReturnedForModification'] ?? false) === true
             && $document['created_by'] == $currentUser['id']
         ) {
             $capabilities['mode'] = "edit";
             $capabilities['show_timeline'] = false;
-
-        }
-        else{
+        } else {
             $capabilities['mode'] = "view";
             $capabilities['show_timeline'] = true;
-
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Bypass
+        |--------------------------------------------------------------------------
+        */
 
-    // throw new \Exception($workflowContext, 1);
+        $capabilities["can_bypass"] = $this->canBypass(
+            $workflowContext,
+            $currentUser,
+            $document
+        );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Signature
+        |--------------------------------------------------------------------------
+        */
 
-          $capabilities["can_bypass"] = $this->canBypass(
-        $workflowContext,
-        $currentUser,
-        $document
-    );
+        $capabilities["can_sign_justificative"] = $this->canSign(
+            $workflowContext,
+            $currentUser,
+            $document
+        );
 
-    $capabilities["workflowContext"] = $workflowContext;
+        /*
+        |--------------------------------------------------------------------------
+        | Workflow context
+        |--------------------------------------------------------------------------
+        */
 
-        $capabilities['can_cancel'] = $cancalable && ( $currentUser['id'] == $document['created_by'] );
+        $capabilities["workflowContext"] = $workflowContext;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Cancel
+        |--------------------------------------------------------------------------
+        */
+
+        $capabilities['can_cancel'] =
+            $cancalable
+            && ($currentUser['id'] == $document['created_by']);
 
         return $capabilities;
     }
 
-
     public function canBypass(
+        array $workflowContext,
+        array $user,
+        array $document
+    ): bool {
+
+        if (!($workflowContext["is_bypassable"] ?? false)) {
+            return false;
+        }
+
+        if (!($workflowContext["is_active"] ?? false)) {
+            return false;
+        }
+
+        return $this->user_service_client->hasPermissions(
+            $document,
+            $user,
+            ["bypass"]
+        );
+    }
+
+    public function canSign(
     array $workflowContext,
     array $user,
     array $document
 ): bool {
 
-    if (!($workflowContext["is_bypassable"] ?? false)) {
+    if (!($workflowContext["is_signable"] ?? false)) {
         return false;
     }
 
-    if (!$workflowContext["is_active"]) {
+    if (!($workflowContext["is_active"] ?? false)) {
         return false;
     }
 
-    return $this->user_service_client->hasBypassPermission($document , $user ,  ["bypass"]);
+    /*
+    |--------------------------------------------------------------------------
+    | Vérifier que l'utilisateur peut agir sur l'étape courante
+    |--------------------------------------------------------------------------
+    */
+
+    $stepPermissions = $workflowContext["permissions_required"] ?? [];
+
+    if (empty($stepPermissions)) {
+        return false;
+    }
+
+    if (!$this->user_service_client->hasPermissions(
+        $document,
+        $user,
+        $stepPermissions,
+        'any'
+    )) {
+        return false;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vérifier qu'il peut signer ou valider
+    |--------------------------------------------------------------------------
+    */
+
+    return $this->user_service_client->hasPermissions(
+        $document,
+        $user,
+        ["validate", "sign"],
+        'any'
+    );
 }
-
 }

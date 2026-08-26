@@ -20,6 +20,11 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+    //         $table->foreignId('file_id')
+    // ->nullable()
+    // ->constrained('files');
+    // ->nullOnDelete();
+
 
             /**
              * Type de signature
