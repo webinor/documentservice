@@ -13,8 +13,8 @@ class SignerVisibilityPolicyFactory
 {
     protected static $policies = [
         'papier-taxi' => TaxiSignerVisibilityPolicy::class,
-        'mission'     => MissionSignerVisibilityPolicy::class,
-        'demande-d-absence' => AbsenceSignerVisibilityPolicy::class,
+        // 'mission'     => MissionSignerVisibilityPolicy::class,
+        // 'demande-d-absence' => AbsenceSignerVisibilityPolicy::class,
         'note-de-frais' => FeeNoteSignerVisibilityPolicy::class,
         'fiche-a-regulariser' => RegulatizationSignerVisibilityPolicy::class,
     ];

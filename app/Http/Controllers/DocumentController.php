@@ -326,7 +326,7 @@ class DocumentController extends Controller
         $participants = $data["participants"];
         $business_signatures = $data["business_signatures"];
 
-        // throw new Exception(json_encode((collect($participants))), 1);
+        // throw new Exception(json_encode((collect($business_signatures)->count())), 1);
         // throw new Exception(json_encode((collect($participants)->pluck('source_value'))), 1);
         // throw new Exception(json_encode((collect($participants))), 1);
         // Log::info(json_encode($participants));

@@ -9,36 +9,14 @@ use App\Services\FinancialDocumentSignerVisibilityPolicy;
 
 class RegulatizationSignerVisibilityPolicy extends FinancialDocumentSignerVisibilityPolicy
 {
-    // public function isVisible(array $participant, array $documentData = []): bool
-    // {
-    //     // return 
+    protected function isSpecificRuleSatisfied(
+        array $participant,
+        array $documentData
+    ): bool {
+        $creator = $participant['user'] ?? null;
 
-    //     if ($participant['status'] != "APPROVED") {
-
-            
-    //     return false;
-        
-
-    //     }
-
-    //         if ($participant['signature_visibility'] == "IF_APPROVED" && $participant['status'] == "APPROVED") {
-
-            
-    //     // return true;
-        
-
-    //     }
-
-    //     if (in_array($participant['source_value'], [
-    //         'DIRECT_MANAGER',
-    //         'HEAD_OF_DEPARTMENT',
-    //         'SIGNATORY',
-    //     ])) {
-
-    //     return true;
-           
-    //     }
-
-    //     return false;
-    // }
+        return $creator
+            && ($participant['source_type'] ?? null) === 'OWNER'
+            && ($creator['employee_id'] ?? null) !== ($documentData['actor_id'] ?? null);
+    }
 }

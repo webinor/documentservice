@@ -7,65 +7,7 @@ use App\Contracts\SignerVisibilityPolicy;
 abstract class FinancialDocumentSignerVisibilityPolicy
     implements SignerVisibilityPolicy
 {
-    final public function old_isVisible(
-        array $participant,
-        array $documentData = []
-    ): bool {
-        if (($participant['status'] ?? null) !== 'APPROVED') {
-            return false;
-        }
-
-        $sourceType = $participant['source_type'] ?? null;
-        $sourceValue = $participant['source_value'] ?? null;
-
-        $responsibilities = collect(
-            $participant['user']['responsibilities'] ?? []
-        )
-        ->pluck('code')
-        ->toArray();
-
-        if (
-            $sourceType === 'OWNER' &&
-            !empty(array_intersect(
-                $responsibilities,
-                [
-                    'SIGNATORY',
-                    'HEAD_OF_DEPARTMENT',
-                ]
-            ))
-        ) {
-            return true;
-        }
-
-        if (in_array(
-            $sourceValue,
-            [
-                'DIRECT_MANAGER',
-                'HEAD_OF_DEPARTMENT',
-                'SIGNATORY',
-            ],
-            true
-        )) {
-            return true;
-        }
-
-        $creator = $participant['user'] ?? null;
-
-        if ($creator
-            && ($participant['source_type'] ?? null) === 'OWNER'
-            && ($creator['employee_id'] ?? null) !== ($documentData['actor_id'] ?? null)) {
-           
-              return  true;
-            
-        }
-      
     
-
-        return $this->isSpecificRuleSatisfied(
-            $participant,
-            $documentData
-        );
-    }
 
     /**
      * Détermine si un participant doit apparaître comme signataire visible
@@ -211,12 +153,15 @@ abstract class FinancialDocumentSignerVisibilityPolicy
         if ($creator && $sourceType === "OWNER" && $creator['employee_id'] != $documentData['actor_id']) {
             
 
-        return true;
+            // throw new \Exception(json_encode($creator && $sourceType === "OWNER" && $creator['employee_id'] != $documentData['actor_id']), 1);
+      
+            return true;
+
+
 
 
         }
 
-                // throw new \Exception(json_encode($creator && $sourceType === "OWNER" && $creator['employee_id'] != $documentData['actor_id']), 1);
 
 
 
