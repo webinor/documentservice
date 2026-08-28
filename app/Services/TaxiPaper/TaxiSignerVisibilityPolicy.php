@@ -15,7 +15,7 @@ protected function isSpecificRuleSatisfied(
         $creator = $participant['user'] ?? null;
 
         return $creator
-            && ($participant['source_type'] ?? null) === 'OWNER'
+            && ($participant['source_type'] ?? null) !== 'OWNER'
             && ($creator['employee_id'] ?? null) !== ($documentData['actor_id'] ?? null);
     }
     

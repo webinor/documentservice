@@ -33,6 +33,11 @@ abstract class FinancialDocumentSignerVisibilityPolicy
             return false;
         }
 
+
+
+        
+           
+
         $creator = $participant['user'];
 
       
@@ -57,6 +62,17 @@ abstract class FinancialDocumentSignerVisibilityPolicy
          * SIGNATORY
          */
         $sourceValue = $participant['source_value'] ?? null;
+
+
+        if (
+            $sourceType === "OWNER" &&
+
+            ($creator['employee_id'] ?? null) === ($documentData['creator_employee_id'] ?? null)
+
+
+        ) {
+            return false;
+        }
 
 
 
