@@ -27,6 +27,7 @@ class DocumentType extends Model
     'dashboard_title',
     'dashboard_subtitle',
     'view_route',
+    'view_own_route',
     'create_route'
     ];
 
