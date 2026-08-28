@@ -17,7 +17,8 @@ class File extends Model
         'size',
         'type',
     'signed_path',
-    'signed_at'
+    'signed_at',
+    'page_count'
 
     ];
 
