@@ -25,7 +25,7 @@ protected $fillable = [
     'width',
     'height',
 
-    'signed_path',
+    // 'signed_path',
 
     'signed_at'
 

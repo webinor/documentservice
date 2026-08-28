@@ -38,6 +38,187 @@ class RegularizationReceiptController extends Controller
 
     public function getRegularizationReceipts($documentIdentifier)
 {
+    $document = $this->documentService->getDoc($documentIdentifier);
+
+    $document->load([
+        'regularization_sheet',
+        'regularization_sheet.receipts.file',
+        'regularization_sheet.receipts.items',
+    ]);
+
+    if (!$document->regularization_sheet) {
+        return response()->json([
+            'success' => true,
+            'receipts' => [],
+        ]);
+    }
+
+    $baseUrl = rtrim(config('app.url'), '/');
+
+    $receipts = $document
+        ->regularization_sheet
+        ->receipts
+        ->map(function ($receipt) use ($baseUrl) {
+
+            $file = $receipt->file;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Aucun fichier
+            |--------------------------------------------------------------------------
+            */
+
+            if (!$file) {
+                return [
+                    'id' => $receipt->id,
+                    'code' => $receipt->code,
+                    'reference' => $receipt->reference,
+
+                    'file' => null,
+
+                    'items' => $receipt->items,
+
+                    'created_at' => $receipt->created_at,
+                    'updated_at' => $receipt->updated_at,
+                ];
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | URL ORIGINAL
+            |--------------------------------------------------------------------------
+            */
+
+            $viewUrl =
+                "{$baseUrl}/api/documents/regularization-items/{$file->path}/view";
+
+            $downloadUrl =
+                "{$baseUrl}/api/documents/regularization-items/{$file->path}/download";
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | URL VERSION SIGNÉE
+            |--------------------------------------------------------------------------
+            */
+
+            $signedViewUrl = null;
+            $signedDownloadUrl = null;
+
+            if (!empty($file->signed_path)) {
+
+                $signedViewUrl =
+                    "{$baseUrl}/api/documents/regularization-items/{$file->signed_path}/view";
+
+                $signedDownloadUrl =
+                    "{$baseUrl}/api/documents/regularization-items/{$file->signed_path}/download";
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESPONSE
+            |--------------------------------------------------------------------------
+            */
+
+            return [
+
+                'id' =>
+                    $receipt->id,
+
+                'code' =>
+                    $receipt->code,
+
+                'reference' =>
+                    $receipt->reference,
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | FILE
+                |--------------------------------------------------------------------------
+                */
+
+                'file' => [
+
+                    'id' =>
+                        $file->id,
+
+                    'name' =>
+                        $file->name,
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | ORIGINAL
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'path' =>
+                        $file->path,
+
+                    'view_url' =>
+                        $viewUrl,
+
+                    'download_url' =>
+                        $downloadUrl,
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | SIGNED COPY
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'signed_path' =>
+                        $file->signed_path,
+
+                    'signed_view_url' =>
+                        $signedViewUrl,
+
+                    'signed_download_url' =>
+                        $signedDownloadUrl,
+
+                    'signed_at' =>
+                        $file->signed_at,
+
+                    'is_signed' =>
+                        !empty($file->signed_path),
+                ],
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | ITEMS
+                |--------------------------------------------------------------------------
+                */
+
+                'items' =>
+                    $receipt->items,
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | DATES
+                |--------------------------------------------------------------------------
+                */
+
+                'created_at' =>
+                    $receipt->created_at,
+
+                'updated_at' =>
+                    $receipt->updated_at,
+            ];
+        });
+
+    return response()->json([
+        'success' => true,
+        'receipts' => $receipts,
+    ]);
+}
+
+    public function OldgetRegularizationReceipts($documentIdentifier)
+{
    
 $document = $this->documentService->getDoc($documentIdentifier);
 

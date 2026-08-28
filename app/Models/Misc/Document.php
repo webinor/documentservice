@@ -4,6 +4,7 @@ namespace App\Models\Misc;
 
 use App\Models\AbsenceRequest;
 use App\Models\DocumentReference;
+use App\Models\DocumentSignaturePosition;
 use App\Models\DocumentStatus;
 use App\Models\FeeNote;
 use App\Models\Finance\InvoiceProvider;
@@ -102,6 +103,14 @@ class Document extends Model
     {
         return $this->hasOne(Mission::class);
     }
+
+    public function signature_positions()
+{
+    return $this->hasMany(
+        DocumentSignaturePosition::class,
+        'document_id'
+    );
+}
 
     /**
      * Met à jour le statut du document en fonction des paiements

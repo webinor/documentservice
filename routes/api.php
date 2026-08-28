@@ -28,6 +28,7 @@ use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\RegularizationItemController;
 use App\Http\Controllers\RegularizationReceiptController;
 use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\SupportingDocumentSignatureController;
 use App\Http\Controllers\TestThumbnailController;
 use App\Models\AbsenceRequest;
 use App\Models\Misc\Document;
@@ -178,6 +179,18 @@ Route::prefix('leave-balances')->group(function () {
 
 });
 
+Route::post(
+    '/{documentUuid}/signature-position-status',
+    [DocumentSignaturePositionController::class, 'status']
+);
+
+
+Route::post(
+    '{documentUuid}/regularization/supporting-documents/apply-signatures',
+    [
+        SupportingDocumentSignatureController::class,
+        'apply',
+    ]);
         Route::prefix('/{documentUuid}/files/{fileId}')
     ->group(function () {
 

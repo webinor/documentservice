@@ -54,4 +54,22 @@ class DocumentSignaturePosition extends Model
             'file_id'
         );
     }
+
+    public function scopeForUser($query, int $userId)
+{
+    return $query->where('user_id', $userId);
+}
+
+public function scopeForDocument($query, int $documentId)
+{
+    return $query->where('document_id', $documentId);
+}
+
+public function scopeReceipt($query)
+{
+    return $query->where(
+        'signature_type',
+        'RECEIPT'
+    );
+}
 }

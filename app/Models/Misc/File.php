@@ -16,7 +16,17 @@ class File extends Model
         'path',
         'size',
         'type',
+    'signed_path',
+    'signed_at'
+
     ];
+
+    protected $casts = [
+    'page_count' => 'integer',
+    'signed_at' => 'datetime',
+];
+
+
 
 
     public function model()

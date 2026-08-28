@@ -6,12 +6,12 @@ use App\Models\Misc\File;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser;
 
 class FileManager
 {
-
     /**
-     * Ajouter un fichier à un modèle
+     * Ajouter un fichier à un modèle.
      */
     public function upload(
         Model $model,
@@ -24,18 +24,17 @@ class FileManager
             'public'
         );
 
-
         return $model->files()->create([
             'path' => $path,
             'size' => $file->getSize(),
             'type' => $type,
+            'page_count' => $this->getPageCount($file),
         ]);
     }
 
 
-
     /**
-     * Remplacer un fichier existant
+     * Remplacer un fichier existant.
      */
     public function replace(
         Model $model,
@@ -43,27 +42,22 @@ class FileManager
         UploadedFile $file
     ): File {
 
-
-        // chercher ancien fichier
         $oldFile = $model->files()
             ->where('type', $type)
             ->first();
-
 
         if ($oldFile) {
 
             if (
                 Storage::disk('public')
-                ->exists($oldFile->path)
+                    ->exists($oldFile->path)
             ) {
                 Storage::disk('public')
                     ->delete($oldFile->path);
             }
 
-
             $oldFile->delete();
         }
-
 
         return $this->upload(
             $model,
@@ -73,29 +67,25 @@ class FileManager
     }
 
 
-
     /**
-     * Supprimer un fichier
+     * Supprimer un fichier.
      */
     public function delete(File $file): bool
     {
-
         if (
             Storage::disk('public')
-            ->exists($file->path)
+                ->exists($file->path)
         ) {
             Storage::disk('public')
                 ->delete($file->path);
         }
 
-
         return $file->delete();
     }
 
 
-
     /**
-     * URL publique
+     * URL publique.
      */
     public function url(?File $file): ?string
     {
@@ -104,5 +94,43 @@ class FileManager
         }
 
         return Storage::url($file->path);
+    }
+
+
+    /**
+     * Déterminer le nombre de pages d'un PDF.
+     *
+     * Retourne null si le fichier n'est pas un PDF
+     * ou si le nombre de pages ne peut pas être déterminé.
+     */
+    protected function getPageCount(
+        UploadedFile $file
+    ): ?int {
+
+        if (
+            strtolower($file->getClientOriginalExtension())
+            !== 'pdf'
+        ) {
+            return null;
+        }
+
+        try {
+
+            $parser = new Parser();
+
+            $pdf = $parser->parseFile(
+                $file->getRealPath()
+            );
+
+            $pages = $pdf->getPages();
+
+            return count($pages);
+
+        } catch (\Throwable $e) {
+
+            report($e);
+
+            return null;
+        }
     }
 }

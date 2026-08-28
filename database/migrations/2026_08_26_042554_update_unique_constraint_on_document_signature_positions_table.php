@@ -18,14 +18,14 @@ class UpdateUniqueConstraintOnDocumentSignaturePositionsTable extends Migration
         function (Blueprint $table) {
 
 
-          $table->unique(
-                [
-                    'document_id',
-                    'signature_type',
-                    'user_id',
-                ],
-                'doc_signature_position_user_unique'
-            );
+        //   $table->unique(
+        //         [
+        //             'document_id',
+        //             'signature_type',
+        //             'user_id',
+        //         ],
+        //         'doc_signature_position_user_unique'
+        //     );
 
 
             $table->dropUnique(
@@ -58,9 +58,9 @@ class UpdateUniqueConstraintOnDocumentSignaturePositionsTable extends Migration
             );
 
             
-            $table->dropUnique(
-                'doc_signature_position_user_unique'
-            );
+            // $table->dropUnique(
+            //     'doc_signature_position_user_unique'
+            // );
 
            
         }
