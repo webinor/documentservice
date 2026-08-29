@@ -35,6 +35,27 @@ class RegularizationDocumentEnrichmentHandler
 
         /*
         |--------------------------------------------------------------------------
+        | Créateur du document
+        |--------------------------------------------------------------------------
+        |
+        | Le créateur est toujours un EMPLOYEE.
+        | Son identifiant est stocké dans creator_employee_id.
+        |
+        */
+
+        $document->creator_details = null;
+
+        if (!empty($document->creator_employee_id)) {
+
+            $document->creator_details =
+                $userClient->resolveActor(
+                    'EMPLOYEE',
+                    $document->creator_employee_id
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Montant dynamique
         |--------------------------------------------------------------------------
         */
@@ -48,11 +69,6 @@ class RegularizationDocumentEnrichmentHandler
         |--------------------------------------------------------------------------
         | Positions de signature
         |--------------------------------------------------------------------------
-        |
-        | On expose explicitement les positions afin que le frontend
-        | et les requirements puissent déterminer si un utilisateur
-        | possède déjà une position de signature.
-        |
         */
 
         $document->signature_positions =
