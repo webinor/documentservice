@@ -26,4 +26,8 @@ class DocumentSignatureController extends Controller
 
     return response()->json($missing);
 }
+
+
+
+
 }
