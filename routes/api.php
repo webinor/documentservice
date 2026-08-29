@@ -65,10 +65,12 @@ Route::get(
 )->where('path', '.*')->name('regularization-items.download');
 
 
-Route::get(
-    '/signatures/{signatureId}',
-    [DocumentSignatureController::class, 'show']
-);
+// Route::get(
+//     '/signatures/{signatureId}',
+//     [DocumentSignatureController::class, 'show']
+// );
+
+    });
 
 Route::middleware("jwt.check")
     ->prefix("documents")
