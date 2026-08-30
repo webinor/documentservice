@@ -19,7 +19,7 @@ class LeaveTypeSeeder extends Seeder
 
             [
                 'code' => 'ANNUAL',
-                'name' => 'Congé annuel payé',
+                'name' => 'Congé',
                 'category' => 'ANNUAL',
                 // 'default_days' => 30,
                 'is_paid' => true,
@@ -27,15 +27,15 @@ class LeaveTypeSeeder extends Seeder
                 'requires_hr_validation' => true,
             ],
 
-            [
-                'code' => 'SICK',
-                'name' => 'Congé maladie',
-                'category' => 'SICK',
-                // 'default_days' => null,
-                'is_paid' => true,
-                'requires_attachment' => true,
-                'requires_hr_validation' => true,
-            ],
+            // [
+            //     'code' => 'SICK',
+            //     'name' => 'Congé maladie',
+            //     'category' => 'SICK',
+            //     // 'default_days' => null,
+            //     'is_paid' => true,
+            //     'requires_attachment' => true,
+            //     'requires_hr_validation' => true,
+            // ],
 
             [
                 'code' => 'MATERNITY',
@@ -119,15 +119,15 @@ class LeaveTypeSeeder extends Seeder
             ],
 
 
-            [
-                'code' => 'FAMILY_EVENT',
-                'name' => 'Événement familial exceptionnel',
-                'category' => 'EXCEPTIONAL',
-                // 'default_days' => 1,
-                'is_paid' => true,
-                'requires_attachment' => true,
-                'requires_hr_validation' => true,
-            ],
+            // [
+            //     'code' => 'FAMILY_EVENT',
+            //     'name' => 'Événement familial exceptionnel',
+            //     'category' => 'EXCEPTIONAL',
+            //     // 'default_days' => 1,
+            //     'is_paid' => true,
+            //     'requires_attachment' => true,
+            //     'requires_hr_validation' => true,
+            // ],
 
 
             /*
@@ -136,15 +136,15 @@ class LeaveTypeSeeder extends Seeder
             |--------------------------------------------------------------------------
             */
 
-            [
-                'code' => 'UNPAID',
-                'name' => 'Congé sans solde',
-                'category' => 'UNPAID',
-                // 'default_days' => null,
-                'is_paid' => false,
-                'requires_attachment' => false,
-                'requires_hr_validation' => true,
-            ],
+            // [
+            //     'code' => 'UNPAID',
+            //     'name' => 'Congé sans solde',
+            //     'category' => 'UNPAID',
+            //     // 'default_days' => null,
+            //     'is_paid' => false,
+            //     'requires_attachment' => false,
+            //     'requires_hr_validation' => true,
+            // ],
 
         ];
 

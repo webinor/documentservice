@@ -39,19 +39,19 @@ class LeaveTypeRuleSeeder extends Seeder
             | Congé maladie
             |--------------------------------------------------------------------------
             */
-            [
-                'code' => 'SICK',
-                'max_days' => null,
-                'paid_days' => null,
-                'deduct_excess_days' => false,
-                'uses_balance' => false,
-                'allow_split' => true,
-                'settings' => [
-                    'medical_certificate_required' => true,
-                    'count_weekends' => false,
-                    'count_public_holidays' => false,
-                ],
-            ],
+            // [
+            //     'code' => 'SICK',
+            //     'max_days' => null,
+            //     'paid_days' => null,
+            //     'deduct_excess_days' => false,
+            //     'uses_balance' => false,
+            //     'allow_split' => true,
+            //     'settings' => [
+            //         'medical_certificate_required' => true,
+            //         'count_weekends' => false,
+            //         'count_public_holidays' => false,
+            //     ],
+            // ],
 
             /*
             |--------------------------------------------------------------------------
@@ -170,30 +170,30 @@ class LeaveTypeRuleSeeder extends Seeder
             | Evènement familial
             |--------------------------------------------------------------------------
             */
-            [
-                'code' => 'FAMILY_EVENT',
-                'max_days' => null,
-                'paid_days' => 1,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => false,
-                'settings' => [],
-            ],
+            // [
+            //     'code' => 'FAMILY_EVENT',
+            //     'max_days' => null,
+            //     'paid_days' => 1,
+            //     'deduct_excess_days' => true,
+            //     'uses_balance' => true,
+            //     'allow_split' => false,
+            //     'settings' => [],
+            // ],
 
             /*
             |--------------------------------------------------------------------------
             | Congé sans solde
             |--------------------------------------------------------------------------
             */
-            [
-                'code' => 'UNPAID',
-                'max_days' => null,
-                'paid_days' => 0,
-                'deduct_excess_days' => false,
-                'uses_balance' => false,
-                'allow_split' => true,
-                'settings' => [],
-            ],
+            // [
+            //     'code' => 'UNPAID',
+            //     'max_days' => null,
+            //     'paid_days' => 0,
+            //     'deduct_excess_days' => false,
+            //     'uses_balance' => false,
+            //     'allow_split' => true,
+            //     'settings' => [],
+            // ],
 
         ];
 
