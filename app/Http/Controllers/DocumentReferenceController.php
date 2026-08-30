@@ -89,7 +89,7 @@ if (strlen($reference) === 4) {
 
             return response()->json([
                 "success" => true,
-                "message" => "Cette référence existe déjà.",
+                "message" => "Cette référence est déjà utilisée.",
                 "data" => $existingReference
             ], 200);
 

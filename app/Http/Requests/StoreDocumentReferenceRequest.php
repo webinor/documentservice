@@ -52,7 +52,7 @@ class StoreDocumentReferenceRequest extends FormRequest
                             $fullReference
                         )->exists()
                     ) {
-                        $fail('Cette référence existe déjà.');
+                        $fail('Cette référence est déjà utilisée.');
                     }
                 },
             ],

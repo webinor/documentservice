@@ -66,7 +66,7 @@ class UpdateDocumentReferenceRequest extends FormRequest
                     ->exists();
 
                     if ($exists) {
-                        $fail('Cette référence existe déjà.');
+                        $fail('Cette référence est déjà utilisée.');
                     }
                 },
             ],

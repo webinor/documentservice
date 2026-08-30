@@ -147,7 +147,8 @@
         </td>
 
         <td>
-            {{ $document['numero_piece'] ?? '-' }}
+            {{-- {{ $document['numero_piece'] ?? '-' }} --}}
+            {{ $accounting_reference ?? '-' }}
         </td>
 
     </tr>
