@@ -27,7 +27,8 @@ class StoreRegularizationReceiptRequest extends FormRequest
             'receipt' => [
                 'required',
                 'file',
-                'mimes:pdf,jpg,jpeg,png',
+                // 'mimes:pdf,jpg,jpeg,png',
+                'mimes:pdf',
                 'max:10240', // 10 MB
             ],
         ];
