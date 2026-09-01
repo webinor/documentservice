@@ -15,185 +15,173 @@ class LeaveTypeRuleSeeder extends Seeder
     {
         $rules = [
 
-            /*
-            |--------------------------------------------------------------------------
-            | Congé annuel
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'ANNUAL',
-                'max_days' => 30,
-                'paid_days' => null,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => true,
-                'settings' => [
-                    'count_weekends' => false,
-                    'count_public_holidays' => false,
-                    'allow_half_day' => true,
-                ],
-            ],
+        /*
+|--------------------------------------------------------------------------
+| Permissions exceptionnelles
+|--------------------------------------------------------------------------
+*/
 
-            /*
-            |--------------------------------------------------------------------------
-            | Congé maladie
-            |--------------------------------------------------------------------------
-            */
-            // [
-            //     'code' => 'SICK',
-            //     'max_days' => null,
-            //     'paid_days' => null,
-            //     'deduct_excess_days' => false,
-            //     'uses_balance' => false,
-            //     'allow_split' => true,
-            //     'settings' => [
-            //         'medical_certificate_required' => true,
-            //         'count_weekends' => false,
-            //         'count_public_holidays' => false,
-            //     ],
-            // ],
+/*
+|--------------------------------------------------------------------------
+| Mariage du travailleur — 4 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'MARRIAGE_EMPLOYEE',
+    'max_days' => 4,
+    'paid_days' => 4,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Congé maternité
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'MATERNITY',
-                'max_days' => 98,
-                'paid_days' => 98,
-                'deduct_excess_days' => false,
-                'uses_balance' => false,
-                'allow_split' => false,
-                'settings' => [
-                    'count_weekends' => true,
-                    'count_public_holidays' => true,
-                ],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Accouchement de l'épouse — 3 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'SPOUSE_CHILDBIRTH',
+    'max_days' => 3,
+    'paid_days' => 3,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Congé paternité
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'PATERNITY',
-                'max_days' => 10,
-                'paid_days' => 10,
-                'deduct_excess_days' => false,
-                'uses_balance' => false,
-                'allow_split' => false,
-                'settings' => [
-                    'count_weekends' => true,
-                    'count_public_holidays' => true,
-                ],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Baptême d'un enfant — 1 jour
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'CHILD_BAPTISM',
+    'max_days' => 1,
+    'paid_days' => 1,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Mariage du salarié
-            | 4 jours payés puis déduction du surplus
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'MARRIAGE_EMPLOYEE',
-                'max_days' => null,
-                'paid_days' => 4,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => false,
-                'settings' => [],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Mariage d'un enfant — 2 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'CHILD_MARRIAGE',
+    'max_days' => 2,
+    'paid_days' => 2,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Naissance
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'BIRTH_CHILD',
-                'max_days' => null,
-                'paid_days' => 3,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => false,
-                'settings' => [],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Décès du conjoint — 5 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'DEATH_SPOUSE',
+    'max_days' => 5,
+    'paid_days' => 5,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Décès conjoint
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'DEATH_SPOUSE',
-                'max_days' => null,
-                'paid_days' => 5,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => false,
-                'settings' => [],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Décès d'un enfant — 3 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'DEATH_CHILD',
+    'max_days' => 3,
+    'paid_days' => 3,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Décès enfant
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'DEATH_CHILD',
-                'max_days' => null,
-                'paid_days' => 5,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => false,
-                'settings' => [],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Décès du père ou de la mère — 5 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'DEATH_PARENT',
+    'max_days' => 5,
+    'paid_days' => 5,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Décès père / mère
-            |--------------------------------------------------------------------------
-            */
-            [
-                'code' => 'DEATH_PARENT',
-                'max_days' => null,
-                'paid_days' => 3,
-                'deduct_excess_days' => true,
-                'uses_balance' => true,
-                'allow_split' => false,
-                'settings' => [],
-            ],
+/*
+|--------------------------------------------------------------------------
+| Décès du père ou de la mère du conjoint légitime — 3 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'DEATH_PARENT_IN_LAW',
+    'max_days' => 3,
+    'paid_days' => 3,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Evènement familial
-            |--------------------------------------------------------------------------
-            */
-            // [
-            //     'code' => 'FAMILY_EVENT',
-            //     'max_days' => null,
-            //     'paid_days' => 1,
-            //     'deduct_excess_days' => true,
-            //     'uses_balance' => true,
-            //     'allow_split' => false,
-            //     'settings' => [],
-            // ],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Congé sans solde
-            |--------------------------------------------------------------------------
-            */
-            // [
-            //     'code' => 'UNPAID',
-            //     'max_days' => null,
-            //     'paid_days' => 0,
-            //     'deduct_excess_days' => false,
-            //     'uses_balance' => false,
-            //     'allow_split' => true,
-            //     'settings' => [],
-            // ],
+/*
+|--------------------------------------------------------------------------
+| Décès du frère ou de la sœur — 3 jours
+|--------------------------------------------------------------------------
+*/
+[
+    'code' => 'DEATH_SIBLING',
+    'max_days' => 3,
+    'paid_days' => 3,
+    'deduct_excess_days' => false,
+    'uses_balance' => false,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
 
         ];
 

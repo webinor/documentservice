@@ -90,9 +90,9 @@ class DocumentCapabilitiesService
         |--------------------------------------------------------------------------
         */
 
-        $capabilities['can_cancel'] =
+        $capabilities['can_cancel'] = true || (
             $cancalable
-            && ($currentUser['id'] == $document['created_by']);
+            && ($currentUser['id'] == $document['created_by']));
 
         return $capabilities;
     }
