@@ -29,6 +29,9 @@ class NotifyBeneficiaryService
     {
         // $document = Document::with("document_type")->findOrFail($documentId);
 
+// throw new \Exception($transactionTypeCode, 1);
+
+
         $document = $this->documentService->getDoc($documentIdentifier);
 
         $child = $document->{$document->document_type->relation_name};
@@ -36,6 +39,12 @@ class NotifyBeneficiaryService
         if (!$child instanceof PayableDocumentInterface) {
             throw new Exception("Document not payable.");
         }
+
+        if (!$transactionTypeCode ||  $transactionTypeCode == "UNKNOWN") {
+            throw new Exception("Le code de transaction {$transactionTypeCode} est inconnu.");
+        }
+
+       
 
         $actor = $child->getSettlementActor();
 
@@ -48,7 +57,7 @@ class NotifyBeneficiaryService
 
         $details = $child->getSettlementDetails();
 
-        // throw new Exception(json_encode($direction), 1);
+        // throw new Exception(json_encode($amount), 1);
 
         $eventResponse = $this->userService->dispatchPaymentEvent(
             $actor,
@@ -73,6 +82,8 @@ class NotifyBeneficiaryService
         }
 
         $transactionCode = $eventResponse->json()['transaction_code'];
+
+
 
         $child->createSettlementRecord(
     $transactionTypeCode,

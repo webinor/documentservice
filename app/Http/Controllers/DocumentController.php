@@ -147,6 +147,12 @@ class DocumentController extends Controller
             "transactionTypeCode" => "required|string",
         ]);
 
+
+        
+        // throw new \Exception('$transaction_type_code', 1);
+
+
+
         try {
             $result = $this->notifyBeneficiaryService->execute(
                 $request->input("document"),

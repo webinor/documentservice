@@ -134,7 +134,12 @@ public function receipts()
     public function getSettlementAmount(
         string $transaction_type_code = ""
     ): float {
+
 //"REGULARIZATION_ADVANCE","REGULARIZATION_SETTLEMENT"
+
+// throw new \Exception($transaction_type_code, 1);
+
+
      if ($transaction_type_code == "REGULARIZATION_ADVANCE") {
           
    
@@ -217,7 +222,7 @@ public function receipts()
 
 
 
-        $balance = $this->getSettlementAmount();
+        $balance = $this->getSettlementAmount($transaction_type_code);
 
        
         
