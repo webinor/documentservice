@@ -2,6 +2,7 @@
 
 namespace App\Services\Signature;
 
+use App\Services\Document\DocumentService;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -13,10 +14,15 @@ class SupportingDocumentSignatureService
 
     protected FileSignatureService $fileSignatureService;
 
+    protected DocumentService $documentService;
+
+
+
     public function __construct(
         SignaturePositionService $positionService,
         PdfSignatureService $pdfSignatureService,
-        FileSignatureService $fileSignatureService
+        FileSignatureService $fileSignatureService,
+        DocumentService $documentService
     ) {
         $this->positionService =
             $positionService;
@@ -26,6 +32,9 @@ class SupportingDocumentSignatureService
 
         $this->fileSignatureService =
             $fileSignatureService;
+
+        $this->documentService =
+            $documentService;
     }
 
     /**
@@ -35,6 +44,11 @@ class SupportingDocumentSignatureService
     public function apply(
         string $documentUuid
     ): array {
+
+
+    $document = $this->documentService->getDoc(
+            $documentUuid
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -149,6 +163,7 @@ class SupportingDocumentSignatureService
             $fileSignatures =
                 $this->fileSignatureService
                     ->recordAppliedSignatures(
+                        $document->id,
                         $file,
                         $positions,
                         $pdfResult['signed_path']

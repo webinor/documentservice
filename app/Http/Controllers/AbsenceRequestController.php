@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreAbsenceRequestRequest;
-use App\Http\Requests\UpdateAbsenceRequestRequest;
-use App\Models\AbsenceRequest;
+
+
 use App\Models\Misc\Document;
 use App\Services\Absence\AbsenceRequestPdfService;
 

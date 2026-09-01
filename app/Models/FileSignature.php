@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Misc\File;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FileSignature extends Model
 {
@@ -25,7 +26,7 @@ protected $fillable = [
     'width',
     'height',
 
-    // 'signed_path',
+    'document_signature_id',
 
     'signed_at'
 
@@ -45,4 +46,12 @@ public function file()
 {
     return $this->belongsTo(File::class);
 }
+
+    public function documentSignature(): BelongsTo
+    {
+        return $this->belongsTo(
+            DocumentSignature::class,
+            'document_signature_id'
+        );
+    }
 }

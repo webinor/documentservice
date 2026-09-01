@@ -46,6 +46,8 @@ class DocumentValidationRules
 
                 'dateDepart' => 'required|date',
                 'dateRetour' => 'required|date',
+                "commentaire" => "nullable|string",
+
 
                 'motif' => [
                     Rule::requiredIf(

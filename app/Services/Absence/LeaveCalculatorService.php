@@ -20,9 +20,11 @@ class LeaveCalculatorService
 
     protected LeaveCalculationRequest $request;
 
-    protected $leaveType;
+    protected WorkCalendarResolver $calendarResolver;
 
-    protected $rule;
+    protected LeaveType $leaveType;
+
+    protected  $rule;
 
     protected $calendar;
 
@@ -31,6 +33,13 @@ class LeaveCalculatorService
     protected Collection $publicHolidays;
 
     protected Collection $days;
+
+    public function __construct(
+    WorkCalendarResolver $calendarResolver
+) {
+    $this->calendarResolver =
+        $calendarResolver;
+}
 
 
     /**
@@ -52,7 +61,7 @@ class LeaveCalculatorService
 
         $this->applyWorkingCalendar();
 
-        $this->applyPublicHolidays();
+        // $this->applyPublicHolidays();
 
         $this->applyLeaveRule();
 
@@ -65,7 +74,7 @@ class LeaveCalculatorService
     /**
      * Chargement des règles RH
      */
-    protected function loadConfiguration()
+    protected function OldloadConfiguration()
     {
 
         // $this->leaveType = $this->absence
@@ -75,9 +84,16 @@ class LeaveCalculatorService
         $this->leaveType = LeaveType::with('rule')->findOrFail($this->request->leaveTypeId);
 
         // throw new \Exception(json_encode($this->leaveType), 1);
+
+        // throw new \Exception(
+        //     json_encode($this->leaveType->toArray())
+        // );
         
 
         $this->rule= $this->leaveType->rule;
+
+
+
 
 
         /**
@@ -126,6 +142,32 @@ class LeaveCalculatorService
 
 
     }
+
+    protected function loadConfiguration()
+{
+    $this->leaveType =
+        LeaveType::with('rule')
+            ->findOrFail(
+                $this->request->leaveTypeId
+            );
+
+
+    $this->rule =
+        $this->leaveType->rule;
+
+
+    /*
+     * Calendrier par défaut
+     */
+    $this->calendar =
+        WorkCalendar::where(
+            'is_default',
+            true
+        )
+        ->firstOrFail();
+}
+
+
 
 
 
@@ -194,6 +236,16 @@ class LeaveCalculatorService
 
         }
 
+        // TEST TEMPORAIRE
+    // throw new \Exception(
+    //     json_encode([
+    //         'start' => $this->request->startDate,
+    //         'end' => $this->request->endDate,
+    //         'count' => $this->days->count(),
+    //         'dates' => $this->days->pluck('date')->values(),
+    //     ], JSON_PRETTY_PRINT)
+    // );
+
     }
 
 
@@ -203,7 +255,7 @@ class LeaveCalculatorService
     /**
      * Application du calendrier de travail
      */
-    protected function applyWorkingCalendar()
+    protected function OldapplyWorkingCalendar()
     {
 
 
@@ -238,6 +290,28 @@ class LeaveCalculatorService
 
     }
 
+ protected function applyWorkingCalendar()
+{
+    $resolvedDays =
+        $this->calendarResolver->resolvePeriod(
+            $this->calendar,
+            Carbon::parse($this->request->startDate),
+            Carbon::parse($this->request->endDate)
+        );
+
+    $this->days =
+        $resolvedDays->map(function ($day) {
+
+            $day['coverage_type'] = null;
+
+            $day['deducts_balance'] = false;
+
+            $day['deduct_days'] = 0;
+
+            return $day;
+        });
+}
+
 
 
 
@@ -245,7 +319,7 @@ class LeaveCalculatorService
     /**
      * Application des jours fériés
      */
-    protected function applyPublicHolidays()
+    protected function OldapplyPublicHolidays()
     {
 
 
@@ -290,6 +364,41 @@ class LeaveCalculatorService
 
 
     }
+
+    protected function applyPublicHolidays()
+{
+    $this->days = $this->days->map(function ($day) {
+
+        if (!$this->publicHolidays->has($day['date'])) {
+            return $day;
+        }
+
+        $holiday = $this->publicHolidays->get(
+            $day['date']
+        );
+
+        $day['is_public_holiday'] = true;
+
+        $day['comment'] = $holiday->name;
+
+        /*
+         * Règle du type de congé
+         */
+        $settings = $this->rule->settings ?? [];
+
+        $countPublicHolidays =
+            $settings['count_public_holidays']
+            ?? false;
+
+        if (!$countPublicHolidays) {
+            $day['counts_for_leave'] = false;
+        }
+
+        return $day;
+    });
+}
+
+
 
 
 

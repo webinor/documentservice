@@ -22,7 +22,8 @@ class AbsenceRequest extends Model
                 'duties_handover',
                 'handover_details',
                 'document_id',
-                'leave_type_id'
+                'leave_type_id',
+                'comment',
     ];
 
 

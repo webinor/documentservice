@@ -34,6 +34,35 @@ class LeaveTypeService implements DocumentTypeHandlerInterface
          $document->absence_request()->create($data);
     }
 
+
+    public function update(
+    Document $document,
+    array $validated
+): void {
+    $absenceRequest = $document->absence_request;
+
+    if (!$absenceRequest) {
+        return;
+    }
+
+    $absenceRequest->update([
+        'reason' => $validated['motif'] ?? null,
+        'type' => $validated['titre'] ?? null,
+
+        'departure_date' => $this->toDate(
+            $validated['dateDepart'] ?? null
+        ),
+
+        'departure_time' => $validated['heureDepart'] ?? null,
+
+        'return_date' => $this->toDate(
+            $validated['dateRetour'] ?? null
+        ),
+
+        'return_time' => $validated['heureRetour'] ?? null,
+    ]);
+}
+
          private function toDate($value)
     {
         if (empty($value)) {

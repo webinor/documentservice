@@ -211,11 +211,20 @@ public function hasPermissions(
         array $details
     )
     {
+
+       $user = request()->get("user");
+
+        $userId = $user["id"];
+
+        // throw new \Exception($userId, 1);
+        
+
         return $this->client()->post(
             "/events/dispatch/init-confirm-payment-receive",
             [
                 "payload" => [
                     "actor" => $actor,
+                    "user_id" => $userId,
                     "amount" => abs($amount),
                     "reason" => $reason,
                     "direction" => $direction,
