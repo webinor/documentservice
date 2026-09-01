@@ -768,6 +768,8 @@ class PdfSignatureService
             |--------------------------------------------------------------------------
             */
 
+            $scale = 1.75;
+
             $this->drawSignatureBlock(
                 $pdf,
                 $signaturePath,
@@ -776,7 +778,8 @@ class PdfSignatureService
                 $x,
                 $y,
                 $width,
-                $height
+                $height,
+                $scale
             );
 
         } finally {
@@ -833,229 +836,275 @@ class PdfSignatureService
      * @return void
      */
     protected function drawSignatureBlock(
-        Fpdi $pdf,
-        string $signaturePath,
-        string $signerName,
-        $signedAt,
-        float $x,
-        float $y,
-        float $width,
-        float $height
-    ): void {
+    Fpdi $pdf,
+    string $signaturePath,
+    string $signerName,
+    $signedAt,
+    float $x,
+    float $y,
+    float $width,
+    float $height,
+    float $scale = 1.0
+): void {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Padding
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | SCALE GLOBAL DU BLOC
+    |--------------------------------------------------------------------------
+    |
+    | 1.00 = taille normale
+    | 1.10 = +10%
+    | 1.25 = +25%
+    | 1.50 = +50%
+    |
+    */
 
-        $padding =
-            max(
-                1,
-                min(
-                    2,
-                    $height * 0.03
-                )
-            );
+    $scale = max(0.1, $scale);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Dimensions internes
-        |--------------------------------------------------------------------------
-        */
 
-        $innerX =
-            $x + $padding;
+    /*
+    |--------------------------------------------------------------------------
+    | Agrandir depuis le centre
+    |--------------------------------------------------------------------------
+    |
+    | Cela évite que le bloc parte uniquement vers la droite
+    | et vers le bas.
+    |
+    */
 
-        $innerWidth =
-            max(
-                1,
-                $width - ($padding * 2)
-            );
+    $scaledWidth =
+        $width * $scale;
 
-        $currentY =
-            $y + $padding;
+    $scaledHeight =
+        $height * $scale;
 
-        $innerHeight =
-            max(
-                1,
-                $height - ($padding * 2)
-            );
+    $x =
+        $x -
+        (($scaledWidth - $width) / 2);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Hauteur du texte "Signé par"
-        |--------------------------------------------------------------------------
-        */
+    $y =
+        $y -
+        (($scaledHeight - $height) / 2);
 
-        $signedByHeight =
-            $this->calculateTextHeight(
-                $innerHeight,
-                0.12
-            );
+    $width =
+        $scaledWidth;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Hauteur du nom
-        |--------------------------------------------------------------------------
-        */
+    $height =
+        $scaledHeight;
 
-        $nameHeight =
-            $this->calculateTextHeight(
-                $innerHeight,
-                0.14
-            );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Hauteur date
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Padding
+    |--------------------------------------------------------------------------
+    */
 
-        $dateHeight =
-            $this->calculateTextHeight(
-                $innerHeight,
-                0.12
-            );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Espacement
-        |--------------------------------------------------------------------------
-        */
-
-        $spacing =
-            max(
-                0.5,
-                min(
-                    1.5,
-                    $innerHeight * 0.02
-                )
-            );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Réserver l'espace texte
-        |--------------------------------------------------------------------------
-        */
-
-        $reservedTextHeight =
-            $signedByHeight
-            +
-            $nameHeight
-            +
-            $dateHeight
-            +
-            ($spacing * 3);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Espace disponible pour la signature
-        |--------------------------------------------------------------------------
-        */
-
-        $signatureAreaHeight =
-            max(
+    $padding =
+        max(
+            1,
+            min(
                 2,
-                $innerHeight -
-                $reservedTextHeight
-            );
-
-        /*
-        |--------------------------------------------------------------------------
-        | 1. SIGNÉ PAR
-        |--------------------------------------------------------------------------
-        */
-
-        $this->drawCenteredText(
-            $pdf,
-            $this->pdfText('Signé par'),
-            $innerX,
-            $currentY,
-            $innerWidth,
-            $signedByHeight,
-            8,
-            false
+                $height * 0.03
+            )
         );
 
-        $currentY +=
-            $signedByHeight +
-            $spacing;
 
-        /*
-        |--------------------------------------------------------------------------
-        | 2. IMAGE DE SIGNATURE
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Dimensions internes
+    |--------------------------------------------------------------------------
+    */
 
-        $this->drawSignatureImage(
-            $pdf,
-            $signaturePath,
-            $innerX,
-            $currentY,
-            $innerWidth,
-            $signatureAreaHeight
+    $innerX =
+        $x + $padding;
+
+    $innerWidth =
+        max(
+            1,
+            $width - ($padding * 2)
         );
 
-        $currentY +=
-            $signatureAreaHeight +
-            $spacing;
+    $currentY =
+        $y + $padding;
 
-        /*
-        |--------------------------------------------------------------------------
-        | 3. NOM DU SIGNATAIRE
-        |--------------------------------------------------------------------------
-        */
-
-        $this->drawCenteredText(
-            $pdf,
-            $this->pdfText($signerName),
-            $innerX,
-            $currentY,
-            $innerWidth,
-            $nameHeight,
-            9,
-            true
+    $innerHeight =
+        max(
+            1,
+            $height - ($padding * 2)
         );
 
-        $currentY +=
-            $nameHeight +
-            $spacing;
 
-        /*
-        |--------------------------------------------------------------------------
-        | 4. DATE + HEURE
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Hauteur du texte "Signé par"
+    |--------------------------------------------------------------------------
+    */
 
-        // $formattedDate =
-        //     $signedAt->format(
-        //         'd/m/Y'
-        //     );
-
-        // $formattedTime =
-        //     $signedAt->format(
-        //         'H:i'
-        //     );
-
-        // $dateText =
-        //     $formattedDate .
-        //     ' à ' .
-        //     $formattedTime;
-
-        $dateText = $this->formatSignatureDate(now());
-
-        $this->drawCenteredText(
-            $pdf,
-            $this->pdfText($dateText),
-            $innerX,
-            $currentY,
-            $innerWidth,
-            $dateHeight,
-            8,
-            false
+    $signedByHeight =
+        $this->calculateTextHeight(
+            $innerHeight,
+            0.12
         );
-    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Hauteur du nom
+    |--------------------------------------------------------------------------
+    */
+
+    $nameHeight =
+        $this->calculateTextHeight(
+            $innerHeight,
+            0.14
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Hauteur date
+    |--------------------------------------------------------------------------
+    */
+
+    $dateHeight =
+        $this->calculateTextHeight(
+            $innerHeight,
+            0.12
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Espacement
+    |--------------------------------------------------------------------------
+    */
+
+    $spacing =
+        max(
+            0.5,
+            min(
+                1.5,
+                $innerHeight * 0.02
+            )
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Réserver l'espace texte
+    |--------------------------------------------------------------------------
+    */
+
+    $reservedTextHeight =
+        $signedByHeight
+        +
+        $nameHeight
+        +
+        $dateHeight
+        +
+        ($spacing * 3);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Espace disponible pour la signature
+    |--------------------------------------------------------------------------
+    */
+
+    $signatureAreaHeight =
+        max(
+            2,
+            $innerHeight -
+            $reservedTextHeight
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. SIGNÉ PAR
+    |--------------------------------------------------------------------------
+    */
+
+    $this->drawCenteredText(
+        $pdf,
+        $this->pdfText('Signé par'),
+        $innerX,
+        $currentY,
+        $innerWidth,
+        $signedByHeight,
+        8 * $scale,
+        false
+    );
+
+    $currentY +=
+        $signedByHeight +
+        $spacing;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. IMAGE DE SIGNATURE
+    |--------------------------------------------------------------------------
+    */
+
+    $this->drawSignatureImage(
+        $pdf,
+        $signaturePath,
+        $innerX,
+        $currentY,
+        $innerWidth,
+        $signatureAreaHeight
+    );
+
+    $currentY +=
+        $signatureAreaHeight +
+        $spacing;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. NOM DU SIGNATAIRE
+    |--------------------------------------------------------------------------
+    */
+
+    $this->drawCenteredText(
+        $pdf,
+        $this->pdfText($signerName),
+        $innerX,
+        $currentY,
+        $innerWidth,
+        $nameHeight,
+        9 * $scale,
+        true
+    );
+
+    $currentY +=
+        $nameHeight +
+        $spacing;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. DATE + HEURE
+    |--------------------------------------------------------------------------
+    */
+
+    $dateText =
+        $this->formatSignatureDate(
+            $signedAt
+        );
+
+    $this->drawCenteredText(
+        $pdf,
+        $this->pdfText($dateText),
+        $innerX,
+        $currentY,
+        $innerWidth,
+        $dateHeight,
+        8 * $scale,
+        false
+    );
+}
 
 
     /**
