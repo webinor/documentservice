@@ -67,8 +67,8 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
-    // 'timezone' => 'Africa/Douala',
+    // 'timezone' => 'UTC',
+    'timezone' => 'Africa/Douala',
 
     /*
     |--------------------------------------------------------------------------
