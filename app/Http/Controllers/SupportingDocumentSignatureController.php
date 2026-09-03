@@ -33,7 +33,7 @@ class SupportingDocumentSignatureController
             $result =
                 $this->service->apply(
                     $documentUuid,
-                    $scale
+                    (floatval($scale))
                 );
 
             return response()->json(
