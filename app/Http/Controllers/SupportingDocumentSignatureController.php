@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\Signature\SupportingDocumentSignatureService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Throwable;
 
 class SupportingDocumentSignatureController
@@ -21,14 +22,18 @@ class SupportingDocumentSignatureController
      * Apposer les signatures sur les pièces justificatives.
      */
     public function apply(
+        Request $request,
         string $documentUuid
     ): JsonResponse {
 
         try {
 
+        $scale = $request->get('scale' , 1.5);
+
             $result =
                 $this->service->apply(
-                    $documentUuid
+                    $documentUuid,
+                    $scale
                 );
 
             return response()->json(
