@@ -38,15 +38,43 @@ class PdfSignatureService
      * Les coordonnées de la zone sont celles
      * enregistrées dans document_signature_positions.
      *
+     * -------------------------------------------------------------------------
+     * ÉCHELLES
+     * -------------------------------------------------------------------------
+     *
+     * $blockScale
+     *      Agrandit ou réduit le bloc complet.
+     *
+     * $textScale
+     *      Agrandit ou réduit uniquement les textes.
+     *
+     * $imageScale
+     *      Agrandit ou réduit uniquement l'image de signature.
+     *
+     * Exemple :
+     *
+     * $service->apply(
+     *     $file,
+     *     $positions,
+     *     2.0,  // blockScale
+     *     1.0,  // textScale
+     *     1.35  // imageScale
+     * );
+     *
      * @param File $file
      * @param mixed $positions
+     * @param float $blockScale
+     * @param float $textScale
+     * @param float $imageScale
      *
      * @return array
      */
     public function apply(
         File $file,
         $positions,
-        float $scale
+        float $blockScale = 1.0,
+        float $textScale = 1.0,
+        float $imageScale = 1.35
     ): array {
 
         $positions = collect($positions);
@@ -56,6 +84,10 @@ class PdfSignatureService
             [
                 'file_id' => $file->id,
                 'positions_count' => $positions->count(),
+
+                'block_scale' => $blockScale,
+                'text_scale' => $textScale,
+                'image_scale' => $imageScale,
             ]
         );
 
@@ -74,19 +106,41 @@ class PdfSignatureService
 
         /*
         |--------------------------------------------------------------------------
+        | Normalisation des échelles
+        |--------------------------------------------------------------------------
+        */
+
+        $blockScale = max(
+            0.1,
+            $blockScale
+        );
+
+        $textScale = max(
+            0.1,
+            $textScale
+        );
+
+        $imageScale = max(
+            0.1,
+            $imageScale
+        );
+
+        /*
+        |--------------------------------------------------------------------------
         | Récupérer les IDs utilisateurs
         |--------------------------------------------------------------------------
         */
 
-        $userIds = $positions
-            ->pluck('user_id')
-            ->filter()
-            ->map(
-                fn ($id) => (int) $id
-            )
-            ->unique()
-            ->values()
-            ->toArray();
+        $userIds =
+            $positions
+                ->pluck('user_id')
+                ->filter()
+                ->map(
+                    fn ($id) => (int) $id
+                )
+                ->unique()
+                ->values()
+                ->toArray();
 
         if (empty($userIds)) {
 
@@ -201,9 +255,14 @@ class PdfSignatureService
         Log::info(
             '[SIGNATURE] Fichier original',
             [
-                'file_id' => $file->id,
-                'source_path' => $sourcePath,
-                'exists' => file_exists($sourcePath),
+                'file_id' =>
+                    $file->id,
+
+                'source_path' =>
+                    $sourcePath,
+
+                'exists' =>
+                    file_exists($sourcePath),
             ]
         );
 
@@ -231,8 +290,11 @@ class PdfSignatureService
         Log::info(
             '[SIGNATURE] PDF chargé',
             [
-                'file_id' => $file->id,
-                'page_count' => $pageCount,
+                'file_id' =>
+                    $file->id,
+
+                'page_count' =>
+                    $pageCount,
             ]
         );
 
@@ -369,6 +431,15 @@ class PdfSignatureService
 
                         'signer_name' =>
                             $position->signer_name,
+
+                        'block_scale' =>
+                            $blockScale,
+
+                        'text_scale' =>
+                            $textScale,
+
+                        'image_scale' =>
+                            $imageScale,
                     ]
                 );
 
@@ -382,7 +453,9 @@ class PdfSignatureService
                     $pdf,
                     $position,
                     $size,
-                    $scale
+                    $blockScale,
+                    $textScale,
+                    $imageScale
                 );
 
                 $appliedPositions[] =
@@ -558,6 +631,9 @@ class PdfSignatureService
      * @param Fpdi $pdf
      * @param mixed $position
      * @param array $pageSize
+     * @param float $blockScale
+     * @param float $textScale
+     * @param float $imageScale
      *
      * @return void
      */
@@ -565,7 +641,9 @@ class PdfSignatureService
         Fpdi $pdf,
         $position,
         array $pageSize,
-        float $scale
+        float $blockScale = 1.0,
+        float $textScale = 1.0,
+        float $imageScale = 1.35
     ): void {
 
         /*
@@ -745,6 +823,15 @@ class PdfSignatureService
 
                     'fpdf_height_mm' =>
                         $height,
+
+                    'block_scale' =>
+                        $blockScale,
+
+                    'text_scale' =>
+                        $textScale,
+
+                    'image_scale' =>
+                        $imageScale,
                 ]
             );
 
@@ -771,8 +858,6 @@ class PdfSignatureService
             |--------------------------------------------------------------------------
             */
 
-            // $scale = .1;
-
             $this->drawSignatureBlock(
                 $pdf,
                 $signaturePath,
@@ -782,7 +867,9 @@ class PdfSignatureService
                 $y,
                 $width,
                 $height,
-                $scale
+                $blockScale,
+                $textScale,
+                $imageScale
             );
 
         } finally {
@@ -827,6 +914,9 @@ class PdfSignatureService
      *
      * Aucun fond ni aucune bordure.
      *
+     * Le bloc, les textes et l'image possèdent
+     * maintenant des échelles indépendantes.
+     *
      * @param Fpdi $pdf
      * @param string $signaturePath
      * @param string $signerName
@@ -835,284 +925,373 @@ class PdfSignatureService
      * @param float $y
      * @param float $width
      * @param float $height
+     * @param float $blockScale
+     * @param float $textScale
+     * @param float $imageScale
      *
      * @return void
      */
     protected function drawSignatureBlock(
-    Fpdi $pdf,
-    string $signaturePath,
-    string $signerName,
-    $signedAt,
-    float $x,
-    float $y,
-    float $width,
-    float $height,
-    float $scale = 1.0
-): void {
+        Fpdi $pdf,
+        string $signaturePath,
+        string $signerName,
+        $signedAt,
+        float $x,
+        float $y,
+        float $width,
+        float $height,
+        float $blockScale = 1.0,
+        float $textScale = 1.0,
+        float $imageScale = 1.35
+    ): void {
 
-    /*
-    |--------------------------------------------------------------------------
-    | SCALE GLOBAL DU BLOC
-    |--------------------------------------------------------------------------
-    |
-    | 1.00 = taille normale
-    | 1.10 = +10%
-    | 1.25 = +25%
-    | 1.50 = +50%
-    |
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | NORMALISATION
+        |--------------------------------------------------------------------------
+        */
 
-    $scale = max(0.1, $scale);
+        $blockScale =
+            max(
+                0.1,
+                $blockScale
+            );
 
+        $textScale =
+            max(
+                0.1,
+                $textScale
+            );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Agrandir depuis le centre
-    |--------------------------------------------------------------------------
-    |
-    | Cela évite que le bloc parte uniquement vers la droite
-    | et vers le bas.
-    |
-    */
+        $imageScale =
+            max(
+                0.1,
+                $imageScale
+            );
 
-    $scaledWidth =
-        $width * $scale;
+        /*
+        |--------------------------------------------------------------------------
+        | SCALE DU BLOC UNIQUEMENT
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT :
+        |
+        | Le blockScale n'est PAS réutilisé automatiquement
+        | pour les textes ou l'image.
+        |
+        */
 
-    $scaledHeight =
-        $height * $scale;
+        $scaledWidth =
+            $width *
+            $blockScale;
 
-    $x =
-        $x -
-        (($scaledWidth - $width) / 2);
+        $scaledHeight =
+            $height *
+            $blockScale;
 
-    $y =
-        $y -
-        (($scaledHeight - $height) / 2);
+        /*
+        |--------------------------------------------------------------------------
+        | Agrandir depuis le centre
+        |--------------------------------------------------------------------------
+        */
 
-    $width =
-        $scaledWidth;
+        $x =
+            $x -
+            (
+                (
+                    $scaledWidth -
+                    $width
+                ) /
+                2
+            );
 
-    $height =
-        $scaledHeight;
+        $y =
+            $y -
+            (
+                (
+                    $scaledHeight -
+                    $height
+                ) /
+                2
+            );
 
+        $width =
+            $scaledWidth;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Padding
-    |--------------------------------------------------------------------------
-    */
+        $height =
+            $scaledHeight;
 
-    $padding =
-        max(
-            1,
-            min(
-                2,
-                $height * 0.03
-            )
+        /*
+        |--------------------------------------------------------------------------
+        | Padding
+        |--------------------------------------------------------------------------
+        */
+
+        $padding =
+            max(
+                1,
+                min(
+                    2,
+                    $height * 0.025
+                )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dimensions internes
+        |--------------------------------------------------------------------------
+        */
+
+        $innerX =
+            $x +
+            $padding;
+
+        $innerWidth =
+            max(
+                1,
+                $width -
+                (
+                    $padding *
+                    2
+                )
+            );
+
+        $currentY =
+            $y +
+            $padding;
+
+        $innerHeight =
+            max(
+                1,
+                $height -
+                (
+                    $padding *
+                    2
+                )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | IMPORTANT :
+        | Le texte ne doit plus consommer inutilement beaucoup d'espace.
+        |--------------------------------------------------------------------------
+        |
+        | On utilise des hauteurs compactes.
+        |
+        */
+
+        $signedByHeight =
+            $this->calculateTextHeight(
+                $innerHeight,
+                0.085
+            );
+
+        $nameHeight =
+            $this->calculateTextHeight(
+                $innerHeight,
+                0.105
+            );
+
+        $dateHeight =
+            $this->calculateTextHeight(
+                $innerHeight,
+                0.085
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Espacement compact
+        |--------------------------------------------------------------------------
+        */
+
+        $spacing =
+            max(
+                0.4,
+                min(
+                    1.0,
+                    $innerHeight * 0.012
+                )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Réserver l'espace texte
+        |--------------------------------------------------------------------------
+        */
+
+        $reservedTextHeight =
+            $signedByHeight
+            +
+            $nameHeight
+            +
+            $dateHeight
+            +
+            (
+                $spacing *
+                3
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Espace signature
+        |--------------------------------------------------------------------------
+        |
+        | On donne explicitement la priorité à la signature.
+        |
+        */
+
+        $signatureAreaHeight =
+            max(
+                4,
+                $innerHeight -
+                $reservedTextHeight
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. SIGNÉ PAR
+        |--------------------------------------------------------------------------
+        */
+
+        $this->drawCenteredText(
+            $pdf,
+            $this->pdfText('Signé par'),
+            $innerX,
+            $currentY,
+            $innerWidth,
+            $signedByHeight,
+            6.5 *
+            $textScale,
+            false
         );
 
+        $currentY +=
+            $signedByHeight +
+            $spacing;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Dimensions internes
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | 2. IMAGE DE SIGNATURE
+        |--------------------------------------------------------------------------
+        */
 
-    $innerX =
-        $x + $padding;
-
-    $innerWidth =
-        max(
-            1,
-            $width - ($padding * 2)
+        $this->drawSignatureImage(
+            $pdf,
+            $signaturePath,
+            $innerX,
+            $currentY,
+            $innerWidth,
+            $signatureAreaHeight,
+            $imageScale
         );
 
-    $currentY =
-        $y + $padding;
+        $currentY +=
+            $signatureAreaHeight +
+            $spacing;
 
-    $innerHeight =
-        max(
-            1,
-            $height - ($padding * 2)
+        /*
+        |--------------------------------------------------------------------------
+        | 3. NOM DU SIGNATAIRE
+        |--------------------------------------------------------------------------
+        */
+
+        $this->drawCenteredText(
+            $pdf,
+            $this->pdfText($signerName),
+            $innerX,
+            $currentY,
+            $innerWidth,
+            $nameHeight,
+            8 *
+            $textScale,
+            true
         );
 
+        $currentY +=
+            $nameHeight +
+            $spacing;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Hauteur du texte "Signé par"
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | 4. DATE + HEURE
+        |--------------------------------------------------------------------------
+        */
 
-    $signedByHeight =
-        $this->calculateTextHeight(
-            $innerHeight,
-            0.12
+        $dateText =
+            $this->formatSignatureDate(
+                $signedAt
+            );
+
+        $this->drawCenteredText(
+            $pdf,
+            $this->pdfText($dateText),
+            $innerX,
+            $currentY,
+            $innerWidth,
+            $dateHeight,
+            6.5 *
+            $textScale,
+            false
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | LOG
+        |--------------------------------------------------------------------------
+        */
 
-    /*
-    |--------------------------------------------------------------------------
-    | Hauteur du nom
-    |--------------------------------------------------------------------------
-    */
+        Log::info(
+            '[SIGNATURE BLOCK] Dimensions finales',
+            [
+                'x' =>
+                    $x,
 
-    $nameHeight =
-        $this->calculateTextHeight(
-            $innerHeight,
-            0.14
+                'y' =>
+                    $y,
+
+                'width' =>
+                    $width,
+
+                'height' =>
+                    $height,
+
+                'inner_width' =>
+                    $innerWidth,
+
+                'inner_height' =>
+                    $innerHeight,
+
+                'signature_area_height' =>
+                    $signatureAreaHeight,
+
+                'signed_by_height' =>
+                    $signedByHeight,
+
+                'name_height' =>
+                    $nameHeight,
+
+                'date_height' =>
+                    $dateHeight,
+
+                'block_scale' =>
+                    $blockScale,
+
+                'text_scale' =>
+                    $textScale,
+
+                'image_scale' =>
+                    $imageScale,
+            ]
         );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Hauteur date
-    |--------------------------------------------------------------------------
-    */
-
-    $dateHeight =
-        $this->calculateTextHeight(
-            $innerHeight,
-            0.12
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Espacement
-    |--------------------------------------------------------------------------
-    */
-
-    $spacing =
-        max(
-            0.5,
-            min(
-                1.5,
-                $innerHeight * 0.02
-            )
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Réserver l'espace texte
-    |--------------------------------------------------------------------------
-    */
-
-    $reservedTextHeight =
-        $signedByHeight
-        +
-        $nameHeight
-        +
-        $dateHeight
-        +
-        ($spacing * 3);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Espace disponible pour la signature
-    |--------------------------------------------------------------------------
-    */
-
-    $signatureAreaHeight =
-        max(
-            2,
-            $innerHeight -
-            $reservedTextHeight
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 1. SIGNÉ PAR
-    |--------------------------------------------------------------------------
-    */
-
-    $this->drawCenteredText(
-        $pdf,
-        $this->pdfText('Signé par'),
-        $innerX,
-        $currentY,
-        $innerWidth,
-        $signedByHeight,
-        8 * $scale,
-        false
-    );
-
-    $currentY +=
-        $signedByHeight +
-        $spacing;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 2. IMAGE DE SIGNATURE
-    |--------------------------------------------------------------------------
-    */
-
-    $this->drawSignatureImage(
-        $pdf,
-        $signaturePath,
-        $innerX,
-        $currentY,
-        $innerWidth,
-        $signatureAreaHeight,
-        $scale
-    );
-
-    $currentY +=
-        $signatureAreaHeight +
-        $spacing;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 3. NOM DU SIGNATAIRE
-    |--------------------------------------------------------------------------
-    */
-
-    $this->drawCenteredText(
-        $pdf,
-        $this->pdfText($signerName),
-        $innerX,
-        $currentY,
-        $innerWidth,
-        $nameHeight,
-        9 * $scale,
-        true
-    );
-
-    $currentY +=
-        $nameHeight +
-        $spacing;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 4. DATE + HEURE
-    |--------------------------------------------------------------------------
-    */
-
-    $dateText =
-        $this->formatSignatureDate(
-            $signedAt
-        );
-
-    $this->drawCenteredText(
-        $pdf,
-        $this->pdfText($dateText),
-        $innerX,
-        $currentY,
-        $innerWidth,
-        $dateHeight,
-        8 * $scale,
-        false
-    );
-}
+    }
 
 
     /**
      * Dessine l'image de signature en conservant son ratio.
+     *
+     * Le scale de l'image est indépendant du scale du bloc.
+     *
+     * L'image est toujours contenue dans la zone disponible.
      *
      * @param Fpdi $pdf
      * @param string $signaturePath
@@ -1120,284 +1299,31 @@ class PdfSignatureService
      * @param float $y
      * @param float $availableWidth
      * @param float $availableHeight
+     * @param float $imageScale
      *
      * @return void
      */
-
     protected function drawSignatureImage(
-    Fpdi $pdf,
-    string $signaturePath,
-    float $x,
-    float $y,
-    float $availableWidth,
-    float $availableHeight,
-    float $scale = 1.0
-): void {
-
-    /*
-    |--------------------------------------------------------------------------
-    | SCALE
-    |--------------------------------------------------------------------------
-    */
-
-    $scale = max(1, $scale);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Dimensions originales
-    |--------------------------------------------------------------------------
-    */
-
-    $imageInfo = @getimagesize($signaturePath);
-
-    if (!$imageInfo) {
-        throw new RuntimeException(
-            "Impossible de déterminer les dimensions de la signature."
-        );
-    }
-
-    $imageWidth = (float) $imageInfo[0];
-    $imageHeight = (float) $imageInfo[1];
-
-    if (
-        $imageWidth <= 0 ||
-        $imageHeight <= 0
-    ) {
-        throw new RuntimeException(
-            "Dimensions de signature invalides."
-        );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ratio
-    |--------------------------------------------------------------------------
-    */
-
-    $ratio = $imageWidth / $imageHeight;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Taille maximale normale
-    |--------------------------------------------------------------------------
-    */
-
-    // $imageDisplayWidth = $availableWidth;
-    // $imageDisplayHeight = $imageDisplayWidth / $ratio;
-
-    /*
-|--------------------------------------------------------------------------
-| Taille de base de la signature
-|--------------------------------------------------------------------------
-|
-| On ne remplit pas toute la zone.
-| Cela laisse de la marge pour appliquer le scale.
-|
-*/
-
-$baseAreaRatio = 0.70;
-
-$imageDisplayWidth =
-    $availableWidth * $baseAreaRatio;
-
-$imageDisplayHeight =
-    $imageDisplayWidth / $ratio;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ajustement hauteur
-    |--------------------------------------------------------------------------
-    */
-
-    // if ($imageDisplayHeight > $availableHeight) {
-
-    //     $imageDisplayHeight = $availableHeight;
-
-    //     $imageDisplayWidth =
-    //         $imageDisplayHeight * $ratio;
-    // }
-    if (
-    $imageDisplayHeight >
-    ($availableHeight * $baseAreaRatio)
-) {
-
-    $imageDisplayHeight =
-        $availableHeight * $baseAreaRatio;
-
-    $imageDisplayWidth =
-        $imageDisplayHeight * $ratio;
-}
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Appliquer le SCALE
-    |--------------------------------------------------------------------------
-    |
-    | On agrandit/réduit l'image autour de son centre.
-    |
-    */
-
-    $scaledWidth =
-        $imageDisplayWidth * $scale;
-
-    $scaledHeight =
-        $imageDisplayHeight * $scale;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ne jamais dépasser la zone disponible
-    |--------------------------------------------------------------------------
-    |
-    | Si le scale provoque un dépassement,
-    | on réduit automatiquement l'image pour rester
-    | dans la zone de signature.
-    |
-    */
-
-    Log::info('[SIGNATURE IMAGE] AVANT SCALE', [
-    'scale' => $scale,
-
-    'availableWidth' => $availableWidth,
-    'availableHeight' => $availableHeight,
-
-    'imageWidth' => $imageWidth,
-    'imageHeight' => $imageHeight,
-
-    'ratio' => $ratio,
-
-    'imageDisplayWidth' => $imageDisplayWidth,
-    'imageDisplayHeight' => $imageDisplayHeight,
-
-    'scaledWidth' => $scaledWidth,
-    'scaledHeight' => $scaledHeight,
-
-    'overflowWidth' =>
-        $scaledWidth > $availableWidth,
-
-    'overflowHeight' =>
-        $scaledHeight > $availableHeight,
-]);
-
- if (
-    $scaledWidth > $availableWidth ||
-    $scaledHeight > $availableHeight
-) {
-
-    Log::info('SIGNATURE SCALE - DEPASSEMENT DETECTE', [
-        'scale' => $scale,
-
-        'available' => [
-            'width' => $availableWidth,
-            'height' => $availableHeight,
-        ],
-
-        'before_scale' => [
-            'width' => $imageDisplayWidth,
-            'height' => $imageDisplayHeight,
-        ],
-
-        'requested_scaled' => [
-            'width' => $scaledWidth,
-            'height' => $scaledHeight,
-        ],
-
-        'scaleByWidth' =>
-            $availableWidth / $imageDisplayWidth,
-
-        'scaleByHeight' =>
-            $availableHeight / $imageDisplayHeight,
-    ]);
-
-    $scaleByWidth =
-        $availableWidth / $imageDisplayWidth;
-
-    $scaleByHeight =
-        $availableHeight / $imageDisplayHeight;
-
-    $effectiveScale =
-        min(
-            $scale,
-            $scaleByWidth,
-            $scaleByHeight
-        );
-
-    $scaledWidth =
-        $imageDisplayWidth * $effectiveScale;
-
-    $scaledHeight =
-        $imageDisplayHeight * $effectiveScale;
-
-
-    Log::info('SIGNATURE SCALE - RESULTAT', [
-        'requested_scale' => $scale,
-
-        'effective_scale' =>
-            $effectiveScale,
-
-        'final_dimensions' => [
-            'width' => $scaledWidth,
-            'height' => $scaledHeight,
-        ],
-    ]);
-}
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Centrage horizontal
-    |--------------------------------------------------------------------------
-    */
-
-    $imageX =
-        $x +
-        (
-            $availableWidth -
-            $scaledWidth
-        ) / 2;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Centrage vertical
-    |--------------------------------------------------------------------------
-    */
-
-    $imageY =
-        $y +
-        (
-            $availableHeight -
-            $scaledHeight
-        ) / 2;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Image
-    |--------------------------------------------------------------------------
-    */
-
-    $pdf->Image(
-        $signaturePath,
-        $imageX,
-        $imageY,
-        $scaledWidth,
-        $scaledHeight
-    );
-}
-    protected function OlddrawSignatureImage(
         Fpdi $pdf,
         string $signaturePath,
         float $x,
         float $y,
         float $availableWidth,
-        float $availableHeight
+        float $availableHeight,
+        float $imageScale = 1.35
     ): void {
+
+        /*
+        |--------------------------------------------------------------------------
+        | SCALE IMAGE UNIQUEMENT
+        |--------------------------------------------------------------------------
+        */
+
+        $imageScale =
+            max(
+                0.1,
+                $imageScale
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -1446,72 +1372,195 @@ $imageDisplayHeight =
 
         /*
         |--------------------------------------------------------------------------
-        | Dimensions maximales
+        | Marges internes de l'image
         |--------------------------------------------------------------------------
+        |
+        | On permet à la signature d'occuper une grande partie
+        | de la zone disponible.
+        |
         */
 
-        // $imageDisplayWidth =
-        //     $availableWidth;
+        $imageAreaRatioWidth =
+            0.96;
 
-        // $imageDisplayHeight =
-        //     $imageDisplayWidth /
-        //     $ratio;
+        $imageAreaRatioHeight =
+            0.92;
 
         /*
         |--------------------------------------------------------------------------
-        | Ajuster si trop haut
+        | Taille maximale de base
         |--------------------------------------------------------------------------
         */
 
-        // if (
-        //     $imageDisplayHeight >
-        //     $availableHeight
-        // ) {
+        $maxWidth =
+            $availableWidth *
+            $imageAreaRatioWidth;
 
-        //     $imageDisplayHeight =
-        //         $availableHeight;
-
-        //     $imageDisplayWidth =
-        //         $imageDisplayHeight *
-        //         $ratio;
-        // }
+        $maxHeight =
+            $availableHeight *
+            $imageAreaRatioHeight;
 
         /*
-|--------------------------------------------------------------------------
-| Taille de base de la signature
-|--------------------------------------------------------------------------
-|
-| On ne remplit pas toute la zone.
-| Cela laisse de la marge pour appliquer le scale.
-|
-*/
+        |--------------------------------------------------------------------------
+        | Calcul proportionnel
+        |--------------------------------------------------------------------------
+        */
 
-$baseAreaRatio = 0.70;
+        $displayWidth =
+            $maxWidth;
 
-$imageDisplayWidth =
-    $availableWidth * $baseAreaRatio;
+        $displayHeight =
+            $displayWidth /
+            $ratio;
 
-$imageDisplayHeight =
-    $imageDisplayWidth / $ratio;
+        /*
+        |--------------------------------------------------------------------------
+        | Si la hauteur est trop grande,
+        | on se base sur la hauteur.
+        |--------------------------------------------------------------------------
+        */
 
+        if (
+            $displayHeight >
+            $maxHeight
+        ) {
 
-/*
-|--------------------------------------------------------------------------
-| Sécurité : ne pas dépasser la hauteur
-|--------------------------------------------------------------------------
-*/
+            $displayHeight =
+                $maxHeight;
 
-if (
-    $imageDisplayHeight >
-    ($availableHeight * $baseAreaRatio)
-) {
+            $displayWidth =
+                $displayHeight *
+                $ratio;
+        }
 
-    $imageDisplayHeight =
-        $availableHeight * $baseAreaRatio;
+        /*
+        |--------------------------------------------------------------------------
+        | Application du SCALE IMAGE
+        |--------------------------------------------------------------------------
+        */
 
-    $imageDisplayWidth =
-        $imageDisplayHeight * $ratio;
-}
+        $scaledWidth =
+            $displayWidth *
+            $imageScale;
+
+        $scaledHeight =
+            $displayHeight *
+            $imageScale;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Limites absolues
+        |--------------------------------------------------------------------------
+        |
+        | Le scale demandé peut être supérieur à la zone disponible.
+        |
+        | Dans ce cas on calcule le plus grand scale réellement
+        | possible sans sortir du cadre.
+        |
+        */
+
+        $scaleByWidth =
+            $availableWidth /
+            max(
+                0.001,
+                $displayWidth
+            );
+
+        $scaleByHeight =
+            $availableHeight /
+            max(
+                0.001,
+                $displayHeight
+            );
+
+        $effectiveImageScale =
+            min(
+                $imageScale,
+                $scaleByWidth,
+                $scaleByHeight
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dimensions finales
+        |--------------------------------------------------------------------------
+        */
+
+        $scaledWidth =
+            $displayWidth *
+            $effectiveImageScale;
+
+        $scaledHeight =
+            $displayHeight *
+            $effectiveImageScale;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sécurité supplémentaire
+        |--------------------------------------------------------------------------
+        */
+
+        $scaledWidth =
+            min(
+                $scaledWidth,
+                $availableWidth
+            );
+
+        $scaledHeight =
+            min(
+                $scaledHeight,
+                $availableHeight
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logs
+        |--------------------------------------------------------------------------
+        */
+
+        Log::info(
+            '[SIGNATURE IMAGE] Calcul',
+            [
+                'requested_image_scale' =>
+                    $imageScale,
+
+                'effective_image_scale' =>
+                    $effectiveImageScale,
+
+                'available_width' =>
+                    $availableWidth,
+
+                'available_height' =>
+                    $availableHeight,
+
+                'original_width_px' =>
+                    $imageWidth,
+
+                'original_height_px' =>
+                    $imageHeight,
+
+                'ratio' =>
+                    $ratio,
+
+                'base_width_mm' =>
+                    $displayWidth,
+
+                'base_height_mm' =>
+                    $displayHeight,
+
+                'final_width_mm' =>
+                    $scaledWidth,
+
+                'final_height_mm' =>
+                    $scaledHeight,
+
+                'scale_by_width' =>
+                    $scaleByWidth,
+
+                'scale_by_height' =>
+                    $scaleByHeight,
+            ]
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -1523,8 +1572,9 @@ if (
             $x +
             (
                 $availableWidth -
-                $imageDisplayWidth
-            ) / 2;
+                $scaledWidth
+            ) /
+            2;
 
         /*
         |--------------------------------------------------------------------------
@@ -1536,8 +1586,9 @@ if (
             $y +
             (
                 $availableHeight -
-                $imageDisplayHeight
-            ) / 2;
+                $scaledHeight
+            ) /
+            2;
 
         /*
         |--------------------------------------------------------------------------
@@ -1549,8 +1600,8 @@ if (
             $signaturePath,
             $imageX,
             $imageY,
-            $imageDisplayWidth,
-            $imageDisplayHeight
+            $scaledWidth,
+            $scaledHeight
         );
     }
 
@@ -1584,15 +1635,10 @@ if (
         |--------------------------------------------------------------------------
         | Police
         |--------------------------------------------------------------------------
-        |
-        | FPDF utilise Helvetica par défaut.
-        |
         */
 
         $font =
-            $bold
-                ? 'Helvetica'
-                : 'Helvetica';
+            'Helvetica';
 
         $style =
             $bold
@@ -1655,6 +1701,18 @@ if (
 
         /*
         |--------------------------------------------------------------------------
+        | Protection
+        |--------------------------------------------------------------------------
+        */
+
+        $textWidth =
+            min(
+                $textWidth,
+                $width
+            );
+
+        /*
+        |--------------------------------------------------------------------------
         | Centrage
         |--------------------------------------------------------------------------
         */
@@ -1666,7 +1724,8 @@ if (
                 (
                     $width -
                     $textWidth
-                ) / 2
+                ) /
+                2
             );
 
         /*
@@ -1719,8 +1778,9 @@ if (
         return max(
             2.5,
             min(
-                5,
-                $height * $ratio
+                4,
+                $height *
+                $ratio
             )
         );
     }
@@ -1740,7 +1800,8 @@ if (
         Log::info(
             '[SIGNATURE] Téléchargement signature',
             [
-                'url' => $url,
+                'url' =>
+                    $url,
             ]
         );
 
@@ -2117,23 +2178,31 @@ if (
         return $signedPath;
     }
 
-    /**
- * Convertit un texte UTF-8 vers l'encodage attendu par FPDF.
- */
-protected function pdfText(string $text): string
-{
-    return iconv(
-        'UTF-8',
-        'windows-1252//TRANSLIT//IGNORE',
-        $text
-    ) ?: '';
-}
 
-protected function formatSignatureDate(
-    \DateTimeInterface $date
-): string {
-    return $date->format('d/m/Y') .
-        ' à ' .
-        $date->format('H:i');
+    /**
+     * Convertit un texte UTF-8 vers l'encodage attendu par FPDF.
+     */
+    protected function pdfText(
+        string $text
+    ): string {
+
+        return iconv(
+            'UTF-8',
+            'windows-1252//TRANSLIT//IGNORE',
+            $text
+        ) ?: '';
+    }
+
+
+    /**
+     * Formate la date de signature.
+     */
+    protected function formatSignatureDate(
+        \DateTimeInterface $date
+    ): string {
+
+        return $date->format('d/m/Y') .
+            ' à ' .
+            $date->format('H:i');
+    }
 }
-} 

@@ -28,7 +28,7 @@ class SupportingDocumentSignatureController
 
         try {
 
-        $scale = $request->get('scale' , 1.5);
+        $scale = $request->get('scale' , 1.0);
 
             $result =
                 $this->service->apply(
