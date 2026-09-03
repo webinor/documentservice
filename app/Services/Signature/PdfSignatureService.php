@@ -1185,8 +1185,26 @@ class PdfSignatureService
     |--------------------------------------------------------------------------
     */
 
-    $imageDisplayWidth = $availableWidth;
-    $imageDisplayHeight = $imageDisplayWidth / $ratio;
+    // $imageDisplayWidth = $availableWidth;
+    // $imageDisplayHeight = $imageDisplayWidth / $ratio;
+
+    /*
+|--------------------------------------------------------------------------
+| Taille de base de la signature
+|--------------------------------------------------------------------------
+|
+| On ne remplit pas toute la zone.
+| Cela laisse de la marge pour appliquer le scale.
+|
+*/
+
+$baseAreaRatio = 0.70;
+
+$imageDisplayWidth =
+    $availableWidth * $baseAreaRatio;
+
+$imageDisplayHeight =
+    $imageDisplayWidth / $ratio;
 
 
     /*
@@ -1195,13 +1213,24 @@ class PdfSignatureService
     |--------------------------------------------------------------------------
     */
 
-    if ($imageDisplayHeight > $availableHeight) {
+    // if ($imageDisplayHeight > $availableHeight) {
 
-        $imageDisplayHeight = $availableHeight;
+    //     $imageDisplayHeight = $availableHeight;
 
-        $imageDisplayWidth =
-            $imageDisplayHeight * $ratio;
-    }
+    //     $imageDisplayWidth =
+    //         $imageDisplayHeight * $ratio;
+    // }
+    if (
+    $imageDisplayHeight >
+    ($availableHeight * $baseAreaRatio)
+) {
+
+    $imageDisplayHeight =
+        $availableHeight * $baseAreaRatio;
+
+    $imageDisplayWidth =
+        $imageDisplayHeight * $ratio;
+}
 
 
     /*
