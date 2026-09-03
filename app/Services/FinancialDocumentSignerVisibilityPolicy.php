@@ -23,6 +23,7 @@ abstract class FinancialDocumentSignerVisibilityPolicy
 
     
 
+  
 
 
         /**
@@ -35,6 +36,7 @@ abstract class FinancialDocumentSignerVisibilityPolicy
 
 
 
+        
         
            
 
@@ -65,14 +67,29 @@ abstract class FinancialDocumentSignerVisibilityPolicy
 
 
         if (
-            $sourceType === "OWNER" &&
+            $sourceType === "OWNER" && isset($documentData['regularization_sheet']) && $documentData['regularization_sheet']['regularization_type']=="ASSISTANCE"
+            && $documentData['regularization_sheet']['assistance_mode']=='ASSISTANCE_URGENT')
+            
 
-            ($creator['employee_id'] ?? null) === ($documentData['creator_employee_id'] ?? null)
-
-
-        ) {
-            return false;
+            // ($creator['employee_id'] ?? null) === ($documentData['creator_employee_id'] ?? null)
+ {
+            return true;
         }
+
+         if (
+            $sourceType === "OWNER" && isset($documentData['regularization_sheet']) && $documentData['regularization_sheet']['regularization_type']!="ASSISTANCE"
+            )
+             {
+           return false;
+        }
+
+          if (
+            $sourceType === "OWNER"  )
+             {
+           return false;
+        }
+
+        //   return true;
 
 
 
