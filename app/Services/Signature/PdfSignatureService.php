@@ -74,7 +74,7 @@ class PdfSignatureService
         $positions,
         float $blockScale = 2.0,
         float $textScale = 1.2,
-        float $imageScale = 2
+        float $imageScale = 2.5
     ): array {
 
         $positions = collect($positions);
