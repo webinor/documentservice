@@ -26,6 +26,8 @@ class SupportingDocumentSignatureController
 
         try {
 
+        
+
             $result =
                 $this->service->apply(
                     $documentUuid
