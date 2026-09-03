@@ -18,6 +18,7 @@ use App\Models\TaxiPaper;
 use App\Services\DocumentStatusResolver;
 use App\Services\DocumentStatusUIMapper;
 use App\Support\DocumentContext;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -212,7 +213,19 @@ class Document extends Model
         if (!$value) {
             return null; // ou return '';
         }
-        return \Carbon\Carbon::parse($value)->format("d-m-Y   H:i");
+
+
+        //     return Carbon::parse($value, 'Africa/Douala')
+        // ->format('d-m-Y H:i');
+
+        return \Carbon\Carbon::parse($value)->format("d-m-Y H:i");
+    }
+
+        protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date
+            ->setTimezone(new \DateTimeZone('Africa/Douala'))
+            ->format('Y-m-d\TH:i:s.uP');
     }
 
     /**

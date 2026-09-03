@@ -3,15 +3,18 @@
 namespace App\Services\Document;
 
 use App\Models\Misc\Document;
+use App\Services\ResponsibilityService;
 use App\Services\UserServiceClient;
 
 class DocumentCapabilitiesService
 {
     protected UserServiceClient $user_service_client;
+    protected ResponsibilityService $responsibilityService;
 
-    public function __construct(UserServiceClient $user_service_client)
+    public function __construct(UserServiceClient $user_service_client,ResponsibilityService $responsibilityService)
     {
         $this->user_service_client = $user_service_client;
+        $this->responsibilityService = $responsibilityService;
     }
 
     public function resolve($document, $workflowContext, array $user): array
@@ -93,6 +96,23 @@ class DocumentCapabilitiesService
         $capabilities['can_cancel'] =
             $cancalable
             && ($currentUser['id'] == $document['created_by']);
+
+
+         $user = request()->get('user');
+
+    // return
+    $responsibilities =
+    $user['employeeContext']['responsibilities'] ?? [];
+
+    $canDelete = $this->responsibilityService->hasAnyCode(
+    $responsibilities,
+    [
+        'SUPER_ADMIN',
+        'DOCUMENT_ADMIN',
+    ]
+);
+
+$capabilities['can_delete'] = $canDelete;
 
         return $capabilities;
     }

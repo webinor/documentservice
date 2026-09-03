@@ -26,6 +26,7 @@ use App\Services\DocumentChildHandler;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
 use App\Services\Pdf\PdfMetadataService;
+use App\Services\ResponsibilityService;
 use App\Services\SignerVisibilityPolicyFactory;
 use App\Services\UserServiceClient;
 use App\Services\Workflow\WorkflowParticipantService;
@@ -40,6 +41,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use Throwable;
 
 // 1. Champ ajouté dans form ✔
 // 2. Ajouté dans mapData ✔
@@ -270,7 +272,13 @@ class DocumentController extends Controller
 
         $formatRules = [
             "amount" => fn($v) => number_format($v, 0, ",", " "), // 500000 → 500.000
-            "created_at" => fn($v) => Carbon::parse($v)->format("d-m-Y H:i"),
+    //         "created_at" => fn($v) => $v
+    // ? Carbon::createFromFormat(
+    //     'Y-m-d H:i:s',
+    //     $v,
+    //     'Africa/Douala'
+    // )->format('d-m-Y H:i')
+    // : null,
             "date_due" => fn($v) => ucfirst(
                 Carbon::parse($v)
                     ->locale("fr")
@@ -2024,11 +2032,16 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         ]);
     }
 
+
+//     throw new \Exception(
+//     "created_at = " . $documents[0]['created_at'] 
+// );
+
         $formatRules = [
             "amount" => fn($v) => number_format($v, 0, ",", "."), // 500000 → 500.000
-            "created_at" => fn($v) => \Carbon\Carbon::parse($v)->format(
-                "d-m-Y H:i"
-            ),
+            // "created_at" => fn($v) => \Carbon\Carbon::parse($v)->format(
+            //     "d-m-Y H:i"
+            // ),
         ];
 
 
@@ -2329,8 +2342,80 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      * @param  \App\Models\Misc\Document  $document
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Document $document)
+    public function destroy(Request $request,ResponsibilityService $responsibilityService,  DocumentService $documentService , $documentId)
+{
+    DB::beginTransaction();
+
+    try {
+
+    
+    $user = request()->get('user');
+
+    // return
+    $responsibilities =
+    $user['employeeContext']['responsibilities'] ?? [];
+
+    $canDelete = $responsibilityService->hasAnyCode(
+    $responsibilities,
+    [
+        'SUPER_ADMIN',
+        'DOCUMENT_ADMIN',
+    ]
+);
+
+if (!$canDelete) {
     {
-        //
+    return response()->json([
+        'message' => 'Vous n’avez pas les responsabilités nécessaires.'
+    ], 403);
+}
+}
+
+
+
+         $document = $documentService->getDoc($documentId);
+
+
+        /*
+         * 1. Supprimer les dépendances du workflow
+         */
+        $workflowResponse = Http::timeout(10)
+        ->withToken(request()->bearerToken())
+            ->delete(
+                config('services.workflow_service.base_url') .
+                '/workflows/by-document/' .
+                $document->uuid
+            );
+
+        if (!$workflowResponse->successful()) {
+            throw new Exception(
+                'Impossible de supprimer le workflow du document -> '. $workflowResponse->body()
+            );
+        }
+
+        /*
+         * 2. Supprimer le document
+         */
+        $document->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document supprimé avec succès.',
+            'document_id' => $document->id,
+        ]);
+
+    } catch (Throwable $e) {
+
+        DB::rollBack();
+
+        report($e);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
 }
