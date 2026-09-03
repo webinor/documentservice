@@ -1231,30 +1231,68 @@ class PdfSignatureService
     |
     */
 
-    if (
-        $scaledWidth > $availableWidth ||
-        $scaledHeight > $availableHeight
-    ) {
+ if (
+    $scaledWidth > $availableWidth ||
+    $scaledHeight > $availableHeight
+) {
 
-        $scaleByWidth =
-            $availableWidth / $imageDisplayWidth;
+    Log::info('SIGNATURE SCALE - DEPASSEMENT DETECTE', [
+        'scale' => $scale,
 
-        $scaleByHeight =
-            $availableHeight / $imageDisplayHeight;
+        'available' => [
+            'width' => $availableWidth,
+            'height' => $availableHeight,
+        ],
 
-        $effectiveScale =
-            min(
-                $scale,
-                $scaleByWidth,
-                $scaleByHeight
-            );
+        'before_scale' => [
+            'width' => $imageDisplayWidth,
+            'height' => $imageDisplayHeight,
+        ],
 
-        $scaledWidth =
-            $imageDisplayWidth * $effectiveScale;
+        'requested_scaled' => [
+            'width' => $scaledWidth,
+            'height' => $scaledHeight,
+        ],
 
-        $scaledHeight =
-            $imageDisplayHeight * $effectiveScale;
-    }
+        'scaleByWidth' =>
+            $availableWidth / $imageDisplayWidth,
+
+        'scaleByHeight' =>
+            $availableHeight / $imageDisplayHeight,
+    ]);
+
+    $scaleByWidth =
+        $availableWidth / $imageDisplayWidth;
+
+    $scaleByHeight =
+        $availableHeight / $imageDisplayHeight;
+
+    $effectiveScale =
+        min(
+            $scale,
+            $scaleByWidth,
+            $scaleByHeight
+        );
+
+    $scaledWidth =
+        $imageDisplayWidth * $effectiveScale;
+
+    $scaledHeight =
+        $imageDisplayHeight * $effectiveScale;
+
+
+    Log::info('SIGNATURE SCALE - RESULTAT', [
+        'requested_scale' => $scale,
+
+        'effective_scale' =>
+            $effectiveScale,
+
+        'final_dimensions' => [
+            'width' => $scaledWidth,
+            'height' => $scaledHeight,
+        ],
+    ]);
+}
 
 
     /*
