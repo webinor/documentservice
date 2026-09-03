@@ -45,7 +45,8 @@ class PdfSignatureService
      */
     public function apply(
         File $file,
-        $positions
+        $positions,
+        float $scale
     ): array {
 
         $positions = collect($positions);
@@ -380,7 +381,8 @@ class PdfSignatureService
                 $this->applySignature(
                     $pdf,
                     $position,
-                    $size
+                    $size,
+                    $scale
                 );
 
                 $appliedPositions[] =
@@ -562,7 +564,8 @@ class PdfSignatureService
     protected function applySignature(
         Fpdi $pdf,
         $position,
-        array $pageSize
+        array $pageSize,
+        float $scale
     ): void {
 
         /*
@@ -768,7 +771,7 @@ class PdfSignatureService
             |--------------------------------------------------------------------------
             */
 
-            $scale = .1;
+            // $scale = .1;
 
             $this->drawSignatureBlock(
                 $pdf,
