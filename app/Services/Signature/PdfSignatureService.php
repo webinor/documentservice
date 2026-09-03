@@ -72,7 +72,7 @@ class PdfSignatureService
     public function apply(
         File $file,
         $positions,
-        float $blockScale = 1.0,
+        float $blockScale = 2.0,
         float $textScale = 1.0,
         float $imageScale = 1.75
     ): array {
