@@ -42,7 +42,7 @@ class SupportingDocumentSignatureService
      * justificatives d'un document.
      */
     public function apply(
-        string $documentUuid,
+        string $documentUuid
         // float $scale = 1.0
     ): array {
 
