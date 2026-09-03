@@ -1053,7 +1053,8 @@ class PdfSignatureService
         $innerX,
         $currentY,
         $innerWidth,
-        $signatureAreaHeight
+        $signatureAreaHeight,
+        $scale
     );
 
     $currentY +=
@@ -1119,7 +1120,183 @@ class PdfSignatureService
      *
      * @return void
      */
+
     protected function drawSignatureImage(
+    Fpdi $pdf,
+    string $signaturePath,
+    float $x,
+    float $y,
+    float $availableWidth,
+    float $availableHeight,
+    float $scale = 1.0
+): void {
+
+    /*
+    |--------------------------------------------------------------------------
+    | SCALE
+    |--------------------------------------------------------------------------
+    */
+
+    $scale = max(0.1, $scale);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dimensions originales
+    |--------------------------------------------------------------------------
+    */
+
+    $imageInfo = @getimagesize($signaturePath);
+
+    if (!$imageInfo) {
+        throw new RuntimeException(
+            "Impossible de déterminer les dimensions de la signature."
+        );
+    }
+
+    $imageWidth = (float) $imageInfo[0];
+    $imageHeight = (float) $imageInfo[1];
+
+    if (
+        $imageWidth <= 0 ||
+        $imageHeight <= 0
+    ) {
+        throw new RuntimeException(
+            "Dimensions de signature invalides."
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ratio
+    |--------------------------------------------------------------------------
+    */
+
+    $ratio = $imageWidth / $imageHeight;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Taille maximale normale
+    |--------------------------------------------------------------------------
+    */
+
+    $imageDisplayWidth = $availableWidth;
+    $imageDisplayHeight = $imageDisplayWidth / $ratio;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ajustement hauteur
+    |--------------------------------------------------------------------------
+    */
+
+    if ($imageDisplayHeight > $availableHeight) {
+
+        $imageDisplayHeight = $availableHeight;
+
+        $imageDisplayWidth =
+            $imageDisplayHeight * $ratio;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Appliquer le SCALE
+    |--------------------------------------------------------------------------
+    |
+    | On agrandit/réduit l'image autour de son centre.
+    |
+    */
+
+    $scaledWidth =
+        $imageDisplayWidth * $scale;
+
+    $scaledHeight =
+        $imageDisplayHeight * $scale;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ne jamais dépasser la zone disponible
+    |--------------------------------------------------------------------------
+    |
+    | Si le scale provoque un dépassement,
+    | on réduit automatiquement l'image pour rester
+    | dans la zone de signature.
+    |
+    */
+
+    if (
+        $scaledWidth > $availableWidth ||
+        $scaledHeight > $availableHeight
+    ) {
+
+        $scaleByWidth =
+            $availableWidth / $imageDisplayWidth;
+
+        $scaleByHeight =
+            $availableHeight / $imageDisplayHeight;
+
+        $effectiveScale =
+            min(
+                $scale,
+                $scaleByWidth,
+                $scaleByHeight
+            );
+
+        $scaledWidth =
+            $imageDisplayWidth * $effectiveScale;
+
+        $scaledHeight =
+            $imageDisplayHeight * $effectiveScale;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Centrage horizontal
+    |--------------------------------------------------------------------------
+    */
+
+    $imageX =
+        $x +
+        (
+            $availableWidth -
+            $scaledWidth
+        ) / 2;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Centrage vertical
+    |--------------------------------------------------------------------------
+    */
+
+    $imageY =
+        $y +
+        (
+            $availableHeight -
+            $scaledHeight
+        ) / 2;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Image
+    |--------------------------------------------------------------------------
+    */
+
+    $pdf->Image(
+        $signaturePath,
+        $imageX,
+        $imageY,
+        $scaledWidth,
+        $scaledHeight
+    );
+}
+    protected function OlddrawSignatureImage(
         Fpdi $pdf,
         string $signaturePath,
         float $x,
