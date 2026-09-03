@@ -1231,6 +1231,30 @@ class PdfSignatureService
     |
     */
 
+    Log::info('[SIGNATURE IMAGE] AVANT SCALE', [
+    'scale' => $scale,
+
+    'availableWidth' => $availableWidth,
+    'availableHeight' => $availableHeight,
+
+    'imageWidth' => $imageWidth,
+    'imageHeight' => $imageHeight,
+
+    'ratio' => $ratio,
+
+    'imageDisplayWidth' => $imageDisplayWidth,
+    'imageDisplayHeight' => $imageDisplayHeight,
+
+    'scaledWidth' => $scaledWidth,
+    'scaledHeight' => $scaledHeight,
+
+    'overflowWidth' =>
+        $scaledWidth > $availableWidth,
+
+    'overflowHeight' =>
+        $scaledHeight > $availableHeight,
+]);
+
  if (
     $scaledWidth > $availableWidth ||
     $scaledHeight > $availableHeight
