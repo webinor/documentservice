@@ -768,7 +768,7 @@ class PdfSignatureService
             |--------------------------------------------------------------------------
             */
 
-            $scale = 1.75;
+            $scale = .1;
 
             $this->drawSignatureBlock(
                 $pdf,
@@ -1137,7 +1137,7 @@ class PdfSignatureService
     |--------------------------------------------------------------------------
     */
 
-    $scale = max(0.1, $scale);
+    $scale = max(1, $scale);
 
 
     /*
