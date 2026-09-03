@@ -28,12 +28,12 @@ class SupportingDocumentSignatureController
 
         try {
 
-        $scale = $request->get('scale' , 1.0);
+        // $scale = $request->get('scale' , 1.0);
 
             $result =
                 $this->service->apply(
                     $documentUuid,
-                    (floatval($scale))
+                    // (floatval($scale))
                 );
 
             return response()->json(

@@ -43,7 +43,7 @@ class SupportingDocumentSignatureService
      */
     public function apply(
         string $documentUuid,
-        float $scale = 1.0
+        // float $scale = 1.0
     ): array {
 
 
@@ -153,7 +153,7 @@ class SupportingDocumentSignatureService
                     ->apply(
                         $file,
                         $positions,
-                        $scale
+                        // $scale
                     );
 
             /*
