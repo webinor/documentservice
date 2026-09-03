@@ -1287,323 +1287,301 @@ class PdfSignatureService
 
 
     /**
-     * Dessine l'image de signature en conservant son ratio.
-     *
-     * Le scale de l'image est indépendant du scale du bloc.
-     *
-     * L'image est toujours contenue dans la zone disponible.
-     *
-     * @param Fpdi $pdf
-     * @param string $signaturePath
-     * @param float $x
-     * @param float $y
-     * @param float $availableWidth
-     * @param float $availableHeight
-     * @param float $imageScale
-     *
-     * @return void
-     */
-    protected function drawSignatureImage(
-        Fpdi $pdf,
-        string $signaturePath,
-        float $x,
-        float $y,
-        float $availableWidth,
-        float $availableHeight,
-        float $imageScale = 1.35
-    ): void {
+ * Dessine l'image de signature.
+ *
+ * $imageScale représente maintenant la taille souhaitée
+ * par rapport à la zone disponible.
+ *
+ * Exemple :
+ *
+ * 1.00 = taille maximale dans la zone
+ * 1.20 = légèrement plus grande, mais plafonnée à la zone
+ * 1.50 = grande
+ * 1.75 = très grande
+ *
+ * Le ratio original de l'image est toujours conservé.
+ */
+protected function drawSignatureImage(
+    Fpdi $pdf,
+    string $signaturePath,
+    float $x,
+    float $y,
+    float $availableWidth,
+    float $availableHeight,
+    float $imageScale = 1.0
+): void {
 
-        /*
-        |--------------------------------------------------------------------------
-        | SCALE IMAGE UNIQUEMENT
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Normalisation
+    |--------------------------------------------------------------------------
+    */
 
-        $imageScale =
-            max(
-                0.1,
-                $imageScale
-            );
+    $imageScale = max(
+        0.1,
+        $imageScale
+    );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Dimensions originales
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Dimensions originales
+    |--------------------------------------------------------------------------
+    */
 
-        $imageInfo =
-            @getimagesize(
-                $signaturePath
-            );
+    $imageInfo = @getimagesize(
+        $signaturePath
+    );
 
-        if (!$imageInfo) {
+    if (!$imageInfo) {
 
-            throw new RuntimeException(
-                "Impossible de déterminer les dimensions de la signature."
-            );
-        }
-
-        $imageWidth =
-            (float) $imageInfo[0];
-
-        $imageHeight =
-            (float) $imageInfo[1];
-
-        if (
-            $imageWidth <= 0
-            ||
-            $imageHeight <= 0
-        ) {
-
-            throw new RuntimeException(
-                "Dimensions de signature invalides."
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Ratio
-        |--------------------------------------------------------------------------
-        */
-
-        $ratio =
-            $imageWidth /
-            $imageHeight;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Marges internes de l'image
-        |--------------------------------------------------------------------------
-        |
-        | On permet à la signature d'occuper une grande partie
-        | de la zone disponible.
-        |
-        */
-
-        $imageAreaRatioWidth =
-            0.96;
-
-        $imageAreaRatioHeight =
-            0.92;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Taille maximale de base
-        |--------------------------------------------------------------------------
-        */
-
-        $maxWidth =
-            $availableWidth *
-            $imageAreaRatioWidth;
-
-        $maxHeight =
-            $availableHeight *
-            $imageAreaRatioHeight;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Calcul proportionnel
-        |--------------------------------------------------------------------------
-        */
-
-        $displayWidth =
-            $maxWidth;
-
-        $displayHeight =
-            $displayWidth /
-            $ratio;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Si la hauteur est trop grande,
-        | on se base sur la hauteur.
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $displayHeight >
-            $maxHeight
-        ) {
-
-            $displayHeight =
-                $maxHeight;
-
-            $displayWidth =
-                $displayHeight *
-                $ratio;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Application du SCALE IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        $scaledWidth =
-            $displayWidth *
-            $imageScale;
-
-        $scaledHeight =
-            $displayHeight *
-            $imageScale;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Limites absolues
-        |--------------------------------------------------------------------------
-        |
-        | Le scale demandé peut être supérieur à la zone disponible.
-        |
-        | Dans ce cas on calcule le plus grand scale réellement
-        | possible sans sortir du cadre.
-        |
-        */
-
-        $scaleByWidth =
-            $availableWidth /
-            max(
-                0.001,
-                $displayWidth
-            );
-
-        $scaleByHeight =
-            $availableHeight /
-            max(
-                0.001,
-                $displayHeight
-            );
-
-        $effectiveImageScale =
-            min(
-                $imageScale,
-                $scaleByWidth,
-                $scaleByHeight
-            );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Dimensions finales
-        |--------------------------------------------------------------------------
-        */
-
-        $scaledWidth =
-            $displayWidth *
-            $effectiveImageScale;
-
-        $scaledHeight =
-            $displayHeight *
-            $effectiveImageScale;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Sécurité supplémentaire
-        |--------------------------------------------------------------------------
-        */
-
-        $scaledWidth =
-            min(
-                $scaledWidth,
-                $availableWidth
-            );
-
-        $scaledHeight =
-            min(
-                $scaledHeight,
-                $availableHeight
-            );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Logs
-        |--------------------------------------------------------------------------
-        */
-
-        Log::info(
-            '[SIGNATURE IMAGE] Calcul',
-            [
-                'requested_image_scale' =>
-                    $imageScale,
-
-                'effective_image_scale' =>
-                    $effectiveImageScale,
-
-                'available_width' =>
-                    $availableWidth,
-
-                'available_height' =>
-                    $availableHeight,
-
-                'original_width_px' =>
-                    $imageWidth,
-
-                'original_height_px' =>
-                    $imageHeight,
-
-                'ratio' =>
-                    $ratio,
-
-                'base_width_mm' =>
-                    $displayWidth,
-
-                'base_height_mm' =>
-                    $displayHeight,
-
-                'final_width_mm' =>
-                    $scaledWidth,
-
-                'final_height_mm' =>
-                    $scaledHeight,
-
-                'scale_by_width' =>
-                    $scaleByWidth,
-
-                'scale_by_height' =>
-                    $scaleByHeight,
-            ]
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Centrage horizontal
-        |--------------------------------------------------------------------------
-        */
-
-        $imageX =
-            $x +
-            (
-                $availableWidth -
-                $scaledWidth
-            ) /
-            2;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Centrage vertical
-        |--------------------------------------------------------------------------
-        */
-
-        $imageY =
-            $y +
-            (
-                $availableHeight -
-                $scaledHeight
-            ) /
-            2;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Image
-        |--------------------------------------------------------------------------
-        */
-
-        $pdf->Image(
-            $signaturePath,
-            $imageX,
-            $imageY,
-            $scaledWidth,
-            $scaledHeight
+        throw new RuntimeException(
+            "Impossible de déterminer les dimensions de la signature."
         );
     }
+
+    $imageWidth = (float) $imageInfo[0];
+    $imageHeight = (float) $imageInfo[1];
+
+    if (
+        $imageWidth <= 0 ||
+        $imageHeight <= 0
+    ) {
+
+        throw new RuntimeException(
+            "Dimensions de signature invalides."
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ratio
+    |--------------------------------------------------------------------------
+    */
+
+    $ratio =
+        $imageWidth /
+        $imageHeight;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Marges de sécurité
+    |--------------------------------------------------------------------------
+    |
+    | On laisse seulement une petite marge autour
+    | de la signature.
+    |
+    */
+
+    $maxWidth =
+        $availableWidth * 0.98;
+
+    $maxHeight =
+        $availableHeight * 0.96;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calcul de la taille maximale
+    |--------------------------------------------------------------------------
+    |
+    | On cherche la plus grande taille possible
+    | qui respecte le ratio de l'image.
+    |
+    */
+
+    $maxImageWidth =
+        $maxWidth;
+
+    $maxImageHeight =
+        $maxImageWidth / $ratio;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Si la hauteur dépasse la zone,
+    | on redimensionne selon la hauteur.
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $maxImageHeight > $maxHeight
+    ) {
+
+        $maxImageHeight =
+            $maxHeight;
+
+        $maxImageWidth =
+            $maxImageHeight * $ratio;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application du scale
+    |--------------------------------------------------------------------------
+    |
+    | Ici on part de la taille maximale possible.
+    |
+    | MAIS :
+    |
+    | on ne laisse jamais l'image sortir de la zone.
+    |
+    */
+
+    $finalWidth =
+        $maxImageWidth *
+        $imageScale;
+
+    $finalHeight =
+        $maxImageHeight *
+        $imageScale;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Si l'image dépasse la largeur,
+    | on la réduit proportionnellement.
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $finalWidth > $availableWidth
+    ) {
+
+        $ratioWidth =
+            $availableWidth /
+            $finalWidth;
+
+        $finalWidth *=
+            $ratioWidth;
+
+        $finalHeight *=
+            $ratioWidth;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Si l'image dépasse la hauteur,
+    | on la réduit proportionnellement.
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $finalHeight > $availableHeight
+    ) {
+
+        $ratioHeight =
+            $availableHeight /
+            $finalHeight;
+
+        $finalWidth *=
+            $ratioHeight;
+
+        $finalHeight *=
+            $ratioHeight;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sécurité finale
+    |--------------------------------------------------------------------------
+    */
+
+    $finalWidth =
+        min(
+            $finalWidth,
+            $availableWidth
+        );
+
+    $finalHeight =
+        min(
+            $finalHeight,
+            $availableHeight
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Centrage horizontal
+    |--------------------------------------------------------------------------
+    */
+
+    $imageX =
+        $x +
+        (
+            $availableWidth -
+            $finalWidth
+        ) / 2;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Centrage vertical
+    |--------------------------------------------------------------------------
+    */
+
+    $imageY =
+        $y +
+        (
+            $availableHeight -
+            $finalHeight
+        ) / 2;
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOG
+    |--------------------------------------------------------------------------
+    */
+
+    Log::info(
+        '[SIGNATURE IMAGE] Rendu final',
+        [
+            'requested_scale' =>
+                $imageScale,
+
+            'available_width' =>
+                $availableWidth,
+
+            'available_height' =>
+                $availableHeight,
+
+            'original_width_px' =>
+                $imageWidth,
+
+            'original_height_px' =>
+                $imageHeight,
+
+            'ratio' =>
+                $ratio,
+
+            'max_width_mm' =>
+                $maxImageWidth,
+
+            'max_height_mm' =>
+                $maxImageHeight,
+
+            'final_width_mm' =>
+                $finalWidth,
+
+            'final_height_mm' =>
+                $finalHeight,
+
+            'image_x' =>
+                $imageX,
+
+            'image_y' =>
+                $imageY,
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dessiner
+    |--------------------------------------------------------------------------
+    */
+
+    $pdf->Image(
+        $signaturePath,
+        $imageX,
+        $imageY,
+        $finalWidth,
+        $finalHeight
+    );
+}
 
 
     /**
