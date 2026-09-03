@@ -676,13 +676,13 @@ class PdfSignatureService
         |--------------------------------------------------------------------------
         */
 
-        // $signedAt = 
-        //     now();
+        $signedAt = 
+            now();
 
-        $signedAt = \Carbon\Carbon::createFromFormat(
-    'd-m-Y H:i',
-    '01-09-2026 16:57'
-);
+//         $signedAt = \Carbon\Carbon::createFromFormat(
+//     'd-m-Y H:i',
+//     '01-09-2026 16:57'
+// );
 
         /*
         |--------------------------------------------------------------------------
