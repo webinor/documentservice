@@ -173,6 +173,18 @@
 
     </tr>
 
+    <tr class="sub-label">
+
+<td class="label">
+Motif
+</td>
+
+<td colspan="3">
+{{ $document['regularization_sheet']['reason'] }}
+</td>
+
+</tr>
+
 </table>
 
 <br>
