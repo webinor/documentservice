@@ -180,7 +180,7 @@ Motif
 </td>
 
 <td colspan="3">
-{{ $document['regularization_sheet']['reason'] }}
+{{ Str::upper($document['regularization_sheet']['reason']) }}
 </td>
 
 </tr>
