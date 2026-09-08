@@ -31,7 +31,7 @@ class UpdateDocumentReferenceRequest extends FormRequest
             'reference' => [
                 'required',
                 'string',
-                'regex:/^[0-9]{1,4}$/',
+                // 'regex:/^[0-9]{1,4}$/',
 
                 function ($attribute, $value, $fail) use ($referenceId) {
 
@@ -51,12 +51,14 @@ class UpdateDocumentReferenceRequest extends FormRequest
                     |
                     */
 
-                    $fullReference = date('y') . str_pad(
-                        $value,
-                        4,
-                        '0',
-                        STR_PAD_LEFT
-                    );
+                    $fullReference = $value;
+
+                    //  date('y') . str_pad(
+                    //     $value,
+                    //     4,
+                    //     '0',
+                    //     STR_PAD_LEFT
+                    // );
 
                     $exists = DocumentReference::where(
                         'reference',

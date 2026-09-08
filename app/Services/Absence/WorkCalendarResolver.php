@@ -47,14 +47,6 @@ class WorkCalendarResolver
          * ---------------------------------------------------------
          * Jours habituels du calendrier
          * ---------------------------------------------------------
-         *
-         * Exemple :
-         *
-         * 1 = lundi
-         * 2 = mardi
-         * ...
-         * 6 = samedi
-         * 7 = dimanche
          */
         $workingDays = WorkCalendarWorkingDay::query()
             ->where(
@@ -67,30 +59,118 @@ class WorkCalendarResolver
 
         /*
          * ---------------------------------------------------------
-         * Jours fériés de la période
+         * Jours fériés
          * ---------------------------------------------------------
          *
-         * On charge uniquement les jours concernés.
+         * On charge :
+         *
+         * 1. Les jours fériés explicites de la période.
+         *
+         * 2. TOUS les jours fériés récurrents du calendrier,
+         *    même s'ils ont été enregistrés pour une autre année.
+         *
+         * Exemple :
+         *
+         * BDD :
+         *
+         * 2026-12-25
+         * Noël
+         * is_recurring = true
+         *
+         * Demande :
+         *
+         * 2027-12-20 -> 2027-12-31
+         *
+         * Le 25/12/2027 sera automatiquement reconnu
+         * comme jour férié.
          */
         $publicHolidays = PublicHoliday::query()
             ->where(
                 'work_calendar_id',
                 $calendar->id
             )
-            ->whereBetween(
-                'date',
-                [
-                    $startDate->toDateString(),
-                    $endDate->toDateString(),
-                ]
-            )
-            ->get()
+            ->where(function ($query) use (
+                $startDate,
+                $endDate
+            ) {
+
+                /*
+                 * Jours fériés explicites dans la période.
+                 */
+                $query->whereBetween(
+                    'date',
+                    [
+                        $startDate->toDateString(),
+                        $endDate->toDateString(),
+                    ]
+                )
+
+                /*
+                 * OU jours fériés récurrents,
+                 * quelle que soit leur année.
+                 */
+                ->orWhere(
+                    'is_recurring',
+                    true
+                );
+            })
+            ->get();
+
+
+        /*
+         * ---------------------------------------------------------
+         * Index des jours fériés exacts
+         * ---------------------------------------------------------
+         *
+         * Exemple :
+         *
+         * 2027-04-02 => Vendredi Saint
+         */
+        $holidaysByDate = $publicHolidays
             ->keyBy(function ($holiday) {
 
-                return Carbon::parse(
-                    $holiday->date
-                )->format('Y-m-d');
+                return $holiday->date instanceof \Carbon\CarbonInterface
+                    ? $holiday->date->format('Y-m-d')
+                    : substr(
+                        (string) $holiday->date,
+                        0,
+                        10
+                    );
+            });
 
+
+        /*
+         * ---------------------------------------------------------
+         * Index des jours fériés récurrents
+         * ---------------------------------------------------------
+         *
+         * Exemple :
+         *
+         * 12-25 => Noël
+         *
+         * L'année n'est donc plus prise en compte.
+         */
+        $recurringHolidays = $publicHolidays
+            ->filter(function ($holiday) {
+
+                return (bool) $holiday->is_recurring;
+            })
+            ->keyBy(function ($holiday) {
+
+                $date = $holiday->date;
+
+                if (
+                    $date instanceof
+                    \Carbon\CarbonInterface
+                ) {
+                    return $date->format('m-d');
+                }
+
+                return substr(
+                    (string) $date,
+                    5,
+                    5
+                );
             });
 
 
@@ -104,7 +184,6 @@ class WorkCalendarResolver
             $endDate
         );
 
-
         $days = collect();
 
 
@@ -113,22 +192,21 @@ class WorkCalendarResolver
          * Compteur des samedis
          * ---------------------------------------------------------
          *
-         * IMPORTANT :
-         *
          * Ce compteur est relatif à LA DEMANDE.
          *
          * samedi #1 = travaillé
          * samedi #2 = repos
          * samedi #3 = travaillé
          * samedi #4 = repos
-         *
          */
         $saturdayNumber = 0;
 
 
         foreach ($period as $date) {
 
-            $date = $date->copy()->startOfDay();
+            $date = $date
+                ->copy()
+                ->startOfDay();
 
             $dateString =
                 $date->format('Y-m-d');
@@ -143,8 +221,9 @@ class WorkCalendarResolver
              * -----------------------------------------------------
              */
             $workingDay =
-                $workingDays->get($dayOfWeek);
-
+                $workingDays->get(
+                    $dayOfWeek
+                );
 
             $isWorkingDay = false;
 
@@ -156,13 +235,16 @@ class WorkCalendarResolver
             if ($workingDay) {
 
                 $isWorkingDay =
-                    (bool) $workingDay->is_working_day;
+                    (bool)
+                    $workingDay->is_working_day;
 
                 $countsForLeave =
-                    (bool) $workingDay->counts_for_leave;
+                    (bool)
+                    $workingDay->counts_for_leave;
 
                 $workingRatio =
-                    (float) $workingDay->working_ratio;
+                    (float)
+                    $workingDay->working_ratio;
             }
 
 
@@ -170,13 +252,10 @@ class WorkCalendarResolver
              * -----------------------------------------------------
              * SAMEDI SUR DEUX
              * -----------------------------------------------------
-             *
-             * Le samedi est le jour ISO 6.
              */
             if ($dayOfWeek === 6) {
 
                 $saturdayNumber++;
-
 
                 /*
                  * 1er samedi = travaillé
@@ -188,7 +267,9 @@ class WorkCalendarResolver
                     ($saturdayNumber % 2) === 1;
 
 
-                if ($isAlternateSaturdayWorking) {
+                if (
+                    $isAlternateSaturdayWorking
+                ) {
 
                     $isWorkingDay = true;
 
@@ -211,16 +292,43 @@ class WorkCalendarResolver
              * -----------------------------------------------------
              * JOUR FÉRIÉ
              * -----------------------------------------------------
+             *
+             * Priorité :
+             *
+             * 1. Correspondance exacte
+             * 2. Correspondance récurrente MM-DD
              */
             $publicHoliday =
-                $publicHolidays->get(
+                $holidaysByDate->get(
                     $dateString
                 );
 
 
+            /*
+             * Aucun jour férié exact :
+             *
+             * on recherche un récurrent
+             * ayant le même mois et le même jour.
+             */
+            if (!$publicHoliday) {
+
+                $monthDay =
+                    $date->format('m-d');
+
+                $publicHoliday =
+                    $recurringHolidays->get(
+                        $monthDay
+                    );
+            }
+
+
+            /*
+             * -----------------------------------------------------
+             * Application du jour férié
+             * -----------------------------------------------------
+             */
             $isPublicHoliday =
                 $publicHoliday !== null;
-
 
             $comment = null;
 
@@ -232,13 +340,12 @@ class WorkCalendarResolver
 
 
                 /*
-                 * Le jour férié peut être :
-                 *
-                 * counts_for_leave = false
-                 *
-                 * => ne compte pas comme jour de congé.
+                 * Le jour férié peut être configuré
+                 * pour ne pas compter dans les congés.
                  */
-                if (!$publicHoliday->counts_for_leave) {
+                if (
+                    !$publicHoliday->counts_for_leave
+                ) {
 
                     $countsForLeave = false;
                 }

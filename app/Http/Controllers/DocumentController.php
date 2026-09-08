@@ -23,6 +23,7 @@ use App\Services\Document\DocumentFilterService;
 use App\Services\Document\DocumentService;
 use App\Services\Document\LegacyDocumentEnricher;
 use App\Services\DocumentChildHandler;
+use App\Services\DocumentPdfService;
 use App\Services\DocumentViewService;
 use App\Services\NotifyBeneficiaryService;
 use App\Services\Pdf\PdfMetadataService;
@@ -312,7 +313,44 @@ class DocumentController extends Controller
     /**
      * Télécharge le document au format PDF
      */
-    public function download_document(
+
+    /**
+ * Télécharge le document au format PDF
+ */
+public function download_document(
+    Request $request,
+    DocumentPdfService $documentPdfService,
+    string $documentIdentifier
+) {
+    if (Str::isUuid($documentIdentifier)) {
+
+        $doc =
+            Document::where(
+                'uuid',
+                $documentIdentifier
+            )->firstOrFail();
+
+    } else {
+
+        $doc =
+            Document::findOrFail(
+                $documentIdentifier
+            );
+    }
+
+    $result =
+        $documentPdfService->generate(
+            $doc,
+            $request->bearerToken()
+        );
+
+    return $result['pdf']->download(
+        $result['file_name']
+    );
+}
+
+
+    public function Old_download_document(
         Request $request,
         DocumentEnrichmentManager $documentEnrichmentManager,
         PdfMetadataService $metadataService,
@@ -2080,7 +2118,6 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         
         // throw new Exception(json_encode($workflowContext), 1);
         
-
         DocumentContext::setWorkflowStatus($document->id, $workflowContext);
 
 
@@ -2114,7 +2151,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $user
             );
 
-    // throw new Exception("Error Processing Request", 1);
+        // throw new Exception("Error Processing Request", 1);
 
             
         // throw new Exception(json_encode($context), 1);

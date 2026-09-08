@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
 
 class UserServiceClient
@@ -265,7 +266,7 @@ public function hasPermissions(
                 break;
 
             case 'USER':
-                $url = $baseUrl . "/users/" . $id;
+                $url = $baseUrl . "/" . $id;
                 break;
 
             default:
@@ -277,6 +278,11 @@ public function hasPermissions(
 
 
         if (!$response->successful()) {
+
+            throw new Exception(json_encode($response->body()), 1);
+                
+
+
             return null;
         }
 

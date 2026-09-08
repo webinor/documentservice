@@ -15,6 +15,7 @@ use App\Http\Controllers\DocumentSignaturePositionController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
+use App\Http\Controllers\LeaveDocumentController;
 use App\Http\Controllers\LeaveSimulationController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\LeaveWorkflowController;
@@ -25,11 +26,13 @@ use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
+use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RegularizationItemController;
 use App\Http\Controllers\RegularizationReceiptController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\SupportingDocumentSignatureController;
 use App\Http\Controllers\TestThumbnailController;
+use App\Http\Controllers\WorkCalendarController;
 use App\Models\AbsenceRequest;
 use App\Models\Misc\Document;
 use Illuminate\Support\Facades\Route;
@@ -162,6 +165,11 @@ Route::middleware("jwt.check")
 
 Route::get('/{document}/leave-requests/pdf',[AbsenceRequestController::class,'pdf'])->name('leave-requests.pdf');
 
+Route::post('/leave/generate',[LeaveDocumentController::class,'generate'])->name('leave-requests.generate');
+
+
+
+
 Route::post(
     '/absence/simulate',
     [
@@ -184,6 +192,62 @@ Route::prefix('leave-balances')->group(function () {
     );
 
 });
+
+
+/* -------------------------------------------------------------------------- */
+/*                           Work Calendars                                   */
+/* -------------------------------------------------------------------------- */
+
+Route::prefix('calendar/work-calendars')->group(function () {
+
+    Route::get('/', [WorkCalendarController::class, 'index']);
+
+    Route::get('/{workCalendar}', [WorkCalendarController::class, 'show']);
+
+    Route::post('/', [WorkCalendarController::class, 'store']);
+
+    Route::put('/{workCalendar}', [WorkCalendarController::class, 'update']);
+
+    Route::delete('/{workCalendar}', [WorkCalendarController::class, 'destroy']);
+});
+
+
+/* -------------------------------------------------------------------------- */
+/*                           Public Holidays                                  */
+/* -------------------------------------------------------------------------- */
+
+Route::prefix('calendar/public-holidays')->group(function () {
+
+    /**
+     * Liste des jours fériés
+     *
+     * Filtres possibles :
+     * ?work_calendar_id=1
+     * ?year=2026
+     */
+    Route::get('/', [PublicHolidayController::class, 'index']);
+
+    /**
+     * Détail d'un jour férié
+     */
+    Route::get('/{publicHoliday}', [PublicHolidayController::class, 'show']);
+
+    /**
+     * Création
+     */
+    Route::post('/', [PublicHolidayController::class, 'store']);
+
+    /**
+     * Modification
+     */
+    Route::put('/{publicHoliday}', [PublicHolidayController::class, 'update']);
+
+    /**
+     * Suppression
+     */
+    Route::delete('/{publicHoliday}', [PublicHolidayController::class, 'destroy']);
+});
+
 
 Route::post(
     '/{documentUuid}/signature-position-status',

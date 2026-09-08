@@ -29,7 +29,7 @@ class StoreDocumentReferenceRequest extends FormRequest
             'reference' => [
                 'required',
                 'string',
-                'regex:/^[0-9]{1,4}$/',
+                // 'regex:/^[0-9]{1,4}$/',
 
                 function ($attribute, $value, $fail) {
 
@@ -39,12 +39,14 @@ class StoreDocumentReferenceRequest extends FormRequest
                     // Référence réellement stockée :
                     // 260203
 
-                    $fullReference = date('y') . str_pad(
-                        $value,
-                        4,
-                        '0',
-                        STR_PAD_LEFT
-                    );
+                    $fullReference = $value;
+                    
+                    // date('y') . str_pad(
+                    //     $value,
+                    //     4,
+                    //     '0',
+                    //     STR_PAD_LEFT
+                    // );
 
                     if (
                         DocumentReference::where(

@@ -3,6 +3,7 @@
 namespace App\Services\Absence;
 
 use App\DTO\LeaveCalculationRequest;
+use App\Models\AbsenceRequest;
 use App\Models\Misc\Document;
 use App\Services\DocumentType\DocumentTypeHandlerInterface;
 use Illuminate\Support\Facades\DB;
@@ -60,16 +61,23 @@ class AbsenceDocumentHandler implements DocumentTypeHandlerInterface
             );
 
 
+            // throw new \Exception(json_encode($simulation), 1);
+            
+
+
             /*
             |--------------------------------------------------------------------------
             | Génération des jours d'absence
             |--------------------------------------------------------------------------
             */
 
-            $this->generator->generate(
+            $generated = $this->generator->generate(
                 $absence,
                 $simulation
             );
+
+            // throw new \Exception(json_encode($generated), 1);
+
 
 
             return $absence->fresh();
@@ -138,7 +146,7 @@ class AbsenceDocumentHandler implements DocumentTypeHandlerInterface
      * Calculer les jours d'absence.
      */
     protected function calculate(
-        $absence,
+        AbsenceRequest $absence,
         Document $document
     ) {
         $request = new LeaveCalculationRequest([

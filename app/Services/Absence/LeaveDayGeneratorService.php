@@ -4,6 +4,7 @@ namespace App\Services\Absence;
 
 use App\Models\AbsenceRequest;
 use App\Models\LeaveRequestDay;
+use Illuminate\Support\Collection;
 
 class LeaveDayGeneratorService
 {
@@ -17,7 +18,7 @@ class LeaveDayGeneratorService
     public function generate(
         AbsenceRequest $absence,
         array $simulation
-    ): void {
+    ): array {
 
         /*
         |--------------------------------------------------------------------------
@@ -57,8 +58,16 @@ class LeaveDayGeneratorService
 
         $days = $simulation['days'] ?? [];
 
+
+        if ($days instanceof Collection) {
+    $days = $days->toArray();
+}
+
+            // throw new \Exception(json_encode(gettype($days),), 1);
+
+
         if (!is_array($days) || empty($days)) {
-            return;
+            return [];
         }
 
 
@@ -125,6 +134,9 @@ class LeaveDayGeneratorService
             ];
         }
 
+            // throw new \Exception(json_encode($rows), 1);
+
+
 
         /*
         |--------------------------------------------------------------------------
@@ -137,9 +149,16 @@ class LeaveDayGeneratorService
 
         if (!empty($rows)) {
 
+
             LeaveRequestDay::insert(
                 $rows
             );
+
+           
         }
+
+         return $rows;
+
+
     }
 }

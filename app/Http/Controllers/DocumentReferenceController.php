@@ -49,10 +49,10 @@ class DocumentReferenceController extends Controller
 
     $user = $request->get("user");
 
-    $reference = str_pad($validated['reference'], 4, '0', STR_PAD_LEFT);
+    $reference = $validated['reference'];// str_pad($validated['reference'], 4, '0', STR_PAD_LEFT);
 
 if (strlen($reference) === 4) {
-    $reference = now()->format('y') . $reference;
+    // $reference = now()->format('y') . $reference;
 }
 
     try {
@@ -108,7 +108,7 @@ if (strlen($reference) === 4) {
 
             "reference_type_code" => $reference_type->code,
 
-            "reference" =>   $reference,
+            "reference" =>   Str::upper($reference),
 
             "created_by" =>
                 $user["id"],
@@ -241,10 +241,10 @@ if ($request->hasFile('attachment')) {
     // return
     $validated = $request->validated();
 
-     $reference = str_pad($validated['reference'], 4, '0', STR_PAD_LEFT);
+     $reference = $validated['reference'];// str_pad($validated['reference'], 4, '0', STR_PAD_LEFT);
 
 if (strlen($reference) === 4) {
-    $reference = now()->format('y') . $reference;
+    // $reference = now()->format('y') . $reference;
 }
 
     DB::transaction(function () use ($request, $validated, $documentReference,$reference) {
@@ -255,7 +255,7 @@ if (strlen($reference) === 4) {
         $documentReference->update([
             'document_reference_type_id' => $validated['document_reference_type_id'],
             'reference_type_code' => $reference_type -> code,
-            'reference' => $reference,
+            'reference' => Str::upper($reference),
             'metadata' => $validated['metadata'] ?? $documentReference->metadata,
         ]);
 
