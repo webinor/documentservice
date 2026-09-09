@@ -15,6 +15,20 @@ class LeaveTypeRuleSeeder extends Seeder
     {
         $rules = [
 
+
+        [
+    'code' => 'LEAVE',
+    'max_days' => 0,
+    'paid_days' => 0,
+    'deduct_excess_days' => true,
+    'uses_balance' => true,
+    'allow_split' => false,
+    'settings' => [
+        'count_weekends' => false,
+        'count_public_holidays' => false,
+    ],
+],
+
         /*
 |--------------------------------------------------------------------------
 | Permissions exceptionnelles

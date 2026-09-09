@@ -18,6 +18,25 @@ class LeaveTypeSeeder extends Seeder
 */
 
 [
+    'code' => 'LEAVE',
+    'name' => 'Congé',
+    'category' => 'ANNUAL',
+    'is_paid' => false,
+    'requires_attachment' => true,
+    'requires_hr_validation' => true,
+],
+
+
+[
+    'code' => 'MARRIAGE_EMPLOYEE',
+    'name' => 'Mariage du travailleur',
+    'category' => 'EXCEPTIONAL',
+    'is_paid' => true,
+    'requires_attachment' => true,
+    'requires_hr_validation' => true,
+],
+
+[
     'code' => 'MARRIAGE_EMPLOYEE',
     'name' => 'Mariage du travailleur',
     'category' => 'EXCEPTIONAL',
