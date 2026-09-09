@@ -235,7 +235,7 @@ class DocumentTypeSeeder extends Seeder
 
             [
                 'code' => 'asrgsef',
-                'name' => "Demande D'absence",
+                'name' => "Demande D'absence / Congé",
                 'slug' => 'demande-d-absence',
                 'class_name' => 'App\\Models\\AbsenceRequest',
                 'creation_handler_class' => 'App\\Services\\Absence\\AbsenceDocumentHandler',
