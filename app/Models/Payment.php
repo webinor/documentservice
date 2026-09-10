@@ -17,6 +17,8 @@ class Payment extends Model
         'status',
         'payment_method',
         'reference',
+        'transaction_code',
+        'transaction_type_code'
     ];
 
     public function document()

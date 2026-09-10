@@ -16,13 +16,19 @@ class TaxiPaperDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInt
 
     $userClient = new UserServiceClient();
 
+
     $actor_details = $userClient->resolveActor(
         $document->actor_type,
         $document->actor_id
     );
 
+
+
     // $base['actor_details'] = $actor_details;
-    $document->actor_details = $actor_details;    
+    $document->actor_details = $actor_details;   
+    
+        // throw new Exception(json_encode('$ids'), 1);
+    
 
     //   $found = Document::find($document['id']);
 

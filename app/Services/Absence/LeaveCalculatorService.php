@@ -89,6 +89,10 @@ class LeaveCalculatorService
                 'year' => Carbon::parse(
                     $request->startDate
                 )->year,
+
+                    'date' => Carbon::parse(
+            $request->startDate
+        )->toDateString(),
             ]
         );
 

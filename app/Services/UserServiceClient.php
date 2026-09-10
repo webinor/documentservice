@@ -279,6 +279,7 @@ public function hasPermissions(
 
         if (!$response->successful()) {
 
+
             throw new Exception(json_encode($response->body()), 1);
                 
 

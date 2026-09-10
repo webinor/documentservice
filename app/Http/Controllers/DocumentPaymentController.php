@@ -54,6 +54,7 @@ class DocumentPaymentController extends Controller
             $paid_amount = floatval($request->input("paid_amount"));
             $isFullPay = (bool) $request->input("is_full_pay", false);
             $transaction_code =  $request->input("transaction_code");
+            $transaction_type_code =  $request->input("transaction_type_code");
 
             
 
@@ -64,8 +65,10 @@ class DocumentPaymentController extends Controller
                 "document_id" => $document->id,
                 "amount" => $paid_amount,
                 "transaction_code" => $transaction_code,
+                "transaction_type_code" => $transaction_type_code,
                 "payment_method" => $request->input("payment_mode"),
                 "user_id" => $request->input("user_id"),
+                "status" => "completed"
             ]);
 
             // dd('payment created');

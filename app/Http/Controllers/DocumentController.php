@@ -1874,6 +1874,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         
         
 
+        // throw new Exception(json_encode($ids), 1);
+
 
 
         if (!empty($filters["accounting_entry_number"])) {
@@ -2032,6 +2034,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
             $enrichedDoc = $this->documentEnrichmentManager->enrich($doc, $base);
 
+           
+
             // $enrichedDoc['user_capabilities'] = []; 
             // $enrichedDoc['user_capabilities']['canCancel'] = $canCancel;
 
@@ -2041,6 +2045,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         });
         // throw new Exception(json_encode($documentsEnrich), 1);
+//                        throw new \Exception(
+//     "created_at = " 
+// );
 
         return $documentsEnrich;
     }
@@ -2054,6 +2061,10 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $request->input("isStat", false),
         FILTER_VALIDATE_BOOLEAN);
 
+//             throw new \Exception(
+//     "created_at = " 
+// );
+
         if ($from == "command" ) {
              $query = Document::query();
              $query->whereIn("id", $ids);
@@ -2064,6 +2075,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $request
     );
 
+//                 throw new \Exception(
+//     "created_at = " 
+// );
+
+
             if ($isStat) {
         return response()->json([
              $documents
@@ -2071,9 +2087,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
     }
 
 
-//     throw new \Exception(
-//     "created_at = " . $documents[0]['created_at'] 
-// );
+
 
         $formatRules = [
             "amount" => fn($v) => number_format($v, 0, ",", "."), // 500000 → 500.000

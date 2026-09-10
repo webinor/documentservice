@@ -139,7 +139,8 @@
         </td>
 
         <td>
-            {{ $document['actor_details']['nom'] ?? '-' }}
+            {{-- {{ $document['actor_details']['nom'] ?? '-' }} --}}
+            {{ $document['actor_details']['nom'] }} {{ $document['actor_details']['prenom'] }}
         </td>
 
         <td class="label">

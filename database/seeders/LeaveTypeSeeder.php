@@ -19,7 +19,7 @@ class LeaveTypeSeeder extends Seeder
 
 [
     'code' => 'LEAVE',
-    'name' => 'Congé',
+    'name' => 'Congé annuel',
     'category' => 'ANNUAL',
     'is_paid' => false,
     'requires_attachment' => true,
