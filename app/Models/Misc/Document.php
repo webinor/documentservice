@@ -208,6 +208,27 @@ class Document extends Model
         return $this->hasOne(RegularizationSheet::class);
     }
 
+     /**
+     * Retourne automatiquement le titre du document
+     * en majuscules lors de chaque récupération.
+     *
+     * Exemple :
+     *
+     * Valeur en base :
+     * "Demande de congé annuel"
+     *
+     * $document->title :
+     * "DEMANDE DE CONGÉ ANNUEL"
+     */
+    public function getTitleAttribute($value)
+    {
+        if (!$value) {
+            return $value;
+        }
+
+        return mb_strtoupper($value, 'UTF-8');
+    }
+
     public function getCreatedAtAttribute($value)
     {
         if (!$value) {
