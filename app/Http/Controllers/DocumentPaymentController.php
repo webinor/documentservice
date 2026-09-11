@@ -61,15 +61,29 @@ class DocumentPaymentController extends Controller
             // throw new Exception(json_encode($document->id));
 
             // Enregistrer le paiement
-            $payment = Payment::create([
-                "document_id" => $document->id,
-                "amount" => $paid_amount,
-                "transaction_code" => $transaction_code,
-                "transaction_type_code" => $transaction_type_code,
-                "payment_method" => $request->input("payment_mode"),
-                "user_id" => $request->input("user_id"),
-                "status" => "completed"
-            ]);
+            // $payment = Payment::create([
+            //     "document_id" => $document->id,
+            //     "amount" => $paid_amount,
+            //     "transaction_code" => $transaction_code,
+            //     "transaction_type_code" => $transaction_type_code,
+            //     "payment_method" => $request->input("payment_mode"),
+            //     "user_id" => $request->input("user_id"),
+            //     "status" => "completed"
+            // ]);
+
+            $payment = Payment::updateOrCreate(
+    [
+        'transaction_code' => $transaction_code,
+    ],
+    [
+        'document_id' => $document->id,
+        'amount' => $paid_amount,
+        'transaction_type_code' => $transaction_type_code,
+        'payment_method' => $request->input('payment_mode'),
+        'user_id' => $request->input('user_id'),
+        'status' => 'completed',
+    ]
+);
 
             // dd('payment created');
 
