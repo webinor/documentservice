@@ -4,45 +4,65 @@ namespace App\Services\TaxiPaper;
 
 use App\Models\Misc\Document;
 use App\Services\DocumentType\DocumentEnrichmentHandlerInterface;
+use App\Services\Financial\TransactionInitiatorEnrichmentService;
 use App\Services\UserServiceClient;
-use Exception;
-use Illuminate\Support\Facades\Http;
 
-class TaxiPaperDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInterface
+class TaxiPaperDocumentEnrichmentHandler
+    implements DocumentEnrichmentHandlerInterface
 {
-    public function enrich(Document $document, array $base): array
-{
+    public function enrich(
+        Document $document,
+        array $base
+    ): array {
+
+        $userClient = new UserServiceClient();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Actor / bénéficiaire
+        |--------------------------------------------------------------------------
+        */
+
+        $document->actor_details =
+            $userClient->resolveActor(
+                $document->actor_type,
+                $document->actor_id
+            );
 
 
-    $userClient = new UserServiceClient();
+        /*
+        |--------------------------------------------------------------------------
+        | Transaction
+        |--------------------------------------------------------------------------
+        |
+        | Le Taxi Paper fonctionne en ONE_SHOT.
+        |
+        | Sa transaction financière de référence est :
+        |
+        | TAXI_PAPER_SETTLEMENT
+        |
+        | L'initiateur de cette transaction devient :
+        |
+        | transaction_initiator_details
+        |
+        */
+
+        app(TransactionInitiatorEnrichmentService::class)
+            ->enrichDocument(
+                $document,
+                [
+                    'transaction_initiator_details' =>
+                        'TAXI_PAPER_SETTLEMENT',
+                ]
+            );
 
 
-    $actor_details = $userClient->resolveActor(
-        $document->actor_type,
-        $document->actor_id
-    );
+        /*
+        |--------------------------------------------------------------------------
+        | Résultat final
+        |--------------------------------------------------------------------------
+        */
 
-
-
-    // $base['actor_details'] = $actor_details;
-    $document->actor_details = $actor_details;   
-    
-        // throw new Exception(json_encode('$ids'), 1);
-    
-
-    //   $found = Document::find($document['id']);
-
-    // throw new Exception(json_encode([
-    //     'attribute' => $found->created_at,
-    //     'raw' => $found->getRawOriginal('created_at'),
-    //     'attributes' => $found->getAttributes(),
-    //     'timezone_php' => date_default_timezone_get(),
-    //     'timezone_carbon' => \Carbon\Carbon::now()->timezoneName,
-    // ], JSON_PRETTY_PRINT));
-    
-
-    return $document->toArray();
-}
-
-
+        return $document->toArray();
+    }
 }
