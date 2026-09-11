@@ -57,6 +57,7 @@ class DocumentController extends Controller
     protected DocumentEnrichmentManager $documentEnrichmentManager;
     protected UserServiceClient $user_service_client;
     private WorkflowParticipantService $workflowParticipantService;
+    private DocumentFilterService $documentFilterService;
 
     private $documents_relation = [
         "facture-fournisseur-medical" => "invoice_provider.ledger_code",
@@ -78,7 +79,8 @@ class DocumentController extends Controller
         LegacyDocumentEnricher $legacyDocumentEnricher,
         DocumentEnrichmentManager $documentEnrichmentManager,
         UserServiceClient $user_service_client,
-        WorkflowParticipantService $workflowParticipantService
+        WorkflowParticipantService $workflowParticipantService,
+        DocumentFilterService $documentFilterService
     ) {
         $this->childHandler = $childHandler;
         $this->notifyBeneficiaryService = $notifyBeneficiaryService;
@@ -86,6 +88,7 @@ class DocumentController extends Controller
         $this->documentEnrichmentManager = $documentEnrichmentManager;
         $this->user_service_client = $user_service_client;
         $this->workflowParticipantService = $workflowParticipantService;
+        $this->documentFilterService = $documentFilterService;
     }
     /**
      * Display a listing of the resource.
@@ -1870,7 +1873,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
             $query->whereActorId($filters["employee_id"]);
         }
 
-        $query = app(DocumentFilterService::class)->apply($query , $filters);
+        $query = $this->documentFilterService->apply($query , $filters , $documentTypes);
         
         
 

@@ -106,7 +106,7 @@ class LeaveCalculatorService
 
         $availableBalance =
             (float) (
-                $balance['remaining_days'] ?? 0
+                $balance['remaining_days'] ?? 0 //
             );
 
         $deductDays =
