@@ -125,7 +125,7 @@ class DocumentsExport extends DefaultValueBinder implements
              * Le rendu des séparateurs est interprété
              * selon la locale du classeur / de l'application Excel.
              */
-            $formats[$letter] = '#,##0.00';
+            $formats[$letter] = '#,##0.0';
         }
 
         return $formats;
