@@ -7,6 +7,7 @@ use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentCapabilitiesController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentExportController;
 use App\Http\Controllers\DocumentPaymentController;
 use App\Http\Controllers\DocumentReferenceController;
 use App\Http\Controllers\DocumentReferenceTypeController;
@@ -114,6 +115,14 @@ Route::middleware("jwt.check")
             MissionExpenseController::class,
             "calculate",
         ]);
+
+        Route::post(
+    '/export/excel',
+    [
+        DocumentExportController::class,
+        'exportExcel',
+    ]
+);
 
         /**
          * 📌 FolderController
