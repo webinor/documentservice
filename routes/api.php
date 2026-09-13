@@ -69,6 +69,11 @@ Route::get(
 )->where('path', '.*')->name('regularization-items.download');
 
 
+Route::post(
+    '/batch/enrich',
+    [DocumentController::class, 'batchEnrich']
+);
+
 // Route::get(
 //     '/signatures/{signatureId}',
 //     [DocumentSignatureController::class, 'show']
@@ -123,6 +128,8 @@ Route::middleware("jwt.check")
         'exportExcel',
     ]
 );
+
+
 
         /**
          * 📌 FolderController

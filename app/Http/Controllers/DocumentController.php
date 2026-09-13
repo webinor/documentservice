@@ -2108,6 +2108,229 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         return response()->json($formattedDocuments);
     }
 
+
+    /**
+ * Enrichit plusieurs documents en une seule requête.
+ *
+ * Les documents peuvent être identifiés par leur ID ou leur UUID.
+ *
+ * Options disponibles :
+ *
+ * - include_workflow_context
+ * - include_context
+ * - include_capabilities
+ *
+ * L'enrichissement métier du document est toujours effectué.
+ *
+ * @param Request $request
+ * @param DocumentService $documentService
+ * @param DocumentViewService $documentViewService
+ * @param DocumentCapabilitiesService $documentCapabilitiesService
+ * @param DocumentContextService $documentContextService
+ *
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function batchEnrich(
+    Request $request,
+    DocumentService $documentService,
+    DocumentViewService $documentViewService,
+    DocumentCapabilitiesService $documentCapabilitiesService,
+    DocumentContextService $documentContextService
+) {
+    $request->validate([
+        'documents' => 'required|array|min:1',
+        'documents.*' => 'required',
+
+        'include_workflow_context' => 'sometimes|boolean',
+        'include_context' => 'sometimes|boolean',
+        'include_capabilities' => 'sometimes|boolean',
+    ]);
+
+    $includeWorkflowContext = $request->boolean(
+        'include_workflow_context',
+        false
+    );
+
+    $includeContext = $request->boolean(
+        'include_context',
+        false
+    );
+
+    $includeCapabilities = $request->boolean(
+        'include_capabilities',
+        false
+    );
+
+    /*
+     * Le context et les capabilities dépendent du workflow context.
+     *
+     * On l'active automatiquement si l'un des deux est demandé.
+     */
+    if ($includeContext || $includeCapabilities) {
+        $includeWorkflowContext = true;
+    }
+
+    $userInfo = $request->get('user', []);
+
+    $user = [
+        'id' => $userInfo['id'] ?? null,
+        'employee_id' => $userInfo['employee_id'] ?? null,
+        'role_id' => $userInfo['role_ids'] ?? null,
+    ];
+
+    $results = [];
+
+    foreach ($request->input('documents', []) as $documentIdentifier) {
+        try {
+            /*
+             * ---------------------------------------------------------
+             * Récupération du document
+             * ---------------------------------------------------------
+             */
+
+            $document = $documentService->getDoc(
+                $documentIdentifier
+            );
+
+            /*
+             * ---------------------------------------------------------
+             * Enrichissement métier
+             * ---------------------------------------------------------
+             *
+             * Cet enrichissement est toujours effectué.
+             */
+
+            $enrichedDocument = $documentService->enrichDocument(
+                $document
+            );
+
+            /*
+             * ---------------------------------------------------------
+             * Workflow Context
+             * ---------------------------------------------------------
+             */
+
+            $workflowContext = null;
+
+            if ($includeWorkflowContext) {
+                $workflowContext =
+                    $documentViewService->getWorkflowStatusStatus(
+                        $document->id
+                    );
+
+                DocumentContext::setWorkflowStatus(
+                    $document->id,
+                    $workflowContext
+                );
+            }
+
+            /*
+             * ---------------------------------------------------------
+             * Capacités utilisateur
+             * ---------------------------------------------------------
+             */
+
+            $capabilities = null;
+
+            if ($includeCapabilities) {
+                $capabilities =
+                    $documentCapabilitiesService->resolve(
+                        $enrichedDocument,
+                        $workflowContext,
+                        $user
+                    );
+            }
+
+            /*
+             * ---------------------------------------------------------
+             * Context document
+             * ---------------------------------------------------------
+             */
+
+            $context = null;
+
+            if ($includeContext) {
+                $context =
+                    $documentContextService->resolve(
+                        $enrichedDocument,
+                        $workflowContext,
+                        $user
+                    );
+            }
+
+            /*
+             * ---------------------------------------------------------
+             * Injection des données optionnelles
+             * ---------------------------------------------------------
+             */
+
+            if ($includeCapabilities) {
+                $enrichedDocument['user_capabilities'] =
+                    $capabilities;
+            }
+
+            if ($includeWorkflowContext) {
+                $enrichedDocument['workflowContext'] =
+                    $workflowContext;
+            }
+
+            if ($includeContext) {
+                $enrichedDocument['context'] =
+                    $context;
+            }
+
+            /*
+             * On retourne également l'identifiant demandé.
+             * Cela facilite le mapping côté Reminder.
+             */
+
+            $results[] = [
+                'identifier' => $documentIdentifier,
+                'success' => true,
+                'document' => $enrichedDocument,
+            ];
+        } catch (\Throwable $e) {
+            Log::error(
+                'Document Service: erreur enrichissement batch',
+                [
+                    'document_identifier' =>
+                        $documentIdentifier,
+
+                    'message' =>
+                        $e->getMessage(),
+
+                    'file' =>
+                        $e->getFile(),
+
+                    'line' =>
+                        $e->getLine(),
+                ]
+            );
+
+            /*
+             * On ne fait pas échouer tout le batch.
+             *
+             * Un document problématique ne doit pas empêcher
+             * les autres documents d'être enrichis.
+             */
+
+            $results[] = [
+                'identifier' => $documentIdentifier,
+                'success' => false,
+                'document' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'count' => count($results),
+        'data' => $results,
+    ]);
+}
+
+
     /**
      * Display the specified resource.
      *
