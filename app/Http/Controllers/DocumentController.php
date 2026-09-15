@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateDocumentRequest;
 use App\Jobs\GeneratePdfThumbnail;
 use App\Managers\DocumentDataManager;
 use App\Managers\DocumentEnrichmentManager;
+use App\Managers\DocumentTypeEnricherManager;
 use App\Models\DocumentStatus;
 use App\Models\Finance\InvoiceProvider;
 use App\Models\Folder;
@@ -59,6 +60,9 @@ class DocumentController extends Controller
     private WorkflowParticipantService $workflowParticipantService;
     private DocumentFilterService $documentFilterService;
 
+    protected DocumentTypeEnricherManager $documentTypeEnricherManager;
+
+
     private $documents_relation = [
         "facture-fournisseur-medical" => "invoice_provider.ledger_code",
         "facture-fournisseur-informatique" => "invoice_provider",
@@ -80,7 +84,9 @@ class DocumentController extends Controller
         DocumentEnrichmentManager $documentEnrichmentManager,
         UserServiceClient $user_service_client,
         WorkflowParticipantService $workflowParticipantService,
-        DocumentFilterService $documentFilterService
+        DocumentFilterService $documentFilterService,
+        DocumentTypeEnricherManager $documentTypeEnricherManager
+        
     ) {
         $this->childHandler = $childHandler;
         $this->notifyBeneficiaryService = $notifyBeneficiaryService;
@@ -89,7 +95,10 @@ class DocumentController extends Controller
         $this->user_service_client = $user_service_client;
         $this->workflowParticipantService = $workflowParticipantService;
         $this->documentFilterService = $documentFilterService;
+        $this->documentTypeEnricherManager =    $documentTypeEnricherManager;
     }
+
+
     /**
      * Display a listing of the resource.
      *
@@ -112,14 +121,14 @@ class DocumentController extends Controller
             // ->select('id', 'document_type_id')
             ->get();
 
-        //     $result = $documents->mapWithKeys(function ($doc) {
-        //     return [
-        //         $doc->id => [
-        //             "id" => $doc->document_type_id,
-        //             "type" => $doc->document_type->slug ?? null,
-        //         ]
-        //     ];
-        // });
+         $result =
+        $this->documentTypeEnricherManager
+            ->enrich($documents);
+
+    return response()->json([
+        "data" => $result,
+    ]);
+    
 
         $result = $documents
             ->map(function ($doc) {
