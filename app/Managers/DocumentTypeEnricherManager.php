@@ -98,7 +98,8 @@ class DocumentTypeEnricherManager
             );
 
         if (!$handlerClass) {
-            throw new \Exception("Enricher $documentType->slug introuvable", 1);
+           
+        // throw new \Exception("Enricher $documentType->slug introuvable", 1);
             
             return $data;
         }
