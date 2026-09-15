@@ -126,9 +126,13 @@ class DocumentTypeEnricherManager
         switch ($documentTypeSlug) {
             case "papier-taxi":
 
+                return null;
+
                 // return \App\Services\TaxiPaper\TaxiPaperDocumentEnrichmentHandler::class;
 
             case "note-de-frais":
+
+                return null;
 
                 // return \App\Services\FeeNote\FeeNoteDocumentEnrichmentHandler::class;
 
@@ -137,6 +141,8 @@ class DocumentTypeEnricherManager
                 return RegularizationDocumentTypeEnrichmentHandler::class;
 
             case "demande-d-absence":
+
+                return null;
 
                 // return \App\Services\Absence\AbsenceDocumentEnrichmentHandler::class;
 
