@@ -243,17 +243,16 @@ INFORMATIONS DU DEMANDEUR
 </tr>
 
 
-<tr class="sub-label">
+{{-- <tr class="sub-label">
 
     
     <td colspan="3">Nombre de jour(s) Demandés</td>
 
     <td>
-        {{-- {{ $document['absence_request']['duration'] ?? 0 }} jour(s) --}}
         {{ $document['absence_request']['simulation']['summary']['requested_days'] ?? 0 }} jour(s)
     </td>
 
-</tr>
+</tr> --}}
 
 <tr class="sub-label">
 
@@ -320,7 +319,7 @@ DECISION
 <tr class="sub-label">
 
 
-<td colspan="4" style="color: rgb(39, 189, 28); font-weight: bold;">
+<td colspan="4" style="color: rgb(40, 144, 32); font-weight: bold; text-align: center;">
 
  Accordé
 
