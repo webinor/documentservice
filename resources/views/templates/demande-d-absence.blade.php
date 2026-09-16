@@ -231,19 +231,42 @@ INFORMATIONS DU DEMANDEUR
 
 <tr class="sub-label">
 
-    <td>Solde disponible</td>
+    <td colspan="3">Solde initial</td>
 
     <td>
-        {{ $document['actor_details']['leave_balance']['remaining_days'] ?? 0 }} jours
+        {{-- {{ $document['actor_details']['leave_balance']['remaining_days'] ?? 0 }} jour(s) --}}
+        {{ $document['absence_request']['simulation']['summary']['available_balance'] ?? 0 }} jour(s)
     </td>
 
-    <td>Demandé</td>
+    
+
+</tr>
+
+
+<tr class="sub-label">
+
+    
+    <td colspan="3">Nombre de jour(s) Demandés</td>
 
     <td>
-        {{ $document['absence_request']['duration'] ?? 0 }} jours
+        {{-- {{ $document['absence_request']['duration'] ?? 0 }} jour(s) --}}
+        {{ $document['absence_request']['simulation']['summary']['requested_days'] ?? 0 }} jour(s)
     </td>
 
 </tr>
+
+<tr class="sub-label">
+
+    
+    <td colspan="3">Nombre de jours Imputables</td>
+
+    <td>
+        {{-- {{ $document['absence_request']['duration'] ?? 0 }} jour(s) --}}
+        {{ $document['absence_request']['simulation']['summary']['deduct_days'] ?? 0 }} jour(s)
+    </td>
+
+</tr>
+
 
 <tr class="sub-label">
 
@@ -255,8 +278,11 @@ INFORMATIONS DU DEMANDEUR
 
         @php
             $remaining =
-                ($document['actor_details']['leave_balance']['remaining_days'] ?? 0)
-                - ($document['absence_request']['duration'] ?? 0);
+                // ($document['actor_details']['leave_balance']['remaining_days'] ?? 0)
+                // - ($document['absence_request']['duration'] ?? 0);
+        $document['absence_request']['simulation']['summary']['remaining_balance'] ?? 0 
+
+                
         @endphp
 
         {{ max($remaining,0) }} jours
