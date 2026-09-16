@@ -65,6 +65,27 @@ class UserServiceClient
     );
 }
 
+public function getLeaveTransactionByAbsenceId(
+    int $absenceRequestId
+): ?array {
+
+    $response = $this->client()->get(
+        "/leave-transactions/absence/{$absenceRequestId}"
+    );
+
+    if ($response->status() === 404) {
+        return null;
+    }
+
+    if ($response->failed()) {
+        throw new \Exception(
+            "UserService unavailable: " . $response->body()
+        );
+    }
+
+    return $response->json('data');
+}
+
 public function hasPermissions(
     array $document,
     array $user,

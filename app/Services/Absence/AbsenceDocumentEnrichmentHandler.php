@@ -112,6 +112,51 @@ class AbsenceDocumentEnrichmentHandler
 
         /*
          * =========================================================
+         * TRANSACTION DE CONGÉ
+         * =========================================================
+         *
+         * On récupère la transaction historique associée
+         * à cette demande d'absence.
+         *
+         * Cette transaction représente le mouvement réel
+         * du solde au moment du traitement de la demande.
+         *
+         * Elle est volontairement récupérée avant la simulation,
+         * car la simulation utilise le solde actuel.
+         */
+        $leaveTransaction = null;
+
+        Log::info(
+            'AbsenceDocumentEnrichmentHandler: récupération de la transaction de congé',
+            [
+                'document_id' => $document->id,
+                'absence_id' => $absence->id,
+            ]
+        );
+
+        $leaveTransaction =
+            $this->userClient->getLeaveTransactionByAbsenceId(
+                $absence->id
+            );
+
+        Log::info(
+            'AbsenceDocumentEnrichmentHandler: transaction de congé récupérée',
+            [
+                'document_id' => $document->id,
+                'absence_id' => $absence->id,
+                'transaction_id' => $leaveTransaction['id'] ?? null,
+                'type' => $leaveTransaction['type'] ?? null,
+                'days' => $leaveTransaction['days'] ?? null,
+                'balance_before' =>
+                    $leaveTransaction['balance_before'] ?? null,
+                'balance_after' =>
+                    $leaveTransaction['balance_after'] ?? null,
+            ]
+        );
+
+
+        /*
+         * =========================================================
          * SIMULATION
          * =========================================================
          *
@@ -161,7 +206,7 @@ class AbsenceDocumentEnrichmentHandler
                     'start_date' => $absence->departure_date,
                     'end_date' => $absence->return_date,
                     'start_time' => $absence->departure_time,
-                    'end_time' => $absence->return_time,
+                    'end_time' => $absence->return_date,
                     'employee_id' => $document->actor_id,
                 ]
             );
@@ -266,6 +311,12 @@ class AbsenceDocumentEnrichmentHandler
 
 
         /*
+         * Ajout de la transaction historique.
+         */
+        $absence->leave_transaction = $leaveTransaction;
+
+
+        /*
          * Remplacement de l'objet absence dans le document.
          */
         $document->absence_request = $absence;
@@ -283,6 +334,7 @@ class AbsenceDocumentEnrichmentHandler
                 'document_id' => $document->id,
                 'absence_id' => $absence->id,
                 'simulation_present' => $simulation !== null,
+                'leave_transaction_present' => $leaveTransaction !== null,
             ]
         );
 
