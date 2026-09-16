@@ -418,8 +418,9 @@ Observation :
                 </div>
 
                 {{-- Fonction / rôle --}}
-                <div style="font-size:10px;">
-                    {{ $item['role'] ?? '' }}
+                {{-- display_job_title --}}
+                <div style="font-size:10px;color:#666;">
+                    {{ $item['display_job_title'] }}
                 </div>
 
                 {{-- Type de signature --}}
