@@ -209,7 +209,7 @@ INFORMATIONS DU DEMANDEUR
     </td>
 
     <td>
-        {{ $document['absence_request']['reason'] ?? '-' }}
+        {{ $document['absence_request']['leave_type']['name'] ?? $document['absence_request']['reason'] ?? '-' }}
     </td>
 
 </tr>
