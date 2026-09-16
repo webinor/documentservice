@@ -285,7 +285,7 @@ INFORMATIONS DU DEMANDEUR
                 // ($document['actor_details']['leave_balance']['remaining_days'] ?? 0)
                 // - ($document['absence_request']['duration'] ?? 0);
         // $document['absence_request']['simulation']['summary']['remaining_balance'] ?? 0 
-        {{ $document['absence_request']['leave_transaction']['balance_after'] ?? 0 }} jour(s)
+         $document['absence_request']['leave_transaction']['balance_after'] ?? 0 
 
 
                 
