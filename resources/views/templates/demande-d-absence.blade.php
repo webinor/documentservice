@@ -319,7 +319,7 @@ DECISION
 <tr class="sub-label">
 
 
-<td colspan="4" style="color: rgb(40, 144, 32); font-size: 1.5rem;  font-weight: bold; text-align: center;">
+<td colspan="4" style="color: rgb(40, 144, 32); font-size: 1.3rem;  font-weight: bold; text-align: center;">
 
  Accordé
 
