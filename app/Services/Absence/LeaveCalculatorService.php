@@ -68,7 +68,7 @@ class LeaveCalculatorService
     public function calculateWithBalance(
         LeaveCalculationRequest $request,
         ?string $token = null
-    ): array {
+    ): ?array {
 
         $result = $this->calculate($request);
 
@@ -97,6 +97,8 @@ class LeaveCalculatorService
         );
 
         if (!$balanceResponse->successful()) {
+
+        return null;
             throw new \RuntimeException(
                 "Impossible de récupérer le solde de congés de l\'employe {$request->employeeId} : ".$balanceResponse->body()
             );

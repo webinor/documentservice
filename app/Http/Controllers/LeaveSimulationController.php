@@ -12,19 +12,20 @@ class LeaveSimulationController extends Controller
         Request $request,
         LeaveCalculatorService $calculator
     ) {
-
         $data = new LeaveCalculationRequest(
             $request->all()
         );
 
-        $result =
-            $calculator->calculateWithBalance(
-                $data,
-                $request->bearerToken()
-            );
-
-        return response()->json(
-            $result
+        $result = $calculator->calculateWithBalance(
+            $data,
+            $request->bearerToken()
         );
+
+        if ($result === null) {
+            return response('null', 200)
+                ->header('Content-Type', 'application/json');
+        }
+
+        return response()->json($result);
     }
 }
