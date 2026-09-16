@@ -102,7 +102,7 @@ class RegularizationDocumentEnrichmentHandler
         }
 
 
-        $document->regularization_sheet->should_regularize = $document->dynamic_amount !== $document->actual_amount ? '1' : '0' ;
+        $document->regularization_sheet->should_regularize = $document->dynamic_amount !== $document->actual_amount ? 1 : 0 ;
 
 
         /*
