@@ -13,7 +13,22 @@ class RegularizationDocumentTypeEnrichmentHandler
         array $base
     ): array {
 
-        // $userClient = new UserServiceClient();
+        $userClient = new UserServiceClient();
+
+
+
+
+         /*
+        |--------------------------------------------------------------------------
+        | Actor / bénéficiaire
+        |--------------------------------------------------------------------------
+        */
+
+        $base['actor_details'] =
+            $userClient->resolveActor(
+                $document->actor_type,
+                $document->actor_id
+            );
 
 
         /*
