@@ -4,6 +4,7 @@ namespace App\Managers;
 
 use App\Models\Misc\Document;
 use App\Services\Regularization\RegularizationDocumentTypeEnrichmentHandler;
+use App\Services\UserServiceClient;
 use Illuminate\Support\Collection;
 
 class DocumentTypeEnricherManager
@@ -85,6 +86,17 @@ class DocumentTypeEnricherManager
         Document $document,
         array $data
     ): array {
+
+
+    $userClient = new UserServiceClient();
+
+       $document->actor_details =
+            $userClient->resolveActor(
+                $document->actor_type,
+                $document->actor_id
+            );
+
+
         $documentType =
             $document->document_type;
 
