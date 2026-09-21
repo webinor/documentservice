@@ -221,6 +221,21 @@ public function hasPermissions(
         return $response->json()['data'] ?? [];
     }
 
+    public function employeesByCity(string $cityId): array
+{
+    $response = $this->client(
+        config("services.user_service.base_url")
+    )->get("/employees/by-city/$cityId");
+
+    if ($response->failed()) {
+        throw new \Exception(
+            "UserService unavailable: " . $response->body()
+        );
+    }
+
+    return $response->json()['data'] ?? [];
+}
+
 
     public function dispatchPaymentEvent(
         array $actor,

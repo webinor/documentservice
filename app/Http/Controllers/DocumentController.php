@@ -1793,7 +1793,7 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $ids = $request->input("ids", []);
         $userId = $request->input("userId", null);
         $from = $request->input("from", null);
-        $documentTypes = $request->input("documentTypes", ["invoice_provider"]);
+        $documentTypes = $request->input("documentTypes", []);
         $filters = $request->input("filters", []); // tableau associatif de filtres dynamiques
         // $filters = $request->query('filters', $request->input('filters', []));
            $shouldEnrich = filter_var(
@@ -1805,6 +1805,19 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         $request->input("isStat", true),
         FILTER_VALIDATE_BOOLEAN
     );
+
+
+        // throw new Exception(json_encode(request()->get('user')['employee']['assignment_place']), 1);
+
+
+    if (!isset($filters['city'])) {
+        
+                $currentUserCity = request()->get('user')['employee']['assignment_place'] ?? "DOUALA";
+
+                $filters['city'] = $currentUserCity;
+            
+    
+    }
 
 
       

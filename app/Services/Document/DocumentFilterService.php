@@ -32,6 +32,11 @@ class DocumentFilterService
         //     $filters
         // );
 
+        $this->filterCity(
+            $query,
+            $filters
+        );
+
 
         $this->filterDepartment(
             $query,
@@ -259,6 +264,46 @@ class DocumentFilterService
         $query->where(
             'actor_id',
             $filters['employee_id']
+        );
+
+    }
+
+        private function filterCity(
+        Builder $query,
+        array $filters
+    ){
+
+        if(empty($filters['city'])){
+            return;
+        }
+
+
+        /*
+            Aujourd'hui :
+            on passe par actor_id
+
+            Demain :
+            document_search_metadata.department_id
+        */
+
+
+        $employees =
+            app(UserServiceClient::class)
+            ->employeesByCity(
+                $filters['city']
+            );
+
+        // throw new \Exception(
+        //         json_encode($filters),
+        //         1
+        //     );
+
+        $employeeIds = sizeof($employees) > 0 ? collect($employees)->pluck('id') : [];
+
+
+        $query->whereIn(
+            'actor_id',
+            $employeeIds
         );
 
     }
