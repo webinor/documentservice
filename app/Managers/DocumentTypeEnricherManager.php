@@ -90,7 +90,7 @@ class DocumentTypeEnricherManager
 
     $userClient = new UserServiceClient();
 
-       $document->actor_details =
+       $data['actor_details'] =
             $userClient->resolveActor(
                 $document->actor_type,
                 $document->actor_id
