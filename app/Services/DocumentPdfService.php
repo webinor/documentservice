@@ -144,8 +144,8 @@ class DocumentPdfService
     |--------------------------------------------------------------------------
     */
 
-    $template = $this->getLeaveTemplate(
-        $context,  $document['document_type']['slug'] 
+    $template = $this->getTemplate(
+      $document['document_type']['slug'] ,  $context
     );
 
     if (
@@ -430,9 +430,9 @@ $contextualVariables =
         ];
     }
 
-    protected function getLeaveTemplate(
-    string $context,
-    string $documentTypeSlug
+    protected function getTemplate(
+        string $documentTypeSlug,
+    ?string $context
 ): string {
 
 
