@@ -1812,9 +1812,9 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
     if (!isset($filters['city'])) {
         
-                $currentUserCity = request()->get('user')['employee']['assignment_place'] ?? "DOUALA";
+                // $currentUserCity = request()->get('user')['employee']['assignment_place'] ?? "DOUALA";
 
-                $filters['city'] = $currentUserCity;
+                // $filters['city'] = $currentUserCity;
             
     
     }
