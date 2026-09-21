@@ -391,4 +391,102 @@ class WorkCalendarResolver
 
         return $days;
     }
+
+    /**
+ * Retourne le premier jour de reprise après la fin du congé.
+ *
+ * Règle de reprise :
+ *
+ * - le jour de fin du congé est exclu ;
+ * - samedi toujours exclu ;
+ * - dimanche toujours exclu ;
+ * - jour férié exclu ;
+ * - jour non ouvert exclu ;
+ * - la reprise se fait donc au premier jour ouvrable
+ *   du lundi au vendredi.
+ *
+ * @param WorkCalendar $calendar
+ * @param Carbon $leaveEndDate
+ * @return Carbon
+ */
+public function nextResumptionDay(
+    WorkCalendar $calendar,
+    Carbon $leaveEndDate
+): Carbon {
+
+    /*
+     * On commence le lendemain du dernier
+     * jour de congé.
+     */
+    $date = $leaveEndDate
+        ->copy()
+        ->startOfDay()
+        ->addDay();
+
+    while (true) {
+
+        /*
+         * ---------------------------------------------------------
+         * SAMEDI / DIMANCHE
+         * ---------------------------------------------------------
+         *
+         * Pour une date de reprise, le samedi est toujours exclu,
+         * même si le calendrier autorise un samedi travaillé sur deux.
+         */
+        if (
+            $date->isSaturday() ||
+            $date->isSunday()
+        ) {
+            $date->addDay();
+
+            continue;
+        }
+
+        /*
+         * ---------------------------------------------------------
+         * Résolution du jour
+         * ---------------------------------------------------------
+         */
+        $days = $this->resolvePeriod(
+            $calendar,
+            $date->copy(),
+            $date->copy()
+        );
+
+        $day = $days->first();
+
+        /*
+         * Si aucune information n'est retournée,
+         * on passe au jour suivant.
+         */
+        if (!$day) {
+
+            $date->addDay();
+
+            continue;
+        }
+
+        /*
+         * ---------------------------------------------------------
+         * JOUR OUVRABLE
+         * ---------------------------------------------------------
+         *
+         * counts_for_leave représente déjà dans ton système
+         * un jour qui peut être considéré comme ouvrable
+         * pour le calendrier de congés.
+         */
+        if (
+            ($day['is_working_day'] ?? false) === true
+            &&
+            ($day['counts_for_leave'] ?? false) === true
+        ) {
+            return $date;
+        }
+
+        /*
+         * Jour férié / jour fermé / jour non ouvrable.
+         */
+        $date->addDay();
+    }
+}
 }

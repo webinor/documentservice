@@ -19,6 +19,18 @@ class AbsenceSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         }
 
+        if (isset($documentData['context']) && $documentData['context'] == "leave_order" && in_array($participant['source_value'], ["OWNER"]) ) {
+            
+        //  throw new \InvalidArgumentException(
+        //         $documentData['context']
+        //     );
+
+        return false;
+        
+        }
+
+     
+
         if ($participant['signature_visibility'] == "IF_APPROVED" && $participant['status'] == "APPROVED") {
 
             
@@ -27,12 +39,31 @@ class AbsenceSignerVisibilityPolicy implements SignerVisibilityPolicy
 
         }
 
-        if (in_array($participant['source_value'], [
+           
+
+       
+
+        if (isset($documentData['context']) && $documentData['context'] == "leave_order" ) {
+            
+        $source_values = [
+            'DIRECT_MANAGER',
+            'HEAD_OF_DEPARTMENT',
+            'SIGNATORY',
+        ];
+        
+        }
+        else{
+
+        $source_values = [
             'OWNER',
             'DIRECT_MANAGER',
             'HEAD_OF_DEPARTMENT',
             'SIGNATORY',
-        ])) {
+        ];
+
+        }
+
+        if (in_array($participant['source_value'], $source_values)) {
 
         return true;
            

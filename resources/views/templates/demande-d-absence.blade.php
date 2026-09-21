@@ -179,7 +179,7 @@ INFORMATIONS DU DEMANDEUR
     </td>
 
     <td class="label">
-        Retour
+        Fin
     </td>
 
     <td>

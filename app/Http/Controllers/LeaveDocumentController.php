@@ -5,55 +5,99 @@ namespace App\Http\Controllers;
 use App\Models\Misc\Document;
 use App\Services\DocumentPdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class LeaveDocumentController extends Controller
 {
     public function generate(
-        Request $request,
-        DocumentPdfService $documentPdfService
-    ) {
-        $request->validate([
-            'document_uuid' => [
-                'required',
-                'uuid',
-            ],
+    Request $request,
+    DocumentPdfService $documentPdfService
+) {
+    $request->validate([
+        'document_uuid' => [
+            'required',
+            'uuid',
+        ],
 
-            'instance_id' => [
-                'nullable',
-                'integer',
-            ],
+        'instance_id' => [
+            'nullable',
+            'integer',
+        ],
 
-            'context' => [
-                'nullable',
-                'array',
-            ],
-        ]);
+        'config' => [
+            'required',
+            'array',
+        ],
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Document
+    |--------------------------------------------------------------------------
+    */
+
+    $document = Document::where(
+        'uuid',
+        $request->document_uuid
+    )->firstOrFail();
+
+
+    $config =  $contexts = $request->input(
+        'config'
+    );
+    /*
+    |--------------------------------------------------------------------------
+    | Contextes demandés
+    |--------------------------------------------------------------------------
+    */
+
+    $contexts = $config['contexts'];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Génération des documents
+    |--------------------------------------------------------------------------
+    */
+
+    $documents = [];
+
+    foreach ($contexts as $context) {
+
 
         /*
-        |--------------------------------------------------------------------------
-        | Document
-        |--------------------------------------------------------------------------
-        */
+     * Chaque contexte travaille sur une nouvelle instance
+     * du document récupérée depuis la base de données.
+     */
+    $documentForGeneration = Document::where(
+        'uuid',
+        $request->document_uuid
+    )->firstOrFail();
 
-        $document =
-            Document::where(
-                'uuid',
-                $request->document_uuid
-            )->firstOrFail();
+  
+     Log::info('CONTEXTE AVANT GENERATION', [
+        'context' => $context,
+        'object_id' => spl_object_id($document),
+        'leave_type' => data_get(
+            $document,
+            'absence_request.leave_type.name'
+        ),
+        'simulation' => data_get(
+            $document,
+            'absence_request.simulation'
+        ),
+    ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Génération PDF
-        |--------------------------------------------------------------------------
-        */
 
-        $result =
-            $documentPdfService->generate(
-                $document,
-                $request->bearerToken()
-            );
+    
+
+        $result = $documentPdfService->generate(
+            $documentForGeneration,
+            $request->bearerToken(),
+            $context,
+            $config['data']
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -61,8 +105,7 @@ class LeaveDocumentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $fileName =
-            $result['file_name'];
+        $fileName = $result['file_name'];
 
         /*
         |--------------------------------------------------------------------------
@@ -83,12 +126,13 @@ class LeaveDocumentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Réponse
+        | Document généré
         |--------------------------------------------------------------------------
         */
 
-        return response()->json([
-            'success' => true,
+        $documents[] = [
+            'type' =>
+                $context,
 
             'document_uuid' =>
                 $document->uuid,
@@ -97,7 +141,7 @@ class LeaveDocumentController extends Controller
                 $request->instance_id,
 
             'context' =>
-                $request->context,
+                $context,
 
             'file_name' =>
                 $fileName,
@@ -108,6 +152,26 @@ class LeaveDocumentController extends Controller
             'url' =>
                 Storage::disk('public')
                     ->url($path),
-        ]);
+        ];
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Réponse
+    |--------------------------------------------------------------------------
+    */
+
+    return response()->json([
+        'success' => true,
+
+        'document_uuid' =>
+            $document->uuid,
+
+        'instance_id' =>
+            $request->instance_id,
+
+        'documents' =>
+            $documents,
+    ]);
+}
 }

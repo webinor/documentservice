@@ -169,7 +169,9 @@
         </td>
 
         <td>
-            {{ $document['actor_details']['organization']['position']['position']['name'] ?? '-' }}
+            {{-- {{ $document['actor_details']['organization']['position']['position']['name'] ?? '-' }} --}}
+            {{ $jobTitle ?? '-' }}
+            
         </td>
 
     </tr>

@@ -362,10 +362,85 @@ class LeaveCalculatorService
             );
     }
 
+    protected function buildResult(): array
+{
+    /*
+     * Calcul de la date de reprise.
+     *
+     * La date de fin du congé est exclue.
+     *
+     * La reprise :
+     * - exclut toujours samedi ;
+     * - exclut toujours dimanche ;
+     * - exclut les jours fériés ;
+     * - exclut les jours non ouverts.
+     */
+    $resumptionDate =
+        $this->calendarResolver->nextResumptionDay(
+            $this->calendar,
+            Carbon::parse(
+                $this->request->endDate
+            )
+        );
+
+    return [
+
+        'summary' => [
+
+            'requested_days' =>
+                $this->days->count(),
+
+            'working_days' =>
+                $this->days
+                    ->where(
+                        'counts_for_leave',
+                        true
+                    )
+                    ->count(),
+
+            'paid_days' =>
+                $this->days
+                    ->where(
+                        'coverage_type',
+                        'EXCEPTIONAL_PAID'
+                    )
+                    ->count(),
+
+            'balance_days' =>
+                $this->days
+                    ->where(
+                        'coverage_type',
+                        'ANNUAL_BALANCE'
+                    )
+                    ->count(),
+
+            'unpaid_days' =>
+                $this->days
+                    ->where(
+                        'coverage_type',
+                        'UNPAID'
+                    )
+                    ->count(),
+
+            'deduct_days' =>
+                $this->days
+                    ->sum('deduct_days'),
+        ],
+
+        /*
+         * Date de reprise après le congé.
+         */
+        'resumption_date' =>
+            $resumptionDate->format('Y-m-d'),
+
+        'days' =>
+            $this->days->values(),
+    ];
+}
     /**
      * Construction du résultat.
      */
-    protected function buildResult(): array
+    protected function OldbuildResult(): array
     {
         return [
 

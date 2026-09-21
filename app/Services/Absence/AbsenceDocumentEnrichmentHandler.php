@@ -26,7 +26,7 @@ class AbsenceDocumentEnrichmentHandler
 
     public function enrich(
         Document $document,
-        array $base
+        array $base 
     ): array {
 
         Log::info('AbsenceDocumentEnrichmentHandler: début enrichissement', [
@@ -71,6 +71,9 @@ class AbsenceDocumentEnrichmentHandler
 
         if (!$absence) {
 
+        // throw new Exception(json_encode("Euil"), 1);
+
+
             Log::warning(
                 'AbsenceDocumentEnrichmentHandler: aucune demande d’absence trouvée',
                 [
@@ -97,6 +100,9 @@ class AbsenceDocumentEnrichmentHandler
          * Chargement du type de congé.
          */
         $absence->load('leave_type');
+
+        // throw new Exception(json_encode($absence), 1);
+        
 
         Log::info(
             'AbsenceDocumentEnrichmentHandler: type de congé chargé',
@@ -337,6 +343,37 @@ class AbsenceDocumentEnrichmentHandler
                 'leave_transaction_present' => $leaveTransaction !== null,
             ]
         );
+
+//         throw new Exception(
+//     json_encode([
+//         'relation_loaded' =>
+//             $absence->relationLoaded('leave_type'),
+
+//         'leave_type' =>
+//             $absence->leave_type
+//                 ? $absence->leave_type->toArray()
+//                 : null,
+
+//         'absence_array' =>
+//             $absence->toArray(),
+//     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+//     1
+// );
+
+
+  if (!isset($document['absence_request']['leave_type'])) {
+            
+        // throw new Exception(json_encode($document['absence_request']), 1);
+        throw new Exception(json_encode('Absent'), 1);
+        
+
+        }
+        else{
+
+        // throw new Exception(json_encode($context), 1);
+
+
+        }
 
         return $document->toArray();
     }
