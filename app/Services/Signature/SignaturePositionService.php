@@ -137,7 +137,10 @@ class SignaturePositionService
 
                     if (!$file) {
                         
-                    throw new Exception("Cannot find file $fileId", 1);
+                    throw new Exception(json_encode([
+                        'fileId' => $fileId,
+                        'filePositions' => $filePositions,
+                    ]), 1);
                     
                     
                     }
