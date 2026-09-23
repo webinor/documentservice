@@ -107,13 +107,27 @@ class AbsenceService implements DocumentTypeHandlerInterface
              * Si le champ n'est pas envoyé lors d'un update,
              * on ne modifie pas sa valeur existante.
              */
-            ...(array_key_exists("commentaire", $validated)
-                ? [
-                    "comment" =>
-                        $validated["commentaire"],
-                ]
-                : []),
+            // ...(array_key_exists("commentaire", $validated)
+            //     ? [
+            //         "comment" =>
+            //             $validated["commentaire"],
+            //     ]
+            //     : []),
         ];
+
+        /**
+     * COMMENTAIRE
+     *
+     * Si le champ est présent dans la requête,
+     * même s'il est vide, on met à jour sa valeur.
+     *
+     * S'il n'est pas présent, on conserve
+     * la valeur existante.
+     */
+    if (array_key_exists("commentaire", $validated)) {
+        $data["comment"] = $validated["commentaire"];
+    }
+
 
         $absence->update($data);
 

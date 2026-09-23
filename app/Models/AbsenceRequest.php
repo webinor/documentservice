@@ -28,9 +28,29 @@ class AbsenceRequest extends Model
 
 
 
-    protected $appends = [
-        "duration"
-    ];
+   protected $appends = [
+    'duration',
+    'departure_date_original',
+    'return_date_original',
+];
+
+public function getDepartureDateOriginalAttribute()
+{
+    if (!$this->getRawOriginal('departure_date')) {
+        return null;
+    }
+
+    return $this->getRawOriginal('departure_date');
+}
+
+public function getReturnDateOriginalAttribute()
+{
+    if (!$this->getRawOriginal('return_date')) {
+        return null;
+    }
+
+    return $this->getRawOriginal('return_date');
+}
 
 
     public function getDurationAttribute()
@@ -61,6 +81,8 @@ class AbsenceRequest extends Model
     }
     return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
 }
+
+
 
 /**
  * Get the leave_type that owns the AbsenceRequest
