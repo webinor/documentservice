@@ -7,6 +7,7 @@ use App\Models\DocumentSignaturePosition;
 use App\Models\Misc\Document;
 use App\Models\Misc\File;
 use App\Services\UserServiceClient;
+use Exception;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -131,7 +132,15 @@ class SignaturePositionService
                 function (Collection $filePositions, $fileId) {
 
                     $file = File::query()
-                        ->findOrFail($fileId);
+                        // ->findOrFail($fileId);
+                        ->find($fileId);
+
+                    if (!$file) {
+                        
+                    throw new Exception("Cannot find file $fileId", 1);
+                    
+                    
+                    }
 
                     return [
                         'file_id' => (int) $fileId,
