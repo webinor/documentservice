@@ -81,6 +81,50 @@ class DocumentValidationRules
                     'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/',
                 ],
             ],
+
+            /*
+             * DEMANDE D'ACHAT
+             */
+            'achat' => [
+                // 'titre' => 'required|string',
+                'description' => 'nullable|string',
+                
+                'category' => [
+                    'required',
+                    'string',
+                    Rule::in([
+                        'IT_EQUIPMENT',
+                        'SOFTWARE',
+                        'OFFICE_SUPPLY',
+                        'FURNITURE',
+                        'VEHICLE',
+                        'TELECOM',
+                        'SERVICE',
+                        'OTHER',
+                    ]),
+                ],
+
+                'destination_service_id' => 'nullable|numeric',
+
+                'priority' => [
+                    'required',
+                    'string',
+                    Rule::in([
+                        'LOW',
+                        'MEDIUM',
+                        'HIGH',
+                        'CRITICAL',
+                    ]),
+                ],
+
+                'libelles' => 'required|array|min:1',
+                
+                'libelles.*.libelle' => 'required|string',
+                'libelles.*.quantite' => 'required|numeric|min:1',
+                'libelles.*.specification' => 'nullable|string',
+
+                'attachments' => 'nullable',
+            ],
         ];
 
         return array_merge(

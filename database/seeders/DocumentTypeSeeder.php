@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Misc\DocumentType;
+use App\Services\Purchase\PurchaseDocumentEnrichmentHandler;
+use App\Services\Purchase\PurchaseRequestDocumentHandler;
 use Illuminate\Database\Seeder;
 
 class DocumentTypeSeeder extends Seeder
@@ -310,8 +312,8 @@ class DocumentTypeSeeder extends Seeder
                 'name' => 'Achat',
                 'slug' => 'achat',
                 'class_name' => 'App\\Models\\PurchaseRequest',
-                'creation_handler_class' => null,
-                'enrichment_handler_class' => null,
+                'creation_handler_class' => PurchaseRequestDocumentHandler::class,
+                'enrichment_handler_class' => PurchaseDocumentEnrichmentHandler::class,
                 'relation_name' => 'purchase_request',
                 'icon' => '📄',
                 'color' => 'blue',

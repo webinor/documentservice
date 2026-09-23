@@ -1809,12 +1809,13 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
         // throw new Exception(json_encode(request()->get('user')['employee']['assignment_place']), 1);
 
+        $currentUserCity = request()->get('user')['employee']['assignment_place'] ;
 
-    if (!isset($filters['city'])) {
+    if (!isset($filters['city']) && $currentUserCity == "YAOUNDE") {
         
                 // $currentUserCity = request()->get('user')['employee']['assignment_place'] ?? "DOUALA";
 
-                // $filters['city'] = $currentUserCity;
+                $filters['city'] = $currentUserCity;
             
     
     }
