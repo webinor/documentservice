@@ -467,7 +467,7 @@ protected function getContextualVariables(
     string $documentTypeSlug,
     ?string $context,
     array $document,
-    array $contextualData 
+    ?array $contextualData  = []
 ): array {
     switch ($documentTypeSlug) {
 
