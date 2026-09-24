@@ -293,26 +293,89 @@ class PdfSignatureService
 
        $pdf = new Fpdi();
 
+// $fpdiSourcePath = $sourcePath;
+$normalizedPath = null;
+
+$normalizedPath = null;
+
 try {
 
-    $pageCount = $pdf->setSourceFile(
-        $sourcePath
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | Chargement FPDI
+    |--------------------------------------------------------------------------
+    */
 
-} catch (\Throwable $e) {
+    $pdf = new Fpdi();
 
-    Log::error(
-        '[SIGNATURE] FPDI IMPOSSIBLE DE LIRE LE PDF',
-        [
-            'file_id' => $file->id,
-            'source_path' => $sourcePath,
-            'size' => filesize($sourcePath),
-            'mime' => mime_content_type($sourcePath),
-            'error' => $e->getMessage(),
-        ]
-    );
+    try {
 
-    throw $e;
+        $pageCount = $pdf->setSourceFile(
+            $sourcePath
+        );
+
+    } catch (\Throwable $e) {
+
+        $normalizedPath =
+            $this->normalizePdfForFpdi(
+                $sourcePath
+            );
+
+        $pdf = new Fpdi();
+
+        $pageCount = $pdf->setSourceFile(
+            $normalizedPath
+        );
+
+        Log::info(
+            '[SIGNATURE] PDF normalisé chargé par FPDI',
+            [
+                'file_id' => $file->id,
+                'source_path' => $sourcePath,
+                'normalized_path' => $normalizedPath,
+                'page_count' => $pageCount,
+            ]
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tout le traitement FPDI
+    |--------------------------------------------------------------------------
+    */
+
+    // importPage()
+    // AddPage()
+    // useTemplate()
+    // applySignature()
+    // Output()
+    // storeSignedCopy()
+    // return ...
+
+} finally {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Suppression du PDF normalisé
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $normalizedPath
+        &&
+        file_exists($normalizedPath)
+    ) {
+
+        @unlink($normalizedPath);
+
+        Log::info(
+            '[SIGNATURE] PDF normalisé temporaire supprimé',
+            [
+                'file_id' => $file->id,
+                'normalized_path' => $normalizedPath,
+            ]
+        );
+    }
 }
 
         Log::info(
@@ -644,6 +707,104 @@ try {
             throw $e;
         }
     }
+
+
+    /**
+ * Normalise un PDF afin de le rendre compatible avec FPDI.
+ *
+ * Le fichier original n'est jamais modifié.
+ *
+ * @param string $sourcePath
+ *
+ * @return string
+ *
+ * @throws \RuntimeException
+ */
+protected function normalizePdfForFpdi(
+    string $sourcePath
+): string {
+    if (!file_exists($sourcePath)) {
+        throw new \RuntimeException(
+            "PDF source introuvable : {$sourcePath}"
+        );
+    }
+
+    $directory = dirname($sourcePath);
+
+    $normalizedPath =
+        $directory
+        . DIRECTORY_SEPARATOR
+        . 'fpdi_normalized_'
+        . uniqid('', true)
+        . '.pdf';
+
+    $command =
+        'gs'
+        . ' -q'
+        . ' -dNOPAUSE'
+        . ' -dBATCH'
+        . ' -sDEVICE=pdfwrite'
+        . ' -dCompatibilityLevel=1.4'
+        . ' -dPDFSETTINGS=/prepress'
+        . ' -sOutputFile='
+        . escapeshellarg($normalizedPath)
+        . ' '
+        . escapeshellarg($sourcePath)
+        . ' 2>&1';
+
+    Log::warning(
+        '[SIGNATURE] Normalisation PDF pour FPDI',
+        [
+            'source' => $sourcePath,
+            'destination' => $normalizedPath,
+            'command' => $command,
+        ]
+    );
+
+    exec(
+        $command,
+        $output,
+        $returnCode
+    );
+
+    if (
+        $returnCode !== 0
+        ||
+        !file_exists($normalizedPath)
+        ||
+        filesize($normalizedPath) <= 0
+    ) {
+        Log::error(
+            '[SIGNATURE] Echec normalisation PDF',
+            [
+                'source' => $sourcePath,
+                'destination' => $normalizedPath,
+                'return_code' => $returnCode,
+                'output' => $output,
+            ]
+        );
+
+        if (file_exists($normalizedPath)) {
+            @unlink($normalizedPath);
+        }
+
+        throw new \RuntimeException(
+            'Impossible de normaliser le PDF pour FPDI.'
+        );
+    }
+
+    Log::info(
+        '[SIGNATURE] PDF normalisé avec succès',
+        [
+            'source' => $sourcePath,
+            'normalized' => $normalizedPath,
+            'original_size' => filesize($sourcePath),
+            'normalized_size' => filesize($normalizedPath),
+        ]
+    );
+
+    return $normalizedPath;
+}
 
 
     /**
