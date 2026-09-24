@@ -60,14 +60,15 @@
         }
 
 
-           .watermark {
+         .watermark {
     position: fixed;
-    top: 40%;
-    left: 20%;
+    top: 50%;
+    left: 50%;
     font-size: 100px;
-    color: rgba(0,0,0,0.08);
-    transform: rotate(-30deg);
+    color: rgba(0, 0, 0, 0.08);
+    transform: translate(-50%, -50%) rotate(-30deg);
     z-index: 0;
+    white-space: nowrap;
 }
 
     </style>
