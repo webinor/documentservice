@@ -98,7 +98,7 @@ class LeaveCalculatorService
 
         if (!$balanceResponse->successful()) {
 
-        return null;
+        // return null;
             throw new \RuntimeException(
                 "Impossible de récupérer le solde de congés de l\'employe {$request->employeeId} : ".$balanceResponse->body()
             );
