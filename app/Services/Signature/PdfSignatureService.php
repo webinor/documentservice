@@ -281,14 +281,39 @@ class PdfSignatureService
         | Initialisation FPDI
         |--------------------------------------------------------------------------
         */
+        Log::info(
+    '[SIGNATURE] Analyse PDF avant FPDI',
+    [
+        'file_id' => $file->id,
+        'source_path' => $sourcePath,
+        'size' => filesize($sourcePath),
+        'mime' => mime_content_type($sourcePath),
+    ]
+);
 
-        $pdf =
-            new Fpdi();
+       $pdf = new Fpdi();
 
-        $pageCount =
-            $pdf->setSourceFile(
-                $sourcePath
-            );
+try {
+
+    $pageCount = $pdf->setSourceFile(
+        $sourcePath
+    );
+
+} catch (\Throwable $e) {
+
+    Log::error(
+        '[SIGNATURE] FPDI IMPOSSIBLE DE LIRE LE PDF',
+        [
+            'file_id' => $file->id,
+            'source_path' => $sourcePath,
+            'size' => filesize($sourcePath),
+            'mime' => mime_content_type($sourcePath),
+            'error' => $e->getMessage(),
+        ]
+    );
+
+    throw $e;
+}
 
         Log::info(
             '[SIGNATURE] PDF chargé',
