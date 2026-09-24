@@ -77,9 +77,9 @@
 
 <body>
 
-     @if($document['is_regularized'] ?? false)
+     {{-- @if($document['is_regularized'] ?? false)
     <div class="watermark">REGULARISEE</div>
-@endif
+@endif --}}
 
 <!-- ====================================================== -->
 <!-- EN-TÊTE -->
