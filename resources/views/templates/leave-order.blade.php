@@ -1089,6 +1089,7 @@
 
                                     @if(is_array($item['user'] ?? null))
 
+                                        {{ $item['civilite'] ?? '' }}
                                         {{ $item['user']['name'] ?? '' }}
 
                                     @else

@@ -177,12 +177,20 @@ class DocumentPdfService
         |--------------------------------------------------------------------------
         */
 
+        
+
         $allSignatures =
             collect($visibleParticipants)
                 ->map(function ($participant) {
 
+        // throw new Exception(json_encode( $participant['civilite']), 1);
+
+
                     return [
                         'type_block' => 'VALIDATION',
+
+                        'civilite' =>
+                            $participant['user']['civilite'] ?? "",
 
                         'user' =>
                             $participant['user'] ?? null,
@@ -219,9 +227,17 @@ class DocumentPdfService
                     collect($businessSignatures)
                         ->map(function ($signature) {
 
+        // throw new Exception(json_encode($signature), 1);
+
+
                             return [
                                 'type_block' => 'RECEPTION',
 
+                                'civilite' => data_get(
+                                        $signature,
+                                        'actor.civilite'
+                                    ) ?? ''
+                                    ,
                                 'user' =>
                                     data_get(
                                         $signature,
