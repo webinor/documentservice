@@ -59,11 +59,26 @@
             font-size: 11px;
         }
 
+
+           .watermark {
+    position: fixed;
+    top: 40%;
+    left: 20%;
+    font-size: 100px;
+    color: rgba(0,0,0,0.08);
+    transform: rotate(-30deg);
+    z-index: 0;
+}
+
     </style>
 
 </head>
 
 <body>
+
+     @if($document['is_regularized'] ?? false)
+    <div class="watermark">REGULARISEE</div>
+@endif
 
 <!-- ====================================================== -->
 <!-- EN-TÊTE -->

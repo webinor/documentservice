@@ -139,6 +139,18 @@ class RegularizationDocumentEnrichmentHandler
             );
 
 
+        $settlement = collect($document->transactions)
+    ->firstWhere('transaction_type_code', 'REGULARIZATION_SETTLEMENT');
+
+    $document->is_regularized = false;
+if ($settlement) {
+    // Transaction trouvée
+
+    $document->is_regularized = true;
+    
+    }
+    // throw new \Exception("Error Processing Request", 1);
+
         /*
         |--------------------------------------------------------------------------
         | Positions de signature
