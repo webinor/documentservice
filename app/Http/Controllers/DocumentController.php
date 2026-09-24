@@ -334,6 +334,21 @@ public function download_document(
     DocumentPdfService $documentPdfService,
     string $documentIdentifier
 ) {
+
+
+   $validated = $request->validate([
+        'context' => 'nullable|string',
+        'contextualData' => 'nullable|array',
+        
+    ]);
+
+    // throw new Exception(json_encode($validated), 1);
+
+
+    $context = $validated['context'] ?? null;
+    $contextualData = $validated['contextualData'] ?? null;
+
+
     if (Str::isUuid($documentIdentifier)) {
 
         $doc =
@@ -350,11 +365,20 @@ public function download_document(
             );
     }
 
+    // throw new Exception("Error Processing Request", 1);
+    
+
     $result =
         $documentPdfService->generate(
             $doc,
-            $request->bearerToken()
+            $request->bearerToken(),
+            $context,
+            $contextualData
+            
         );
+
+    // throw new Exception($doc, 1);
+
 
     return $result['pdf']->download(
         $result['file_name']
@@ -2169,6 +2193,9 @@ public function batchEnrich(
         'include_capabilities' => 'sometimes|boolean',
     ]);
 
+//    throw new Exception("Error Processing Request", 1);
+    
+
     $includeWorkflowContext = $request->boolean(
         'include_workflow_context',
         false
@@ -2390,12 +2417,26 @@ public function batchEnrich(
 
 
         $userInfo = request()->get("user");
+        
+
+        $isHead = data_get(
+    $userInfo,
+    'employeeContext.active_position.is_head',
+    false
+);
+
+
+
 
         $user = [
             'id' => $userInfo['id'],
             'employee_id' =>$userInfo['employee_id'],
             'role_id' => $userInfo['role_ids'] ?? null,
+            'isHead' => $isHead
         ];
+
+        // throw new Exception(json_encode($user), 1);
+
 
          /**
          * Résolution des capacités
@@ -2414,7 +2455,6 @@ public function batchEnrich(
             $user
             );
 
-        // throw new Exception("Error Processing Request", 1);
 
             
         // throw new Exception(json_encode($context), 1);

@@ -35,6 +35,8 @@ class DocumentCapabilitiesController extends Controller
         // return
         $userInfo = request()->get("user");
 
+
+
         $user = [
             'id' => $userInfo['id'],
             'employee_id' =>$userInfo['employee_id'],

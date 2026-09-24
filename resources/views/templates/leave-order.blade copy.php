@@ -17,11 +17,6 @@
     |--------------------------------------------------------------------------
     */
 
-    @page {
-    margin-top: 40px;
-    margin-bottom: 105px;
-}
-
     body {
         font-family: helvetica;
         font-size: 9px;
@@ -29,16 +24,6 @@
         margin: 0;
         padding: 0;
     }
-
-    .footer-info-fixed {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    font-size: 8px;
-    border-collapse: collapse;
-    z-index: 1000;
-}
 
 
     /*
@@ -81,21 +66,6 @@
     | HEADER
     |--------------------------------------------------------------------------
     */
-
-      .header, .footer {
-            width: 100%;
-            text-align: center;
-        }
-        .header img {
-            /* height: 100px; */
-        }
-
-
-        .footer-info {
-    font-size: 10px;
-    text-align: center;
-    margin-top: 15px;
-}
 
     .header-table {
         width: 100%;
@@ -568,52 +538,103 @@
 
 
 {{-- =====================================================================
-     HEADER CAS
+     HEADER
 ===================================================================== --}}
 
-<div class="header">
-    <table width="100%">
-        <tr>
+<table class="header-table">
 
-            <td align="left">
+    <tr>
 
-                @if(file_exists(public_path('assets/img/LOGO_CAMEROUN_ASSIST.png')))
-                    <img
-                        src="{{ public_path('assets/img/LOGO_CAMEROUN_ASSIST.png') }}"
-                        alt="Logo CAS"
-                        style="display:block; margin:auto; height:100px;"
-                    >
-                @endif
+        {{-- LOGO --}}
+        <td
+            class="header-logo"
+            width="20%"
+        >
 
-                {{-- <div style="
-                    text-align:left;
-                    font-size:8px;
-                    margin-top:4px;
-                ">
-                    ASSISTANCE AUX PERSONNES -
-                    TRANSPORTS MEDICALISES -
-                    EVACUATIONS SANITAIRES
-                </div> --}}
+            @if(file_exists(public_path('assets/img/LOGO_CAMEROUN_ASSIST.png')))
 
-            </td>
+                <img
+                    src="{{ public_path('assets/img/LOGO_CAMEROUN_ASSIST.png') }}"
+                    width="70"
+                >
 
-            <td align="right">
+            @endif
 
-                {{-- @if(!empty($company['logo'])) --}}
-                @if(file_exists(public_path('assets/img/LOGO_ISO_CAMEROUN_ASSIST.png')))
-                {{-- asset("assets/img/LOGO_ISO_CAMEROUN_ASSIST.png") --}}
-                    <img
-                        src="{{ public_path('assets/img/LOGO_ISO_CAMEROUN_ASSIST.png') }}"
-                        style="display:block; margin-top:20px; height:50px;"
-                        alt="Logo ISO"
-                    >
-                @endif
+        </td>
 
-            </td>
 
-        </tr>
-    </table>
-</div>
+        {{-- IDENTITÉ --}}
+        <td
+            class="header-main"
+            width="55%"
+        >
+
+            <div class="company-name">
+
+                {{ $company['name'] ?? 'CAMEROUN ASSISTANCE SANITAIRE' }}
+
+            </div>
+
+            <div class="company-tagline">
+
+                {{ $company['tagline'] ?? 'Nous sommes là quand il le faut !' }}
+
+            </div>
+
+        </td>
+
+
+        {{-- DOCUMENT --}}
+        <td
+            class="header-document"
+            width="25%"
+        >
+
+            <div class="document-code">
+
+                {{ $document['code'] ?? 'RH / CONGÉ' }}
+
+            </div>
+
+            <div class="document-name">
+
+                {{ $document['type'] ?? 'LETTRE DE MISE EN CONGÉ' }}
+
+            </div>
+
+
+            @if(!empty($document['reference']))
+
+                <div class="document-reference">
+
+                    Référence :
+                    {{ $document['reference'] }}
+
+                </div>
+
+            @endif
+
+
+            <div class="document-reference">
+
+                {{-- Date : --}}
+                Douala,
+                {{ $documentDate ?? now()->format('d/m/Y') }}
+
+            </div>
+
+
+            <div class="confidentiality">
+
+                {{ $document['confidentiality'] ?? 'DOCUMENT INTERNE' }}
+
+            </div>
+
+        </td>
+
+    </tr>
+
+</table>
 
 
 
@@ -1154,80 +1175,69 @@
 
 
 {{-- =====================================================================
-     FOOTER CAS
+     FOOTER
 ===================================================================== --}}
 
-<table class="footer-info-fixed">
+<table class="footer">
+
     <tr>
 
-        <td
-            style="
-                border:1px solid #000;
-                padding:5px;
-                font-weight:bold;
-                height:10px;
-            "
-        >
-            <span>
-                Certificat N° <br>
-                Qual/2003/1357
-            </span>
-        </td>
+        <td class="footer-left">
 
-        <td style="padding:5px; text-align:center;">
+            <div class="footer-company">
 
-            BP : 2265 DOUALA CAMEROUN, 645 RUE BERTAUT BALI
-            <br>
+                {{ $company['name'] ?? 'CAMEROUN ASSISTANCE SANITAIRE' }}
 
-            Tél. H24 :
-            (237) 233 42 14 14 •
-            233 42 15 15 •
-            233 42 20 20 •
-            233 42 48 91 •
-            233 43 91 91
+            </div>
 
-            <br>
 
-            Fax :
-            (237) 233 42 00 79 •
-            233 43 30 30 •
+            <div class="footer-info">
 
-            Email :
-            administration@cas-assistance.com •
-            commercial@cas-asistance.com
+                {{ $company['address'] ?? '' }}
 
-            <br>
+                <br>
 
-            www.cas-assistance.com
+                Tél. :
+                {{ $company['phone'] ?? '' }}
 
-            <br>
+                @if(!empty($company['support_phone']))
 
-            S.A. au capital de
-            <strong>100 000 000 FCFA</strong>
-            –
-            RC/DLA/1987/B/04790
-            –
-            N° Empl.5613301 A
-            –
-            NIU : M128800000469U
+                    · Assistance :
+                    {{ $company['support_phone'] }}
 
-            <br>
+                @endif
 
-            Autorisation Arrêté Ministériel N°
-            <strong>1982/A/MINSANTE/SG/DOSTS/SDSSP</strong>
-            du 07 juin 2010
+                <br>
+
+                {{ $company['email'] ?? '' }}
+
+            </div>
 
         </td>
 
-        <td
-            style="
-                padding-top:6px;
-                text-align:center;
-            "
-        >
+
+        <td class="footer-right">
+
+            <div class="footer-website">
+
+                {{ $company['website'] ?? 'www.cas-assistance.com' }}
+
+            </div>
+
+
+            <div class="footer-tagline">
+
+                {{ $company['tagline'] ?? 'Nous sommes là quand il le faut !' }}
+
+            </div>
+
+
+            <div class="footer-accent"></div>
+
         </td>
 
     </tr>
+
 </table>
 
 

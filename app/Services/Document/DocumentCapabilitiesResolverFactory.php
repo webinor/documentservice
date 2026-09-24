@@ -4,6 +4,7 @@ namespace App\Services\Document;
 
 use App\Models\Misc\Document;
 use App\Services\Document\Contracts\DocumentCapabilitiesResolver;
+use App\Services\Document\Resolvers\AbsenceCapabilitiesResolver;
 use App\Services\Document\Resolvers\DefaultCapabilitiesResolver;
 use App\Services\Document\Resolvers\MissionCapabilitiesResolver;
 use App\Services\Document\Resolvers\RegularizationCapabilitiesResolver;
@@ -21,6 +22,9 @@ class DocumentCapabilitiesResolverFactory
 
             case "fiche-a-regulariser":
                 return app(RegularizationCapabilitiesResolver::class);
+
+               case "demande-d-absence":
+                return app(AbsenceCapabilitiesResolver::class);
 
             case "taxi-paper":
                 // return app(TaxiPaperCapabilitiesResolver::class);

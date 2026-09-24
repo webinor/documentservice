@@ -105,6 +105,7 @@ class DocumentPdfService
             if ($context) {
                 $document['context'] = $context;
             }
+
         $visibleParticipants =
             collect($participants)
                 ->filter(
@@ -308,6 +309,8 @@ class DocumentPdfService
         |--------------------------------------------------------------------------
         */
 
+
+
         $accountingReference =
             optional(
                 collect(
@@ -368,6 +371,8 @@ $contextualVariables =
     );
 
         // throw new Exception(json_encode($document['absence_request']['leave_type']), 1);
+
+    // throw new Exception("$template", 1);
 
 
         /*
