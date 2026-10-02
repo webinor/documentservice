@@ -20,7 +20,6 @@ class DocumentCapabilitiesService
     public function resolve($document, $workflowContext, array $user): array
     {
 
-    // throw new \Exception(json_encode($user), 1);
 
 
         $resolver = DocumentCapabilitiesResolverFactory::make($document);
@@ -190,4 +189,6 @@ $capabilities['can_delete'] = $canDelete;
         'any'
     );
 }
+
+
 }

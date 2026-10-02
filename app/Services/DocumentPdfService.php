@@ -2,18 +2,16 @@
 
 namespace App\Services;
 
-use App\DTO\LeaveCalculationRequest;
 use App\Managers\DocumentEnrichmentManager;
 use App\Models\Misc\Document;
 use App\Services\Absence\LeaveCalculatorService;
+use App\Services\EmployeeResponsibilityService;
 use App\Services\Pdf\PdfMetadataService;
 use App\Services\Workflow\WorkflowParticipantService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class DocumentPdfService
 {
@@ -25,17 +23,21 @@ class DocumentPdfService
 
     private LeaveCalculatorService $leaveCalculatorService;
 
+    private EmployeeResponsibilityService $employeeResponsibilityService;
+
 
     public function __construct(
         DocumentEnrichmentManager $documentEnrichmentManager,
         PdfMetadataService $metadataService,
         WorkflowParticipantService $workflowParticipantService,
-        LeaveCalculatorService $leaveCalculatorService
+        LeaveCalculatorService $leaveCalculatorService,
+        EmployeeResponsibilityService $employeeResponsibilityService
     ) {
         $this->documentEnrichmentManager = $documentEnrichmentManager;
         $this->metadataService = $metadataService;
         $this->workflowParticipantService = $workflowParticipantService;
         $this->leaveCalculatorService = $leaveCalculatorService;
+        $this->employeeResponsibilityService = $employeeResponsibilityService;
     }
 
     /**
@@ -483,7 +485,7 @@ protected function getContextualVariables(
     string $documentTypeSlug,
     ?string $context,
     array $document,
-    ?array $contextualData  = []
+    ?array $contextualData = []
 ): array {
     switch ($documentTypeSlug) {
 
@@ -504,7 +506,7 @@ protected function getContextualVariables(
         }
         else{
 
-        // throw new \Exception(json_encode($document['absence_request']), 1);
+        // throw new \Exception(json_encode($contextualData), 1);
 
 
         }
@@ -518,7 +520,6 @@ protected function getContextualVariables(
         // throw new Exception(json_encode($document['absence_request']['leave_type']), 1);
 
 
-            // throw new Exception(json_encode($getLeaveContextVariables), 1);
             
 
             return $getLeaveContextVariables;
@@ -607,6 +608,7 @@ protected function getLeaveContextVariables(
         $absence = $document['absence_request'];
 
 
+       
         // throw new Exception(json_encode($absence), 1);
 
 
@@ -652,6 +654,24 @@ protected function getLeaveContextVariables(
 // throw new Exception(json_encode(Carbon::parse($contextualData['executed_at'])), 1);
 
 
+$director = $this->employeeResponsibilityService
+    ->findByResponsibilities([
+        'CEO'
+    ]);
+
+
+// throw new Exception(json_encode(($director)), 1);
+
+
+if (!$director) {
+    Log::warning(
+        'Aucun directeur trouvé pour la génération de la lettre de mise en congé',
+        [
+            'document_id' => $document['id'] ?? null,
+            'employee_id' => $document['actor_id'] ?? null,
+        ]
+    );
+}
 
 
     return array_merge(
@@ -662,6 +682,8 @@ protected function getLeaveContextVariables(
 
             'is_leave_order' =>
                 true,
+
+             'director' => $director,
 
             'is_leave_request_validated' =>
                 false,

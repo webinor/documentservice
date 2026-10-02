@@ -339,14 +339,12 @@ public function download_document(
    $validated = $request->validate([
         'context' => 'nullable|string',
         'contextualData' => 'nullable|array',
-        
     ]);
 
     // throw new Exception(json_encode($validated), 1);
 
-
     $context = $validated['context'] ?? null;
-    $contextualData = $validated['contextualData'] ?? null;
+    $contextualData = $validated['contextualData'] ?? [];
 
 
     if (Str::isUuid($documentIdentifier)) {

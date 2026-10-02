@@ -17,6 +17,11 @@
     |--------------------------------------------------------------------------
     */
 
+    @page {
+    margin-top: 40px;
+    margin-bottom: 105px;
+}
+
     body {
         font-family: helvetica;
         font-size: 9px;
@@ -24,6 +29,16 @@
         margin: 0;
         padding: 0;
     }
+
+    .footer-info-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    font-size: 8px;
+    border-collapse: collapse;
+    z-index: 1000;
+}
 
 
     /*
@@ -66,6 +81,21 @@
     | HEADER
     |--------------------------------------------------------------------------
     */
+
+      .header, .footer {
+            width: 100%;
+            text-align: center;
+        }
+        .header img {
+            /* height: 100px; */
+        }
+
+
+        .footer-info {
+    font-size: 10px;
+    text-align: center;
+    margin-top: 15px;
+}
 
     .header-table {
         width: 100%;
@@ -218,7 +248,7 @@
     }
 
     .recipient-label {
-        font-size: 6px;
+        font-size: 10px;
         font-weight: bold;
         color: {{ $branding['muted_color'] ?? '#687784' }};
         text-transform: uppercase;
@@ -235,7 +265,7 @@
 
     .recipient-position {
         margin-top: 4px;
-        font-size: 7px;
+        font-size: 10px;
         color: {{ $branding['muted_color'] ?? '#687784' }};
         line-height: 1.4;
     }
@@ -254,14 +284,14 @@
     .subject-label {
         width: 12%;
         font-weight: bold;
-        font-size: 8px;
+        font-size: 13px;
         color: {{ $branding['primary_color'] ?? '#123B63' }};
         padding: 3px 0;
     }
 
     .subject-content {
         width: 88%;
-        font-size: 8px;
+        font-size: 13px;
         line-height: 1.5;
         padding: 3px 0;
     }
@@ -290,7 +320,7 @@
     }
 
     .period-label {
-        font-size: 6px;
+        font-size: 10px;
         font-weight: bold;
         color: {{ $branding['muted_color'] ?? '#687784' }};
         text-transform: uppercase;
@@ -299,7 +329,7 @@
 
     .period-value {
         margin-top: 5px;
-        font-size: 8px;
+        font-size: 10px;
         font-weight: bold;
         color: {{ $branding['primary_color'] ?? '#123B63' }};
         line-height: 1.4;
@@ -365,7 +395,7 @@
         padding: 7px 8px;
         background: {{ $branding['light_color'] ?? '#F4F7FA' }};
         border-left: 4px solid {{ $branding['primary_color'] ?? '#123B63' }};
-        font-size: 6px;
+        font-size: 10px;
         font-weight: bold;
         color: {{ $branding['primary_color'] ?? '#123B63' }};
         text-transform: uppercase;
@@ -373,7 +403,7 @@
     }
 
     .signatures-table {
-        margin-top: 7px;
+        margin-top: 10px;
         width: 100%;
         /* border-collapse: collapse; */
     }
@@ -386,7 +416,7 @@
     }
 
     .signature-type {
-        font-size: 5.5px;
+        font-size: 10px;
         font-weight: bold;
         color: {{ $branding['accent_color'] ?? '#C6202E' }};
         text-transform: uppercase;
@@ -407,7 +437,7 @@
     }
 
     .signature-name {
-        font-size: 8px;
+        font-size: 12px;
         font-weight: bold;
         color: {{ $branding['primary_color'] ?? '#123B63' }};
         line-height: 1.35;
@@ -415,7 +445,7 @@
 
     .signature-position {
         margin-top: 4px;
-        font-size: 6.5px;
+        font-size: 10px;
         color: {{ $branding['muted_color'] ?? '#687784' }};
         line-height: 1.35;
     }
@@ -520,7 +550,7 @@
 
         text-align: center;
 
-        font-size: 7px;
+        font-size: 10px;
 
         color: #9AA4AD;
 
@@ -538,103 +568,65 @@
 
 
 {{-- =====================================================================
-     HEADER
+     HEADER CAS
 ===================================================================== --}}
 
-<table class="header-table">
-
-    <tr>
-
-        {{-- LOGO --}}
-        <td
-            class="header-logo"
-            width="20%"
-        >
-
-            @if(file_exists(public_path('assets/img/LOGO_CAMEROUN_ASSIST.png')))
-
-                <img
-                    src="{{ public_path('assets/img/LOGO_CAMEROUN_ASSIST.png') }}"
-                    width="70"
-                >
-
-            @endif
-
-        </td>
+<div class="header">
+    <table width="100%">
+        <tr>
 
 
-        {{-- IDENTITÉ --}}
-        <td
-            class="header-main"
-            width="55%"
-        >
 
-            <div class="company-name">
+            <td align="left">
 
-                {{ $company['name'] ?? 'CAMEROUN ASSISTANCE SANITAIRE' }}
+                @if(file_exists(public_path('assets/img/LOGO_CAMEROUN_ASSIST.png')))
+                    <img
+                        src="{{ public_path('assets/img/LOGO_ISO_CAMEROUN_ASSIST.png') }}"
+                        alt="Logo CAS"
+                        style="display:block;  height:50px;"
+                    >
+                @endif
 
-            </div>
-
-            <div class="company-tagline">
-
-                {{ $company['tagline'] ?? 'Nous sommes là quand il le faut !' }}
-
-            </div>
-
-        </td>
-
-
-        {{-- DOCUMENT --}}
-        <td
-            class="header-document"
-            width="25%"
-        >
-
-            <div class="document-code">
-
-                {{ $document['code'] ?? 'RH / CONGÉ' }}
-
-            </div>
-
-            <div class="document-name">
-
-                {{ $document['type'] ?? 'LETTRE DE MISE EN CONGÉ' }}
-
-            </div>
-
-
-            @if(!empty($document['reference']))
-
-                <div class="document-reference">
-
-                    Référence :
-                    {{ $document['reference'] }}
-
+                <div style="text-align:left;
+                    font-size:8px;
+                    margin-top:4px;
+                ">
+                    ASSISTANCE AUX PERSONNES -
+                    TRANSPORTS MEDICALISES -
+                    EVACUATIONS SANITAIRES
                 </div>
 
-            @endif
+            </td>
 
+              <td align="right">
 
-            <div class="document-reference">
+                {{-- @if(!empty($company['logo'])) --}}
+                @if(file_exists(public_path('assets/img/LOGO_ISO_CAMEROUN_ASSIST.png')))
+                {{-- asset("assets/img/LOGO_ISO_CAMEROUN_ASSIST.png") --}}
+                    <img
+                        src="{{ public_path('assets/img/LOGO_CAMEROUN_ASSIST.png') }}"
+                        style="display:block; height:70px;"
+                        alt="Logo ISO"
+                    >
+                @endif
 
-                {{-- Date : --}}
-                Douala,
-                {{ $documentDate ?? now()->format('d/m/Y') }}
+                 <div style="
+                    text-align:left;
+                    font-size:8px;
+                    margin-top:4px;
+                ">
+                    {{-- ASSISTANCE AUX PERSONNES -
+                    TRANSPORTS MEDICALISES -
+                    EVACUATIONS SANITAIRES --}}
+                </div>
 
-            </div>
+            </td>
 
+          
 
-            <div class="confidentiality">
-
-                {{ $document['confidentiality'] ?? 'DOCUMENT INTERNE' }}
-
-            </div>
-
-        </td>
-
-    </tr>
-
-</table>
+        </tr>
+    </table>
+</div>
 
 
 
@@ -652,11 +644,11 @@
         >
         </td>
 
-        <td class="institution-content">
+        {{-- <td class="institution-content">
 
             {{ $company['services'] ?? 'ASSISTANCE AUX PERSONNES • TRANSPORTS MÉDICALISÉS • ÉVACUATIONS SANITAIRES' }}
 
-        </td>
+        </td> --}}
 
     </tr>
 
@@ -674,11 +666,11 @@
 
         <td>
 
-            <div class="title-overline">
+            {{-- <div class="title-overline">
 
                 Gestion des ressources humaines
 
-            </div>
+            </div> --}}
 
 
             <div class="title-main">
@@ -803,10 +795,11 @@
 
 <table class="period-table">
 
+    {{--
     <tr>
 
 
-        {{-- TYPE --}}
+        {{-- TYPE --}
         <td
             class="period-cell"
             width="33%"
@@ -828,7 +821,7 @@
         </td>
 
 
-        {{-- DÉPART --}}
+        {{-- DÉPART --}
         <td
             class="period-cell"
             width="33%"
@@ -858,7 +851,7 @@
         </td>
 
 
-        {{-- REPRISE --}}
+        {{-- REPRISE --}
         <td
             class="period-cell"
             width="34%"
@@ -888,6 +881,7 @@
         </td>
 
     </tr>
+    --}}
 
 </table>
 
@@ -1019,7 +1013,7 @@
         </td>
 
 
-        <td class="notice-content">
+        {{-- <td class="notice-content">
 
             <strong>Information RH :</strong>
 
@@ -1027,7 +1021,7 @@
             la mise en congé dans le cadre du processus de gestion des
             absences de l'entreprise.
 
-        </td>
+        </td> --}}
 
     </tr>
 
@@ -1110,6 +1104,7 @@
 
                                     @if(is_array($item['user'] ?? null))
 
+                                        {{ $item['civilite'] ?? '' }}
                                         {{ $item['user']['name'] ?? '' }}
 
                                     @else
@@ -1175,69 +1170,80 @@
 
 
 {{-- =====================================================================
-     FOOTER
+     FOOTER CAS
 ===================================================================== --}}
 
-<table class="footer">
-
+<table class="footer-info-fixed">
     <tr>
 
-        <td class="footer-left">
+        <td
+            style="
+                border:1px solid #000;
+                padding:5px;
+                font-weight:bold;
+                height:10px;
+            "
+        >
+            <span>
+                Certificat N° <br>
+                Qual/2003/1357
+            </span>
+        </td>
 
-            <div class="footer-company">
+        <td style="padding:5px; text-align:center;">
 
-                {{ $company['name'] ?? 'CAMEROUN ASSISTANCE SANITAIRE' }}
+            BP : 2265 DOUALA CAMEROUN, 645 RUE BERTAUT BALI
+            <br>
 
-            </div>
+            Tél. H24 :
+            (237) 233 42 14 14 •
+            233 42 15 15 •
+            233 42 20 20 •
+            233 42 48 91 •
+            233 43 91 91
 
+            <br>
 
-            <div class="footer-info">
+            Fax :
+            (237) 233 42 00 79 •
+            233 43 30 30 •
 
-                {{ $company['address'] ?? '' }}
+            Email :
+            administration@cas-assistance.com •
+            commercial@cas-asistance.com
 
-                <br>
+            <br>
 
-                Tél. :
-                {{ $company['phone'] ?? '' }}
+            www.cas-assistance.com
 
-                @if(!empty($company['support_phone']))
+            <br>
 
-                    · Assistance :
-                    {{ $company['support_phone'] }}
+            S.A. au capital de
+            <strong>100 000 000 FCFA</strong>
+            –
+            RC/DLA/1987/B/04790
+            –
+            N° Empl.5613301 A
+            –
+            NIU : M128800000469U
 
-                @endif
+            <br>
 
-                <br>
-
-                {{ $company['email'] ?? '' }}
-
-            </div>
+            Autorisation Arrêté Ministériel N°
+            <strong>1982/A/MINSANTE/SG/DOSTS/SDSSP</strong>
+            du 07 juin 2010
 
         </td>
 
-
-        <td class="footer-right">
-
-            <div class="footer-website">
-
-                {{ $company['website'] ?? 'www.cas-assistance.com' }}
-
-            </div>
-
-
-            <div class="footer-tagline">
-
-                {{ $company['tagline'] ?? 'Nous sommes là quand il le faut !' }}
-
-            </div>
-
-
-            <div class="footer-accent"></div>
-
+        <td
+            style="
+                padding-top:6px;
+                text-align:center;
+            "
+        >
         </td>
 
     </tr>
-
 </table>
 
 

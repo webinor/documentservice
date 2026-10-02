@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class LeaveCalculatorService
 {
@@ -96,13 +97,25 @@ class LeaveCalculatorService
             ]
         );
 
-        if (!$balanceResponse->successful()) {
+      if (!$balanceResponse->successful()) {
 
-        return null;
-            throw new \RuntimeException(
-                "Impossible de récupérer le solde de congés de l\'employe {$request->employeeId} : ".$balanceResponse->body()
-            );
-        }
+    Log::error(
+        "Impossible de récupérer le solde de congés de l'employé {$request->employeeId}",
+        [
+            'employee_id' => $request->employeeId,
+            'status' => $balanceResponse->status(),
+            'body' => $balanceResponse->body(),
+            'headers' => $balanceResponse->headers(),
+        ]
+    );
+
+    // return null;
+
+    throw new \RuntimeException(
+        "Impossible de récupérer le solde de congés de l'employé {$request->employeeId} : "
+        . $balanceResponse->body()
+    );
+}
 
         $balance = $balanceResponse->json();
 
