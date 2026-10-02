@@ -109,7 +109,7 @@ class LeaveCalculatorService
         ]
     );
 
-    // return null;
+    return null;
 
     throw new \RuntimeException(
         "Impossible de récupérer le solde de congés de l'employé {$request->employeeId} : "
