@@ -320,7 +320,8 @@
     ================================================================= --}}
     <div class="subject">
         <span class="subject-label">Objet :</span>
-        Congé {{ $leaveTypeLabel }}
+        {{-- Congé  --}}
+        {{ $leaveTypeLabel }}
     </div>
 
     {{-- ================================================================
