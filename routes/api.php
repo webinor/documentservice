@@ -14,6 +14,7 @@ use App\Http\Controllers\DocumentReferenceTypeController;
 use App\Http\Controllers\DocumentSignatureController;
 use App\Http\Controllers\DocumentSignaturePositionController;
 use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\DocumentVerificationController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\LeaveDocumentController;
@@ -49,6 +50,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix("documents")
     ->group(function () {
+
+
+    Route::get('/verify/{verificationCode}', [
+    DocumentVerificationController::class,
+    'verify'
+]);
 
 
     Route::get("/by-status", [DocumentController::class, "getByStatus"]);
