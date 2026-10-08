@@ -4,12 +4,16 @@ namespace App\Services\Export;
 
 use App\Managers\DocumentEnrichmentManager;
 use App\Models\Misc\Document;
+use App\Services\UserServiceClient;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DocumentExportService
 {
+
+    protected UserServiceClient $userClient;
+
     /**
      * Gestionnaire d'enrichissement des documents.
      *
@@ -31,9 +35,13 @@ class DocumentExportService
      * @param DocumentExportColumnResolver $columnResolver
      */
     public function __construct(
+        UserServiceClient $userClient,
         DocumentEnrichmentManager $documentEnrichmentManager,
         DocumentExportColumnResolver $columnResolver
     ) {
+             $this->userClient =
+            $userClient; 
+
         $this->documentEnrichmentManager =
             $documentEnrichmentManager;
 
@@ -277,11 +285,13 @@ class DocumentExportService
         /*
          * Enrichissement via le mécanisme existant.
          */
-        return $this->enrichDocuments(
-            $documents,
-            $documentTypes,
-            $shouldEnrich
-        );
+        // return $this->enrichDocuments(
+        //     $documents,
+        //     $documentTypes,
+        //     $shouldEnrich
+        // );
+        /* * ------------------------------------------------------------------ * Enrichissement * ------------------------------------------------------------------ * * Pour l'export, nous utilisons maintenant le mécanisme batch. * * Cela permet au DocumentEnrichmentManager de préparer les * relations, transactions, pièces jointes, etc. pour l'ensemble * de la collection. */ 
+        return $this->enrichDocumentsBatch( $documents, $documentTypes, $shouldEnrich );
     }
 
     /**
@@ -355,6 +365,190 @@ class DocumentExportService
             );
         });
     }
+
+    /**
+ * Enrichit les documents en batch.
+ *
+ * Contrairement à enrichDocuments(), cette méthode délègue
+ * l'ensemble de la collection au DocumentEnrichmentManager
+ * afin de permettre un enrichissement optimisé et d'éviter
+ * un traitement document par document.
+ *
+ * @param Collection $documents
+ * @param array $documentTypes
+ * @param bool $shouldEnrich
+ *
+ * @return Collection
+ */
+protected function enrichDocumentsBatch(
+    Collection $documents,
+    array $documentTypes,
+    bool $shouldEnrich = true
+): Collection {
+    /*
+     * Aucun document à traiter.
+     */
+    if ($documents->isEmpty()) {
+        return collect();
+    }
+
+    /*
+     * Si l'enrichissement est désactivé, on conserve
+     * exactement la même structure que enrichDocuments().
+     */
+    if (!$shouldEnrich) {
+        return $documents->map(function ($doc) {
+            return [
+                "id" => $doc->id,
+                "code" => $doc->code,
+                "amount" => $doc->dynamic_amount,
+                "dynamic_amount" => $doc->dynamic_amount,
+                "title" => $doc->title,
+                "date_due" => $doc->date_due,
+                "document_type_name" =>
+                    $doc->document_type->name,
+                "document_type_slug" =>
+                    $doc->document_type->slug,
+                "document_type_id" =>
+                    $doc->document_type_id,
+                "type" =>
+                    $doc->document_type->name,
+                "status" => $doc->status,
+                "created_at" => $doc->created_at,
+                "created_by" => $doc->created_by,
+            ];
+        });
+    }
+
+    /*
+     * Vérification préalable des enrichers.
+     *
+     * On conserve ici le même comportement que
+     * enrichDocuments() : chaque type de document enrichi
+     * doit disposer d'un handler.
+     */
+    foreach ($documents as $doc) {
+        $type = $doc->document_type;
+
+        if (!$type->enrichment_handler_class) {
+            throw new \Exception(
+                "Aucun enricher pour {$type}"
+            );
+        }
+    }
+
+    /*
+     * Construction des données de base.
+     *
+     * Elles restent identiques à celles utilisées
+     * actuellement par enrichDocuments().
+     */
+    // $baseDocuments = $documents->map(function ($doc) {
+    //     return [
+    //         "id" => $doc->id,
+    //         "code" => $doc->code,
+    //         "amount" => $doc->dynamic_amount,
+    //         "dynamic_amount" => $doc->dynamic_amount,
+    //         "title" => $doc->title,
+    //         "date_due" => $doc->date_due,
+    //         "document_type_name" =>
+    //             $doc->document_type->name,
+    //         "document_type_slug" =>
+    //             $doc->document_type->slug,
+    //         "document_type_id" =>
+    //             $doc->document_type_id,
+    //         "type" =>
+    //             $doc->document_type->name,
+    //         "status" => $doc->status,
+    //         "created_at" => $doc->created_at,
+    //         "created_by" => $doc->created_by,
+    //     ];
+    // });
+
+    $baseDocuments = $documents->mapWithKeys(
+    function ($doc) {
+        return [
+            (int) $doc->id => [
+                "id" => $doc->id,
+                "code" => $doc->code,
+                "amount" => $doc->dynamic_amount,
+                "dynamic_amount" => $doc->dynamic_amount,
+                "title" => $doc->title,
+                "date_due" => $doc->date_due,
+                "document_type_name" =>
+                    $doc->document_type->name,
+                "document_type_slug" =>
+                    $doc->document_type->slug,
+                "document_type_id" =>
+                    $doc->document_type_id,
+                "type" =>
+                    $doc->document_type->name,
+                "status" => $doc->status,
+                "created_at" => $doc->created_at,
+                "created_by" => $doc->created_by,
+            ],
+        ];
+    }
+);
+
+    /*
+     * Le manager reçoit maintenant toute la collection
+     * en une seule fois.
+     *
+     * C'est ici que nous pourrons implémenter :
+     *
+     * - les appels HTTP batch ;
+     * - les relations chargées en groupe ;
+     * - les transactions récupérées en groupe ;
+     * - les acteurs récupérés en groupe ;
+     * - les pièces récupérées en groupe ;
+     * - les données partagées entre documents.
+     */
+    return $this->documentEnrichmentManager->enrichBatch(
+        $documents,
+        $baseDocuments
+    );
+}
+
+protected function loadBatchTransactionInitiators(
+    array $transactionsByDocument
+): array {
+    $initiatorIds = collect(
+        $transactionsByDocument
+    )
+        ->flatten(1)
+        ->pluck('initiated_by')
+        ->filter(function ($id) {
+            return !empty($id);
+        })
+        ->map(function ($id) {
+            return (int) $id;
+        })
+        ->unique()
+        ->values()
+        ->all();
+
+    if (empty($initiatorIds)) {
+        return [];
+    }
+
+    $initiators = [];
+
+    foreach ($initiatorIds as $initiatorId) {
+        try {
+            $initiators[$initiatorId] =
+                $this->userClient
+                    ->resolveActor(
+                        'USER',
+                        $initiatorId
+                    );
+        } catch (\Throwable $e) {
+            $initiators[$initiatorId] = null;
+        }
+    }
+
+    return $initiators;
+}
 
     /**
      * Ajoute les métadonnées workflow aux documents.

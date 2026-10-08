@@ -4,6 +4,7 @@ namespace App\Services\Purchase;
 
 
 use App\Models\Misc\Document;
+use App\Models\PurchaseRequestItem;
 use App\Services\DocumentType\DocumentEnrichmentHandlerInterface;
 use App\Services\UserServiceClient;
 use Exception;
@@ -15,6 +16,12 @@ class PurchaseDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInte
 {
 
 
+    // throw new Exception(json_encode($document->purchase_request->id), 1);
+
+
+    $purchase_request_items = PurchaseRequestItem::wherePurchaseRequestId($document->purchase_request->id)->get();
+
+    $document->purchase_request->purchase_request_items = $purchase_request_items;
     // $userClient = new UserServiceClient();
 
     // $actor_details = $userClient->resolveActor(
@@ -26,7 +33,6 @@ class PurchaseDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInte
 
     
 
-    // throw new Exception(json_encode($actor_details), 1);
     
 
     return $document->toArray();

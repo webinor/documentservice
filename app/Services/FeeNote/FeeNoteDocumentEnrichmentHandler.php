@@ -10,12 +10,26 @@ use App\Services\UserServiceClient;
 class FeeNoteDocumentEnrichmentHandler
     implements DocumentEnrichmentHandlerInterface
 {
+
+protected UserServiceClient $userClient;
+protected TransactionInitiatorEnrichmentService $transactionInitiatorService;
+
+    public function __construct(
+    UserServiceClient $userClient,
+    TransactionInitiatorEnrichmentService $transactionInitiatorService
+) {
+    $this->userClient =
+        $userClient;
+
+    $this->transactionInitiatorService =   $transactionInitiatorService;
+}
+
     public function enrich(
         Document $document,
         array $base
     ): array {
 
-        $userClient = new UserServiceClient();
+        // $userClient = new UserServiceClient();
 
 
         /*
@@ -25,7 +39,7 @@ class FeeNoteDocumentEnrichmentHandler
         */
 
         $document->actor_details =
-            $userClient->resolveActor(
+            $this->userClient->resolveActor(
                 $document->actor_type,
                 $document->actor_id
             );
@@ -44,7 +58,8 @@ class FeeNoteDocumentEnrichmentHandler
         |
         */
 
-        app(TransactionInitiatorEnrichmentService::class)
+        // app(TransactionInitiatorEnrichmentService::class)
+        $this->transactionInitiatorService
             ->enrichDocument(
                 $document,
                 [

@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
-use Exception;
+// use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class UserServiceClient
 {
-    protected $defaulUrl ;
+    protected string $defaulUrl ;
+    protected static $actorCache = [];
 
     public function __construct() {
         $this->defaulUrl =  config("services.user_service.base_url");
@@ -289,8 +291,46 @@ public function hasPermissions(
         return $response->json()['data'] ?? [];
     }
 
+      /**
+ * Récupère les transactions de plusieurs documents
+ * en une seule requête vers le UserService.
+ *
+ * @param array<int, int> $documentIds
+ *
+ * @return array
+ */
+public function getDocumentsTransactions(
+    array $documentIds
+): array {
+    if (empty($documentIds)) {
+        return [];
+    }
 
-    public function resolveActor(string $type, int $id): ?array
+    $documentIds = array_values(
+        array_unique(
+            array_map('intval', $documentIds)
+        )
+    );
+
+    $response = $this->client()->post(
+        '/documents/transactions/batch',
+        [
+            'document_ids' => $documentIds,
+        ]
+    );
+
+    if ($response->failed()) {
+        throw new \Exception(
+            'UserService unavailable: ' .
+            $response->body()
+        );
+    }
+
+    return $response->json('data') ?? [];
+}
+
+
+    public function OldresolveActor(string $type, int $id): ?array
     {
         $baseUrl = config("services.user_service.base_url");
 
@@ -326,4 +366,127 @@ public function hasPermissions(
 
         return $response->json('user') ?? $response->json('employee');
     }
+
+/**
+ * Résout un acteur avec cache mémoire.
+ *
+ * Le cache est partagé pendant toute la durée
+ * de la requête PHP.
+ *
+ * Ainsi, si 50 documents utilisent le même
+ * acteur, UserService n'est appelé qu'une seule fois.
+ *
+ * @param string $type
+ * @param int $id
+ *
+ * @return array|null
+ */
+public function resolveActor(
+    string $type,
+    int $id
+): ?array {
+    $cacheKey =
+        strtoupper($type) . ':' . $id;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Réutilisation du cache
+    |--------------------------------------------------------------------------
+    |
+    | Si l'acteur existe déjà dans le cache, aucune requête
+    | HTTP vers le UserService n'est effectuée.
+    |
+    | On écrit un log afin de pouvoir vérifier concrètement
+    | pendant l'export que le cache est bien réutilisé.
+    |
+    */
+
+    if (array_key_exists(
+        $cacheKey,
+        self::$actorCache
+    )) {
+        Log::debug(
+            'UserServiceClient: acteur réutilisé depuis le cache.',
+            [
+                'cache_key' => $cacheKey,
+                'actor_type' => strtoupper($type),
+                'actor_id' => $id,
+            ]
+        );
+
+        return self::$actorCache[$cacheKey];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Construction de l'URL
+    |--------------------------------------------------------------------------
+    */
+
+    $baseUrl =
+        config("services.user_service.base_url");
+
+    switch ($type) {
+        case 'EMPLOYEE':
+            $url =
+                $baseUrl . "/employee/" . $id;
+            break;
+
+        case 'USER':
+            $url =
+                $baseUrl . "/" . $id;
+            break;
+
+        default:
+            self::$actorCache[$cacheKey] = null;
+
+            return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Appel UserService
+    |--------------------------------------------------------------------------
+    */
+
+    $response =
+        Http::withToken(request()->bearerToken())
+            ->acceptJson()
+            ->get($url);
+
+    if (!$response->successful()) {
+        self::$actorCache[$cacheKey] = null;
+
+        return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Préparation de l'acteur
+    |--------------------------------------------------------------------------
+    */
+
+    $actor =
+        $response->json('user')
+        ?? $response->json('employee');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mise en cache
+    |--------------------------------------------------------------------------
+    */
+
+    self::$actorCache[$cacheKey] = $actor;
+
+    Log::debug(
+        'UserServiceClient: acteur chargé depuis le UserService et mis en cache.',
+        [
+            'cache_key' => $cacheKey,
+            'actor_type' => strtoupper($type),
+            'actor_id' => $id,
+        ]
+    );
+
+    return $actor;
+}
 }

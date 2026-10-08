@@ -19,6 +19,8 @@ class DocumentService
     {
         $this->documentEnrichmentManager = $documentEnrichmentManager;
     }
+
+    
         public function enrichDocument(Document $document) {
 
      $document->load("document_type");
