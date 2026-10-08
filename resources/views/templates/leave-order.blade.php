@@ -197,7 +197,7 @@
             border: 1px solid #777;
             padding: 4px 2px;
             text-align: center;
-            font-size: 10px;
+            font-size: 5px;
             line-height: 1.25;
         }
 
