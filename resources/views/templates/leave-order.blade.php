@@ -175,7 +175,7 @@
             right: 0;
             bottom: 0;
             height: 22mm;
-            font-size: 10px;
+            font-size: 8px;
             line-height: 1.22;
             color: #111;
         }
@@ -197,7 +197,7 @@
             border: 1px solid #777;
             padding: 4px 2px;
             text-align: center;
-            font-size: 5px;
+            font-size: 7px;
             line-height: 1.25;
         }
 
@@ -334,8 +334,8 @@
     </div>
 
     <br>
-    <br>
-    <br>
+    {{-- <br>
+    <br> --}}
 
     {{-- ================================================================
          CORPS DE LA LETTRE
@@ -393,8 +393,8 @@
 
     </div>
 
-    <br>
-    <br>
+    {{-- <br>
+    <br> --}}
 
     {{-- ================================================================
          SIGNATURE
@@ -476,11 +476,11 @@ $directorSignature = !empty($director['signature'])
                     BP : 2265 DOUALA CAMEROUN, 645 RUE BERTAUT BALI
                     <br>
                     Tél. H24 : (237) 233 42 14 14 • 233 42 15 15 • 233 42 20 20 •
-                    233 42 48 91 • 233 43 91 91
+                    233 42 48 91 • 233 43 91 91 • Fax : (237) 233 42 00 79 • 233 43 30 30 
                     <br>
-                    Fax : (237) 233 42 00 79 • 233 43 30 30 •
+                    {{-- Fax : (237) 233 42 00 79 • 233 43 30 30 • --}}
                     Email : administration@cas-assistance.com • commercial@cas-asistance.com
-                    <br>
+                    {{-- <br> --}}
                     www.cas-assistance.com
                     <br>
                     S.A. au capital de <strong>100 000 000 FCFA</strong> –
