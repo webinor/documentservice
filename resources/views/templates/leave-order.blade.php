@@ -82,7 +82,7 @@
         .date-row {
             margin-top: 12px;
             text-align: right;
-            font-size: 9px;
+            font-size: 12px;
         }
 
         /* ================================================================
@@ -99,7 +99,7 @@
             border: 1px solid #bdbdbd;
             padding: 3px 8px 4px 8px;
             text-align: center;
-            font-size: 8px;
+            font-size: 12px;
             line-height: 1.15;
         }
 
@@ -116,7 +116,7 @@
         ================================================================= */
         .subject {
             margin-top: 27px;
-            font-size: 9px;
+            font-size: 12px;
             line-height: 1.4;
         }
 
@@ -129,7 +129,7 @@
         ================================================================= */
         .letter-body {
             margin-top: 34px;
-            font-size: 9px;
+            font-size: 12px;
             line-height: 1.55;
         }
 
@@ -152,7 +152,7 @@
         .director-signature {
             margin-top: 52px;
             text-align: center;
-            font-size: 9px;
+            font-size: 12px;
             line-height: 1.35;
         }
 
@@ -175,7 +175,7 @@
             right: 0;
             bottom: 0;
             height: 22mm;
-            font-size: 8.3px;
+            font-size: 10px;
             line-height: 1.22;
             color: #111;
         }
@@ -197,7 +197,7 @@
             border: 1px solid #777;
             padding: 4px 2px;
             text-align: center;
-            font-size: 5px;
+            font-size: 10px;
             line-height: 1.25;
         }
 
