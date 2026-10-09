@@ -101,6 +101,8 @@ class DocumentCapabilitiesService
             && ($currentUser['id'] == $document['created_by']);
 
 
+           
+
          $user = request()->get('user');
 
     // return
@@ -115,7 +117,18 @@ class DocumentCapabilitiesService
     ]
 );
 
+ $canCancelOperation = $this->responsibilityService->hasAnyCode(
+    $responsibilities,
+    [
+        'SUPER_ADMIN',
+        'TREASURER',
+    ]
+);
+
 $capabilities['can_delete'] = $canDelete;
+
+$capabilities['can_cancel_operation'] = $canCancelOperation;
+
 
         return $capabilities;
     }
