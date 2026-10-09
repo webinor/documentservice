@@ -121,7 +121,7 @@ class DocumentCapabilitiesService
     $responsibilities,
     [
         'SUPER_ADMIN',
-        'TREASURER',
+        'WORKFLOW_CANCELLER',
     ]
 );
 
