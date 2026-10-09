@@ -33,7 +33,7 @@ public function __construct(EmployeeServiceClient $employee_service_client) {
     $days = $absence->leaveRequestDays()
         ->sum('deduct_days');
 
-        throw new \Exception(json_encode($document), 1);
+        // throw new \Exception(json_encode($document), 1);
 
 
     if ($days <= 0) {
