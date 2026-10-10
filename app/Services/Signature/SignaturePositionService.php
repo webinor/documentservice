@@ -9,6 +9,7 @@ use App\Models\Misc\File;
 use App\Services\UserServiceClient;
 use Exception;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class SignaturePositionService
@@ -126,36 +127,107 @@ class SignaturePositionService
         |--------------------------------------------------------------------------
         */
 
-        return $positions
-            ->groupBy('file_id')
-            ->map(
-                function (Collection $filePositions, $fileId) {
+        // return $positions
+        //     ->groupBy('file_id')
+        //     ->map(
+        //         function (Collection $filePositions, $fileId) {
 
-                    $file = File::query()
-                        // ->findOrFail($fileId);
-                        ->find($fileId);
+        //             $file = File::query()
+        //                 // ->findOrFail($fileId);
+        //                 ->find($fileId);
 
-                    if (!$file) {
+        //             if (!$file) {
                         
-                    throw new Exception(json_encode([
-                        'fileId' => $fileId,
-                        'filePositions' => $filePositions,
-                    ]), 1);
+        //             throw new Exception(json_encode([
+        //                 'fileId' => $fileId,
+        //                 'filePositions' => $filePositions,
+        //             ]), 1);
                     
                     
-                    }
+        //             }
 
-                    return [
-                        'file_id' => (int) $fileId,
+        //             return [
+        //                 'file_id' => (int) $fileId,
 
-                        'file' => $file,
+        //                 'file' => $file,
 
-                        'positions' => $filePositions
-                            ->values(),
-                    ];
-                }
-            )
-            ->values();
+        //                 'positions' => $filePositions
+        //                     ->values(),
+        //             ];
+        //         }
+        //     )
+        //     ->values();
+
+        return $positions
+    ->groupBy('file_id')
+    ->map(
+        function (Collection $filePositions, $fileId) {
+
+            // Le fichier n'est associé à aucune position.
+            if (is_null($fileId)) {
+
+                Log::warning(
+                    'Positions orphelines détectées : file_id est NULL.',
+                    [
+                        'positions_ids' => $filePositions
+                            ->pluck('id')
+                            ->values()
+                            ->toArray(),
+
+                        'positions_count' => $filePositions->count(),
+                    ]
+                );
+
+                // Supprimer les positions sans fichier associé.
+                DocumentSignaturePosition::query()
+                    ->whereIn(
+                        'id',
+                        $filePositions->pluck('id')->toArray()
+                    )
+                    ->delete();
+
+                // Ignorer ce groupe et poursuivre le traitement.
+                return null;
+            }
+
+            $file = File::query()->find($fileId);
+
+            // Le fichier associé n'existe plus.
+            if (!$file) {
+
+                Log::warning(
+                    'Fichier introuvable : suppression des positions orphelines.',
+                    [
+                        'file_id' => $fileId,
+
+                        'positions_ids' => $filePositions
+                            ->pluck('id')
+                            ->values()
+                            ->toArray(),
+
+                        'positions_count' => $filePositions->count(),
+                    ]
+                );
+
+                DocumentSignaturePosition::query()
+                    ->whereIn(
+                        'id',
+                        $filePositions->pluck('id')->toArray()
+                    )
+                    ->delete();
+
+                return null;
+            }
+
+            return [
+                'file_id' => (int) $fileId,
+                'file' => $file,
+                'positions' => $filePositions->values(),
+            ];
+        }
+    )
+    ->filter()
+    ->values();
     }
 
     /**
