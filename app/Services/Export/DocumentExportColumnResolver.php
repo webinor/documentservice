@@ -388,6 +388,24 @@ class DocumentExportColumnResolver
                     array $document,
                     array $workflowMetadata
                 ) {
+
+
+                $workflow_closed_at = data_get(
+        $workflowMetadata,
+        'workflow_availability.workflow_closed_at'
+    );
+
+    $settlement_initiator_details = $name = data_get(
+                        $document,
+                        'settlement_initiator_details',
+                        null
+                    );
+
+                    if ($workflow_closed_at && !$settlement_initiator_details) {
+                        return 'Non applicable';
+                    }
+
+
                     $name = data_get(
                         $document,
                         'settlement_initiator_details.name',
@@ -418,6 +436,23 @@ class DocumentExportColumnResolver
         array $document,
         array $workflowMetadata
     ) {
+
+      $workflow_closed_at = data_get(
+        $workflowMetadata,
+        'workflow_availability.workflow_closed_at'
+    );
+
+    $settlement_initiator_details = $name = data_get(
+                        $document,
+                        'settlement_initiator_details',
+                        null
+                    );
+
+                      if ($workflow_closed_at && !$settlement_initiator_details) {
+                        return 'Non applicable';
+                    }
+
+
          return $this->extractTransactionDateByCode(
             $document,
             'REGULARIZATION_SETTLEMENT'
