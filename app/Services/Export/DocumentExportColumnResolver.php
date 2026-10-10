@@ -172,7 +172,7 @@ class DocumentExportColumnResolver
              * est disponible sous cette forme.
              */
             'dynamic_amount' => [
-                'label' => 'Montant',
+                'label' => 'Montant sollicité',
                 'type' => 'amount',
                 'value' => function (
                     array $document,
