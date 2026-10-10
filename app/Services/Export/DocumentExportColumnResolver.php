@@ -2,6 +2,7 @@
 
 namespace App\Services\Export;
 
+use Exception;
 use Illuminate\Validation\ValidationException;
 
 class DocumentExportColumnResolver
@@ -351,6 +352,27 @@ class DocumentExportColumnResolver
             ],
 
             /*
+ * ------------------------------------------------------------------
+ * Date de paiement de l'avance
+ * ------------------------------------------------------------------
+ *
+ * Correspond à REGULARIZATION_ADVANCE.
+ */
+'advance_initiation_details' => [
+    'label' => 'Avance payée le',
+    'type' => 'date',
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+        return $this->extractTransactionDateByCode(
+            $document,
+            'REGULARIZATION_ADVANCE'
+        );
+    },
+],
+
+            /*
              * ------------------------------------------------------------------
              * Initiateur de la régularisation
              * ------------------------------------------------------------------
@@ -382,6 +404,27 @@ class DocumentExportColumnResolver
                 },
             ],
 
+                        /*
+ * ------------------------------------------------------------------
+ * Date de régularisation
+ * ------------------------------------------------------------------
+ *
+ * Correspond à la transaction REGULARIZATION_SETTLEMENT.
+ */
+'regularization_initiation_details' => [
+    'label' => 'Régularisation effectuée le',
+    'type' => 'date',
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+         return $this->extractTransactionDateByCode(
+            $document,
+            'REGULARIZATION_SETTLEMENT'
+        );
+    },
+],
+
             /*
              * ------------------------------------------------------------------
              * Initiateur de transaction
@@ -412,8 +455,309 @@ class DocumentExportColumnResolver
                     return trim($name . ' ' . $prenom);
                 },
             ],
+
+
+
+
+
+/*
+ * ------------------------------------------------------------------
+ * Date de paiement du papier taxi
+ * ------------------------------------------------------------------
+ *
+ * Correspond à TAXI_PAPER_SETTLEMENT.
+ */
+'payment_details' => [
+    'label' => 'Papier taxi payé le',
+    'type' => 'date',
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+          return $this->extractTransactionDateByCode(
+            $document,
+            'TAXI_PAPER_SETTLEMENT'
+        );
+    },
+],
+
+
+/*
+ * ------------------------------------------------------------------
+ * Date de paiement de la note de frais
+ * ------------------------------------------------------------------
+ *
+ * Correspond à FEE_NOTE_SETTLEMENT.
+ */
+'fee_note_payment_details' => [
+    'label' => 'Note de frais payée le',
+    'type' => 'date',
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+         return $this->extractTransactionDateByCode(
+            $document,
+            'FEE_NOTE_SETTLEMENT'
+        );
+    },
+],
+
+/*
+ * ------------------------------------------------------------------
+ * Date de clôture du workflow
+ * ------------------------------------------------------------------
+ */
+'workflow_closed_at' => [
+    'label' => 'Clôturé le',
+    'type' => 'date',
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+        $value = data_get(
+        $workflowMetadata,
+        'workflow_availability.workflow_closed_at'
+    );
+
+    if ($document['uuid'] == "1160897e-a286-460d-a2ae-0627eea49252") {
+        # code...
+        // throw new Exception(json_encode($workflowMetadata['workflow_availability']), 1);
+    }
+    
+
+    // logger()->debug('Export - workflow_closed_at', [
+    //     'document' => $document,
+    //     'document_id' => data_get($document, 'id'),
+    //     'workflow_availability_exists' => isset($document['workflow_availability']),
+    //     'value' => $value,
+    // ]);
+
+    return $value;
+    },
+],
         ];
     }
+
+    /**
+ * Extrait la date d'une transaction.
+ *
+ * Prend en charge :
+ * - une date directement représentée par une chaîne ;
+ * - un tableau contenant signed_at ;
+ * - un tableau contenant paid_at ;
+ * - un tableau contenant transaction.signed_at ;
+ * - une collection de transactions.
+ *
+ * @param mixed $details
+ * @return string|null
+ */
+protected function extractTransactionDate($details)
+{
+    if (empty($details)) {
+        return null;
+    }
+
+    // Cas où la valeur est directement une date.
+    if (is_string($details)) {
+        return $details;
+    }
+
+    // Cas où le détail est un tableau de transactions.
+    if (is_array($details)) {
+        // Si plusieurs transactions sont présentes,
+        // on privilégie la première transaction exploitable.
+        $isList = count($details) > 0
+    && array_keys($details) ===
+        range(0, count($details) - 1);
+
+if ($isList) {
+            foreach ($details as $transaction) {
+                $date = $this->extractTransactionDate(
+                    $transaction
+                );
+
+                if (!empty($date)) {
+                    return $date;
+                }
+            }
+
+            return null;
+        }
+
+        // Essayer les différentes clés possibles.
+        $datePaths = [
+            'signed_at',
+            'paid_at',
+            'payment_date',
+            'transaction_date',
+            'created_at',
+            'transaction.signed_at',
+            'transaction.paid_at',
+        ];
+
+        foreach ($datePaths as $path) {
+            $date = data_get($details, $path);
+
+            if (!empty($date) && is_string($date)) {
+                return $date;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Récupère la date d'une transaction à partir de son code.
+ *
+ * Sources :
+ * - document.transactions
+ *
+ * Prend en charge :
+ * - une collection Laravel ;
+ * - un tableau de transactions ;
+ * - un objet contenant les transactions ;
+ * - une transaction unique.
+ *
+ * @param array $document
+ * @param string $transactionTypeCode
+ * @return string|null
+ */
+protected function extractTransactionDateByCode(
+    array $document,
+    string $transactionTypeCode
+) {
+    $transactions = data_get(
+        $document,
+        'transactions',
+        []
+    );
+
+    /*
+     * Convertir une collection Laravel en tableau.
+     */
+    if ($transactions instanceof \Illuminate\Support\Collection) {
+        $transactions = $transactions->all();
+    }
+
+    /*
+     * Si transactions est un objet, tenter de récupérer
+     * les éléments via ses propriétés publiques ou sa
+     * méthode toArray().
+     */
+    elseif (is_object($transactions)) {
+        if (method_exists($transactions, 'toArray')) {
+            $transactions = $transactions->toArray();
+        } else {
+            $transactions = (array) $transactions;
+        }
+    }
+
+    if (!is_array($transactions)) {
+        return null;
+    }
+
+    /*
+     * Certaines structures sérialisées contiennent les
+     * transactions dans une propriété items.
+     *
+     * Après conversion d'un objet PHP en tableau, une
+     * propriété protégée peut avoir une clé contenant
+     * des caractères NUL.
+     */
+    $items = null;
+
+    foreach ($transactions as $key => $value) {
+        if (
+            $key === 'items'
+            || substr((string) $key, -5) === 'items'
+        ) {
+            $items = $value;
+            break;
+        }
+    }
+
+    if (is_array($items)) {
+        $transactions = $items;
+    }
+
+    /*
+     * Une transaction unique peut être représentée
+     * directement par un tableau associatif.
+     */
+    if (isset($transactions['transaction_type_code'])) {
+        $transactions = [$transactions];
+    }
+
+    /*
+     * Rechercher exclusivement la transaction
+     * correspondant au code demandé.
+     */
+    foreach ($transactions as $transaction) {
+        /*
+         * Normaliser chaque transaction en tableau.
+         */
+        if (is_object($transaction)) {
+            if (method_exists($transaction, 'toArray')) {
+                $transaction = $transaction->toArray();
+            } else {
+                $transaction = (array) $transaction;
+            }
+        }
+
+        if (!is_array($transaction)) {
+            continue;
+        }
+
+        if (
+            !isset($transaction['transaction_type_code'])
+            || $transaction['transaction_type_code']
+                !== $transactionTypeCode
+        ) {
+            continue;
+        }
+
+        /*
+         * signed_at est la date de signature/paiement
+         * présente dans les données fournies.
+         */
+        if (!empty($transaction['signed_at'])) {
+    return $this->formatExportDate(
+        $transaction['signed_at']
+    );
+}
+
+        return null;
+    }
+
+    return null;
+}
+
+/**
+ * Formate une date pour l'export Excel.
+ *
+ * Le fuseau horaire source est UTC lorsque la date
+ * se termine par Z. Le résultat est converti vers
+ * Africa/Douala.
+ *
+ * @param mixed $date
+ * @return string|null
+ */
+protected function formatExportDate($date)
+{
+    if (empty($date) || !is_string($date)) {
+        return null;
+    }
+
+    try {
+        return \Carbon\Carbon::parse($date)
+            ->setTimezone('Africa/Douala')
+            ->format('d-m-Y H:i');
+    } catch (\Exception $e) {
+        return null;
+    }
+}
 
     /**
      * Résout les colonnes demandées.

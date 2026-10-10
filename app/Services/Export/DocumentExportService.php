@@ -5,6 +5,7 @@ namespace App\Services\Export;
 use App\Managers\DocumentEnrichmentManager;
 use App\Models\Misc\Document;
 use App\Services\UserServiceClient;
+use Exception;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -126,6 +127,8 @@ class DocumentExportService
             $documentType,
             $shouldEnrich
         );
+
+        
 
         /*
          * ------------------------------------------------------------------
