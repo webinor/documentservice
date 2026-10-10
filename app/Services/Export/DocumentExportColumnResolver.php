@@ -390,13 +390,13 @@ class DocumentExportColumnResolver
                 ) {
                     $name = data_get(
                         $document,
-                        'regularization_initiator_details.name',
+                        'settlement_initiator_details.name',
                         ''
                     );
 
                     $prenom = data_get(
                         $document,
-                        'regularization_initiator_details.prenom',
+                        'settlement_initiator_details.prenom',
                         ''
                     );
 
