@@ -223,6 +223,71 @@ public function hasPermissions(
         return $response->json()['data'] ?? [];
     }
 
+
+    /**
+ * Récupère les identifiants des documents dont le paiement
+ * correspond à la période demandée.
+ *
+ * UserService doit exposer l'endpoint :
+ * GET /transactions/document-ids-by-paid-date
+ *
+ * Critères attendus côté UserService :
+ * - transaction.status = COMPLETED
+ * - transaction.signed_at >= date_paid_start, si renseignée
+ * - transaction.signed_at <= date_paid_end, si renseignée
+ * - document_type_code correspond aux types demandés, si renseignés
+ *
+ * @param string|null $datePaidStart
+ * @param string|null $datePaidEnd
+ * @param array $documentTypes
+ *
+ * @return array<int>
+ *
+ * @throws \Exception
+ */
+public function getDocumentIdsByPaidDate(
+    ?string $datePaidStart,
+    ?string $datePaidEnd,
+    array $documentTypes = []
+): array {
+    // Aucun critère de date : aucun filtrage à appliquer.
+    if (empty($datePaidStart) && empty($datePaidEnd)) {
+        return [];
+    }
+
+    $response = $this->client()->get(
+        '/transactions/document-ids-by-paid-date',
+        [
+            'date_paid_start' => $datePaidStart,
+            'date_paid_end' => $datePaidEnd,
+            'document_types' => array_values(
+                array_unique($documentTypes)
+            ),
+        ]
+    );
+
+    if ($response->failed()) {
+        throw new \Exception(
+            'UserService unavailable while retrieving documents by payment date: '
+            . $response->body()
+        );
+    }
+
+    $documentIds = $response->json('data', []);
+
+    if (!is_array($documentIds)) {
+        throw new \UnexpectedValueException(
+            'Invalid response from UserService: expected an array of document IDs.'
+        );
+    }
+
+    return array_values(
+        array_unique(
+            array_map('intval', $documentIds)
+        )
+    );
+}
+
     public function employeesByCity(string $cityId): array
 {
     $response = $this->client(

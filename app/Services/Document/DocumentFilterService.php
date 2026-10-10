@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\Http;
 class DocumentFilterService
 {
 
+protected UserServiceClient $userServiceClient;
+
+public function __construct(
+    UserServiceClient $userServiceClient
+) {
+    $this->userServiceClient = $userServiceClient;
+}
+
     public function apply(
         Builder $query,
         array $filters,
@@ -31,6 +39,12 @@ class DocumentFilterService
         //     $query,
         //     $filters
         // );
+
+        $this->filterPaidDate(
+    $query,
+    $filters,
+    $documentTypes
+);
 
         $this->filterCity(
             $query,
@@ -287,8 +301,8 @@ class DocumentFilterService
         */
 
 
-        $employees =
-            app(UserServiceClient::class)
+        $employees = $this->userServiceClient
+            // app(UserServiceClient::class)
             ->employeesByCity(
                 $filters['city']
             );
@@ -307,6 +321,41 @@ class DocumentFilterService
         );
 
     }
+
+    /**
+ * Filtre les documents selon leur date de paiement.
+ *
+ * @param Builder $query
+ * @param array $filters
+ * @param array $documentTypes
+ * @return void
+ */
+private function filterPaidDate(
+    Builder $query,
+    array $filters,
+    array $documentTypes = []
+): void {
+    $dateStart = $filters['date_paid_start'] ?? null;
+    $dateEnd = $filters['date_paid_end'] ?? null;
+
+    if (empty($dateStart) && empty($dateEnd)) {
+        return;
+    }
+
+    if (empty($documentTypes)) {
+        $query->whereRaw('1 = 0');
+        return;
+    }
+
+    $documentIds = $this->userServiceClient
+        ->getDocumentIdsByPaidDate(
+            $dateStart,
+            $dateEnd,
+            $documentTypes
+        );
+
+    $query->whereIn('id', $documentIds);
+}
 
 
     private function filterDepartment(
@@ -328,8 +377,8 @@ class DocumentFilterService
         */
 
 
-        $employeeIds =
-            app(UserServiceClient::class)
+        $employeeIds =$this->userServiceClient
+            // app(UserServiceClient::class)
             ->employeesByDepartment(
                 $filters['department_id']
             );
