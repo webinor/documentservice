@@ -2,17 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRegularizationReceiptRequest;
+use App\Http\Requests\SyncRegularizationReceiptItemsRequest;
 use App\Http\Requests\UpdateRegularizationReceiptRequest;
 use App\Models\Misc\Document;
 use App\Models\RegularizationReceipt;
 use App\Services\Common\FileManager;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
- use App\Http\Requests\SyncRegularizationReceiptItemsRequest;
 use App\Services\Document\DocumentService;
+use App\Services\RegularizationReceiptCompletionService;
+use App\Services\ResponsibilityService;
+use App\Services\WorkflowServiceClient;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RegularizationReceiptController extends Controller
 {
@@ -35,6 +42,212 @@ class RegularizationReceiptController extends Controller
     {
         //
     }
+
+
+   /**
+ * Enregistre la réception physique d'une pièce justificative.
+ *
+ * Seul un utilisateur possédant la responsabilité TREASURER
+ * peut modifier ce statut.
+ *
+ * PATCH /api/documents/regularization-receipts/{receipt}/physical-receipt
+ *
+ * Payload :
+ * {
+ *     "received": true
+ * }
+ *
+ * @param Request $request
+ * @param ResponsibilityService $responsibilityService
+ * @param RegularizationReceiptCompletionService $completionService
+ * @param int $receipt
+ * @return JsonResponse
+ */
+public function updatePhysicalReceiptStatus(
+    Request $request,
+    ResponsibilityService $responsibilityService,
+    WorkflowServiceClient $workflowServiceClient,
+    RegularizationReceiptCompletionService $completionService,
+    int $receipt
+)//: JsonResponse
+ {
+
+    /*
+     * 1. Valider la requête.
+     */
+    $validated = $request->validate([
+        'received' => ['required', 'boolean'],
+    ]);
+
+    /*
+     * 2. Vérifier la responsabilité TREASURER.
+     */
+    $user = $request->get('user');
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Utilisateur non authentifié.',
+        ], 401);
+    }
+
+    $responsibilities =
+        $user['employeeContext']['responsibilities'] ?? [];
+
+    $canManagePhysicalReceipts =
+        $responsibilityService->hasAnyCode(
+            $responsibilities,
+            ['TREASURER']
+        );
+
+    if (!$canManagePhysicalReceipts) {
+        return response()->json([
+            'success' => false,
+            'message' =>
+                'Vous ne disposez pas de la responsabilité TREASURER.',
+        ], 403);
+    }
+
+    /*
+     * 3. Charger le justificatif et sa fiche.
+     */
+    $regularizationReceipt = RegularizationReceipt::query()
+        ->with('sheet.document')
+        ->findOrFail($receipt);
+
+    if (!$regularizationReceipt->sheet) {
+        return response()->json([
+            'success' => false,
+            'message' =>
+                'La fiche de régularisation associée est introuvable.',
+        ], 404);
+    }
+
+    $received = (bool) $validated['received'];
+
+    /*
+     * 4. Enregistrer la réception physique.
+     */
+    DB::transaction(function () use (
+        $regularizationReceipt,
+        $received,
+        $user
+    ) {
+        $regularizationReceipt->physical_receipt_received =
+            $received;
+
+        $regularizationReceipt->physical_receipt_received_at =
+            $received ? now() : null;
+
+        $regularizationReceipt->physical_receipt_received_by =
+            $received ? $user['employee_id'] : null;
+
+        $regularizationReceipt->save();
+    });
+
+    /*
+     * 5. Vérifier si tous les justificatifs sont reçus.
+     */
+    $allReceiptsReceived = $completionService
+        ->areAllReceiptsReceived(
+            $regularizationReceipt->sheet
+        );
+
+   
+
+    /*
+ * 6. Mettre à jour le statut du workflow selon
+ *    la réception physique de tous les justificatifs.
+ */
+
+$workflowResult = null;
+
+$documentUuid = $regularizationReceipt
+    ->sheet
+    ->document -> uuid;
+
+$statusCode = $allReceiptsReceived
+    ? 'RECEIPTS_RECEIVED_WAITING_CLOSURE'
+    : 'WAITING_PHYSICAL_SUPPORTING_DOCUMENTS';
+
+$workflowResponse = $workflowServiceClient
+    ->markReceiptsReceivedWaitingClosure(
+        $documentUuid,
+        $statusCode
+    );
+
+$workflowResult = $workflowResponse->json();
+
+if (!$workflowResponse->successful()) {
+
+throw new Exception(json_encode($workflowResponse->body()), 1);
+
+    Log::error(
+        'Échec de la mise à jour du statut Workflow après modification de la réception physique.',
+        [
+            'document_uuid' => $documentUuid,
+            'requested_status_code' => $statusCode,
+            'http_status' => $workflowResponse->status(),
+            'response' => $workflowResult,
+        ]
+    );
+
+    return response()->json([
+        'success' => true,
+        'message' => 'La réception physique a été enregistrée, mais la mise à jour du workflow a échoué.',
+        'workflow_updated' => false,
+        'workflow_error' => $workflowResult['message']
+            ?? 'Erreur de communication avec le service Workflow.',
+        'data' => [
+            'receipt_id' => $regularizationReceipt->id,
+            'physical_receipt_received' => $received,
+            'all_receipts_received' => $allReceiptsReceived,
+        ],
+    ], 200);
+}
+
+    /*
+     * 7. Journaliser la modification.
+     */
+    Log::info(
+        'Statut de réception physique d’un justificatif mis à jour.',
+        [
+            'receipt_id' => $regularizationReceipt->id,
+            'received' => $received,
+            'user_id' => $user['employee_id'],
+            'all_receipts_received' => $allReceiptsReceived,
+        ]
+    );
+
+    /*
+     * 8. Retourner le résultat.
+     */
+    return response()->json([
+        'success' => true,
+        'message' => $received
+            ? 'Le justificatif physique a été déclaré reçu.'
+            : 'Le justificatif physique est déclaré en attente.',
+        'data' => [
+            'receipt_id' =>
+                $regularizationReceipt->id,
+
+            'physical_receipt_received' =>
+                (bool) $regularizationReceipt
+                    ->physical_receipt_received,
+
+            'physical_receipt_received_at' =>
+                $regularizationReceipt
+                    ->physical_receipt_received_at,
+
+            'physical_receipt_received_by' =>
+                $regularizationReceipt
+                    ->physical_receipt_received_by,
+
+            'all_receipts_received' =>
+                $allReceiptsReceived,
+        ],
+    ]);
+}
 
     public function getRegularizationReceipts($documentIdentifier)
 {
@@ -132,6 +345,18 @@ class RegularizationReceiptController extends Controller
 
                 'reference' =>
                     $receipt->reference,
+
+                  'physical_receipt_received' =>
+                    $receipt
+                        ->physical_receipt_received,
+
+                'physical_receipt_received_at' =>
+                    $receipt
+                        ->physical_receipt_received_at,
+
+                'physical_receipt_received_by' =>
+                    $receipt
+                        ->physical_receipt_received_by,
 
 
                 /*

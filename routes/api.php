@@ -375,6 +375,22 @@ Route::post(
     [RegularizationReceiptController::class, 'destroy']
 );
 
+/**
+ * Mise à jour du statut de réception physique
+ * d'une pièce justificative.
+ *
+ * Accessible uniquement aux utilisateurs ayant
+ * la responsabilité TREASURER.
+ */
+Route::patch(
+    '/regularization-receipts/{receipt}/physical-receipt',
+    [
+        RegularizationReceiptController::class,
+        'updatePhysicalReceiptStatus',
+    ]
+)->whereNumber('receipt')
+ ->name('documents.regularization-receipts.physical-receipt');
+
 
           Route::delete("/{document}/regularization-expenses/{item}", [
             RegularizationItemController::class,

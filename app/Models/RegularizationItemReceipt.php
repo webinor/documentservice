@@ -12,4 +12,26 @@ class RegularizationItemReceipt extends Model
     protected $casts = [
         'allocated_amount'=>'integer'
     ];
+
+     /**
+     * Dépense associée au justificatif.
+     */
+    public function item()
+    {
+        return $this->belongsTo(
+            RegularizationItem::class,
+            'regularization_item_id'
+        );
+    }
+
+    /**
+     * Justificatif associé à la dépense.
+     */
+    public function receipt()
+    {
+        return $this->belongsTo(
+            RegularizationReceipt::class,
+            'regularization_receipt_id'
+        );
+    }
 }

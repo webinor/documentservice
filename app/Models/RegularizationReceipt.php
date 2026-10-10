@@ -18,6 +18,10 @@ protected $fillable = [
         'code'
     ];
 
+protected $casts = [
+    'physical_receipt_received' => 'boolean'
+];
+
     public function sheet()
     {
         return $this->belongsTo(
@@ -48,4 +52,14 @@ protected $fillable = [
         return $this->morphOne(File::class, 'model')
             ->where('type', 'RECEIPT');
     }
+
+    /**
+ * Indique si le justificatif possède son fichier principal.
+ *
+ * @return bool
+ */
+public function hasReceiptFile(): bool
+{
+    return $this->file()->exists();
+}
 }
