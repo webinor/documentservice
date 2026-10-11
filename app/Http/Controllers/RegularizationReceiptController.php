@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class RegularizationReceiptController extends Controller
 {
@@ -42,6 +43,300 @@ class RegularizationReceiptController extends Controller
     {
         //
     }
+
+
+    /**
+ * Confirme la transmission physique de tous les justificatifs
+ * d'une fiche de régularisation.
+ *
+ * Cette opération est appelée par le Workflow Service
+ * avant l'enregistrement de la signature du bénéficiaire.
+ *
+ * POST /api/documents/{document}/regularization-receipts/confirm-physical-transmission
+ *
+ * L'opération est idempotente :
+ * - un justificatif déjà reçu reste reçu ;
+ * - la date de première réception est conservée ;
+ * - l'employé de première réception est conservé.
+ *
+ * @param Request $request
+ * @param int $document
+ * @return JsonResponse
+ */
+public function confirmPhysicalTransmission(
+    Request $request,
+    int $document
+)//: JsonResponse
+ {
+    /*
+     * 1. Validation du payload envoyé par le Workflow Service.
+     */
+    // return
+    $validated = $request->validate([
+        'document_uuid' => ['required', 'string'],
+        'received_by' => ['required', 'integer'],
+        'received_by_name' => ['required', 'string', 'max:255'],
+        'received_by_type' => ['required', 'string', 'max:100'],
+        'received_by_role' => ['required', 'string', 'max:255'],
+        'source' => ['required', 'string', 'max:100'],
+        'transaction_type_code' => ['required', 'string', 'max:100'],
+    ]);
+
+    $requestId = (string) Str::uuid();
+
+    $transactionTypeCode = strtoupper(
+        trim($validated['transaction_type_code'])
+    );
+
+    Log::info(
+        'Début de la confirmation automatique de transmission physique.',
+        [
+            'request_id' => $requestId,
+            'document_id' => $document,
+            'document_uuid' => $validated['document_uuid'],
+            'received_by' => $validated['received_by'],
+            'received_by_name' => $validated['received_by_name'],
+            'source' => $validated['source'],
+            'transaction_type_code' => $transactionTypeCode,
+        ]
+    );
+
+    /*
+     * 2. Vérifier le type de transaction.
+     *
+     * La transmission est confirmée à la régularisation,
+     * et non au paiement de l'avance.
+     */
+    if ($transactionTypeCode !== 'REGULARIZATION_SETTLEMENT') {
+        Log::warning(
+            'Confirmation physique refusée : type de transaction invalide.',
+            [
+                'request_id' => $requestId,
+                'document_id' => $document,
+                'transaction_type_code' => $transactionTypeCode,
+            ]
+        );
+
+        return response()->json([
+            'success' => false,
+            'message' =>
+                'La confirmation physique est autorisée uniquement lors de la régularisation.',
+            'error_code' => 'INVALID_PHYSICAL_TRANSMISSION_TRANSACTION',
+            'request_id' => $requestId,
+        ], 422);
+    }
+
+    try {
+        /*
+         * 3. Vérifier le document, sa fiche et ses justificatifs,
+         * puis mettre à jour tous les justificatifs dans une
+         * seule transaction de base de données.
+         */
+        $result = DB::transaction(function () use (
+            $document,
+            $validated,
+            $requestId
+        ) {
+            /*
+             * 3.1. Verrouiller le document pour éviter que deux
+             * requêtes concurrentes traitent simultanément
+             * la même fiche.
+             */
+            $documentModel = Document::query()
+                ->where('id', $document)
+                ->where('uuid', $validated['document_uuid'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$documentModel) {
+                return [
+                    'http_status' => 404,
+                    'body' => [
+                        'success' => false,
+                        'message' =>
+                            'Document introuvable ou UUID non correspondant.',
+                        'error_code' => 'DOCUMENT_NOT_FOUND',
+                        'request_id' => $requestId,
+                    ],
+                ];
+            }
+
+            /*
+             * 3.2. Vérifier l'existence de la fiche.
+             */
+            $sheet = $documentModel->regularization_sheet;
+
+            if (!$sheet) {
+                return [
+                    'http_status' => 404,
+                    'body' => [
+                        'success' => false,
+                        'message' =>
+                            'Aucune fiche de régularisation associée au document.',
+                        'error_code' => 'REGULARIZATION_SHEET_NOT_FOUND',
+                        'request_id' => $requestId,
+                    ],
+                ];
+            }
+
+            /*
+             * 3.3. Charger et verrouiller les justificatifs.
+             */
+            $receipts = RegularizationReceipt::query()
+                ->where('regularization_sheet_id', $sheet->id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            /*
+             * Sans justificatif, nous ne pouvons pas confirmer
+             * que la transmission des pièces a été enregistrée.
+             */
+            if ($receipts->isEmpty()) {
+                Log::warning(
+                    'Aucun justificatif trouvé pour la fiche de régularisation.',
+                    [
+                        'request_id' => $requestId,
+                        'document_id' => $documentModel->id,
+                        'regularization_sheet_id' => $sheet->id,
+                    ]
+                );
+
+                return [
+                    'http_status' => 422,
+                    'body' => [
+                        'success' => false,
+                        'message' =>
+                            'Aucun justificatif n’est enregistré pour cette fiche.',
+                        'error_code' => 'NO_REGULARIZATION_RECEIPTS',
+                        'request_id' => $requestId,
+                    ],
+                ];
+            }
+
+            /*
+             * 3.4. Mettre à jour les justificatifs.
+             *
+             * Si un justificatif est déjà reçu, on conserve
+             * son historique de première réception.
+             */
+            $now = now();
+
+            $updatedCount = 0;
+            $alreadyReceivedCount = 0;
+
+            foreach ($receipts as $receipt) {
+                $alreadyReceived =
+                    (bool) $receipt->physical_receipt_received;
+
+                if ($alreadyReceived) {
+                    $alreadyReceivedCount++;
+
+                    /*
+                     * Ne pas écraser la date ou l'employé
+                     * d'une réception déjà enregistrée.
+                     */
+                    continue;
+                }
+
+                $receipt->physical_receipt_received = true;
+                $receipt->physical_receipt_received_at = $now;
+                $receipt->physical_receipt_received_by =
+                    $validated['received_by'];
+
+                $receipt->save();
+
+                $updatedCount++;
+            }
+
+            /*
+             * 3.5. Vérifier le résultat avant de confirmer
+             * le succès de l'opération.
+             */
+            $receivedCount = RegularizationReceipt::query()
+                ->where('regularization_sheet_id', $sheet->id)
+                ->where('physical_receipt_received', true)
+                ->count();
+
+            $totalCount = $receipts->count();
+
+            if ($receivedCount !== $totalCount) {
+                /*
+                 * Une exception annule toute la transaction.
+                 */
+                throw new \RuntimeException(
+                    sprintf(
+                        'Confirmation physique incomplète : %d justificatif(s) reçu(s) sur %d.',
+                        $receivedCount,
+                        $totalCount
+                    )
+                );
+            }
+
+            Log::info(
+                'Transmission physique confirmée pour tous les justificatifs.',
+                [
+                    'request_id' => $requestId,
+                    'document_id' => $documentModel->id,
+                    'document_uuid' => $documentModel->uuid,
+                    'regularization_sheet_id' => $sheet->id,
+                    'total_receipts' => $totalCount,
+                    'updated_receipts' => $updatedCount,
+                    'already_received_receipts' => $alreadyReceivedCount,
+                    'received_by' => $validated['received_by'],
+                    'source' => $validated['source'],
+                ]
+            );
+
+            return [
+                'http_status' => 200,
+                'body' => [
+                    'success' => true,
+                    'message' =>
+                        'La transmission physique de tous les justificatifs a été confirmée.',
+                    'request_id' => $requestId,
+                    'data' => [
+                        'document_id' => $documentModel->id,
+                        'document_uuid' => $documentModel->uuid,
+                        'regularization_sheet_id' => $sheet->id,
+                        'total_receipts' => $totalCount,
+                        'updated_receipts' => $updatedCount,
+                        'already_received_receipts' =>
+                            $alreadyReceivedCount,
+                        'all_receipts_received' => true,
+                    ],
+                ],
+            ];
+        }, 3);
+
+        return response()->json(
+            $result['body'],
+            $result['http_status']
+        );
+    } catch (Throwable $exception) {
+        Log::error(
+            'Échec de la confirmation automatique de transmission physique.',
+            [
+                'request_id' => $requestId,
+                'document_id' => $document,
+                'document_uuid' => $validated['document_uuid'],
+                'transaction_type_code' => $transactionTypeCode,
+                'exception' => get_class($exception),
+                'error' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]
+        );
+
+        return response()->json([
+            'success' => false,
+            'message' =>
+                'Impossible de confirmer la transmission physique des justificatifs.',
+            'error_code' => 'PHYSICAL_TRANSMISSION_CONFIRMATION_ERROR',
+            'request_id' => $requestId,
+        ], 500);
+    }
+}
 
 
    /**

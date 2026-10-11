@@ -392,6 +392,23 @@ Route::patch(
  ->name('documents.regularization-receipts.physical-receipt');
 
 
+ /**
+ * Confirme la transmission physique des justificatifs
+ * d'une fiche de régularisation.
+ *
+ * Appelée automatiquement par le Workflow Service
+ * lors de la signature du bénéficiaire.
+ */
+Route::post(
+    '/{document}/regularization-receipts/confirm-physical-transmission',
+    [
+        RegularizationReceiptController::class,
+        'confirmPhysicalTransmission',
+    ]
+)->whereNumber('document')
+ ->name('documents.regularization-receipts.confirm-physical-transmission');
+
+
           Route::delete("/{document}/regularization-expenses/{item}", [
             RegularizationItemController::class,
             "deleteItem",
