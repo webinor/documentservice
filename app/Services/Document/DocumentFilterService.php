@@ -3,6 +3,7 @@
 namespace App\Services\Document;
 
 use App\Services\UserServiceClient;
+use App\Services\WorkflowServiceClient;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Http;
 
@@ -11,10 +12,14 @@ class DocumentFilterService
 
 protected UserServiceClient $userServiceClient;
 
+protected WorkflowServiceClient $workflowServiceClient;
+
 public function __construct(
-    UserServiceClient $userServiceClient
+    UserServiceClient $userServiceClient,
+    WorkflowServiceClient $workflowServiceClient
 ) {
     $this->userServiceClient = $userServiceClient;
+    $this->workflowServiceClient = $workflowServiceClient;
 }
 
     public function apply(
@@ -27,6 +32,11 @@ public function __construct(
         //     $query,
         //     $filters
         // );
+
+            $this->filterByClosedAt(
+        $query,
+        $filters
+    );
 
 
         // $this->filterDate(
@@ -321,6 +331,38 @@ public function __construct(
         );
 
     }
+/**
+ * Filtre les documents selon leur date de clôture.
+ *
+ * La récupération des IDs est déléguée au WorkflowServiceClient.
+ *
+ * @param Builder $query
+ * @param array $filters
+ * @return void
+ */
+protected function filterByClosedAt(
+    Builder $query,
+    array $filters
+): void {
+    $dateStart = $filters['date_closed_start'] ?? null;
+    $dateEnd = $filters['date_closed_end'] ?? null;
+
+    // Aucun filtre de clôture demandé.
+    if (empty($dateStart) && empty($dateEnd)) {
+        return;
+    }
+
+    $documentIds = $this->workflowServiceClient
+        ->getClosedDocumentIds($dateStart, $dateEnd);
+
+    // Aucun document ne correspond aux critères.
+    if (empty($documentIds)) {
+        $query->whereRaw('1 = 0');
+        return;
+    }
+
+    $query->whereIn('id', $documentIds);
+}
 
     /**
  * Filtre les documents selon leur date de paiement.
@@ -390,6 +432,8 @@ private function filterPaidDate(
         );
 
     }
+
+    
 
 
     private function filterWorkflowDelay(

@@ -180,7 +180,7 @@ $workflowResult = $workflowResponse->json();
 
 if (!$workflowResponse->successful()) {
 
-throw new Exception(json_encode($workflowResponse->body()), 1);
+// throw new Exception(json_encode($workflowResponse->body()), 1);
 
     Log::error(
         'Échec de la mise à jour du statut Workflow après modification de la réception physique.',
