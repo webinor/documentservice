@@ -157,7 +157,7 @@ INFORMATIONS DU DEMANDEUR
     </td>
 
     <td colspan="3">
-        {{ ucfirst(strtolower($document['absence_request']['type'] ?? '-')) }}
+       {{ str_replace('Conge', 'Congé', ucfirst(strtolower($document['absence_request']['type'] ?? '-'))) }}
     </td>
 
 </tr>
@@ -328,7 +328,7 @@ DECISION
 
 <td colspan="4" style="color: rgb(40, 144, 32); font-size: 1.15rem;  font-weight: bold; text-align: center;">
 
- Accordé
+ ACCORDÉE
 
 
 &nbsp;&nbsp;&nbsp;
