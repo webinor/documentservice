@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Misc\Document;
+use App\Services\Resolvers\WorkflowStatusResolver;
 use Exception;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Collection;
@@ -11,6 +12,7 @@ use Throwable;
 
 class BeneficiaryEligibilityService
 {
+  
     /**
      * Nombre maximum de fiches incomplètes autorisées.
      *
@@ -41,10 +43,16 @@ class BeneficiaryEligibilityService
      */
     protected $workflowServiceClient;
 
+
+    protected WorkflowStatusResolver $workflowStatusResolver;
+
     public function __construct(
+        WorkflowStatusResolver $workflowStatusResolver,
         WorkflowServiceClient $workflowServiceClient
     ) {
         $this->workflowServiceClient = $workflowServiceClient;
+        $this->workflowStatusResolver = $workflowStatusResolver;
+
     }
 
     /**
@@ -174,7 +182,7 @@ class BeneficiaryEligibilityService
             if ($completeWorkflows->isNotEmpty()) {
                 $completedSheets[] = [
                     'document_id' => (int) $document->id,
-                    'workflow_status' => self::WORKFLOW_COMPLETE,
+                    'workflow_status' => $this->workflowStatusResolver->resolve(self::WORKFLOW_COMPLETE),
                     'counted' => false,
                     'reason_code' => 'WORKFLOW_COMPLETE',
                     'reason' => 'Le workflow est clôturé. '
@@ -336,7 +344,7 @@ class BeneficiaryEligibilityService
                 'document_uuid' => $document->uuid ?? null,
                 'document_type' => 'REGULARIZATION_SHEET',
                 'workflow_instance_id' => $workflow['id'] ?? null,
-                'workflow_status' => self::WORKFLOW_PENDING,
+                'workflow_status' => $this->workflowStatusResolver->resolve(self::WORKFLOW_PENDING) ,
                 'incomplete' => true,
                 'counted' => true,
                 'total_receipts' => $totalReceipts,
