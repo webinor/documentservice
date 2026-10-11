@@ -159,6 +159,301 @@ class DocumentExportColumnResolver
             ],
 
 
+            /*
+ * ------------------------------------------------------------------
+ * Motif de la demande d'absence
+ * ------------------------------------------------------------------
+ *
+ * Source :
+ * absence_request.reason
+ *
+ * Clé envoyée par le frontend :
+ * absence_request_reason
+ */
+'absence_request_reason' => [
+    'label' => 'Motif',
+    'type' => 'text',
+
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+        $reason = data_get(
+            $document,
+            'absence_request.reason',
+            ''
+        );
+
+        /*
+         * Traduction des codes métier en libellés français.
+         */
+        $reasons = [
+            'CONGE' => 'Congé',
+            'MARIAGE' => 'Mariage',
+            'MALADIE' => 'Maladie',
+            'PERMISSION' => 'Permission',
+            'AUTRE' => 'Autre',
+        ];
+
+        return $reasons[$reason] ?? $reason;
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| ABSENCES ET CONGÉS
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| Type de demande
+|--------------------------------------------------------------------------
+*/
+'absence_request_type' => [
+    'label' => 'Type de demande',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        $type = data_get(
+            $document,
+            'absence_request.type',
+            ''
+        );
+
+        $labels = [
+            'CONGE'      => 'Congé',
+            'PERMISSION' => 'Permission',
+            'ABSENCE'    => 'Absence',
+        ];
+
+        return $labels[$type] ?? $type;
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Type de congé
+|--------------------------------------------------------------------------
+*/
+'absence_request_leave_type' => [
+    'label' => 'Type de congé',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        return data_get(
+            $document,
+            'absence_request.leave_type.name',
+            ''
+        );
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Date de début
+|--------------------------------------------------------------------------
+*/
+'absence_request_departure_date' => [
+    'label' => 'Date de début',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        return data_get(
+            $document,
+            'absence_request.departure_date',
+            ''
+        );
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Heure de départ
+|--------------------------------------------------------------------------
+*/
+'absence_request_departure_time' => [
+    'label' => 'Heure de départ',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        return data_get(
+            $document,
+            'absence_request.departure_time',
+            ''
+        );
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Date de fin
+|--------------------------------------------------------------------------
+*/
+'absence_request_return_date' => [
+    'label' => 'Date de fin',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        return data_get(
+            $document,
+            'absence_request.return_date',
+            ''
+        );
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Heure de retour
+|--------------------------------------------------------------------------
+*/
+'absence_request_return_time' => [
+    'label' => 'Heure de retour',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        return data_get(
+            $document,
+            'absence_request.return_time',
+            ''
+        );
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Durée de l'absence
+|--------------------------------------------------------------------------
+*/
+'absence_request_duration' => [
+    'label' => 'Durée',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        $duration = data_get(
+            $document,
+            'absence_request.duration'
+        );
+
+        return $duration !== null && $duration !== ''
+            ? $duration . ' jour(s)'
+            : '';
+    },
+],
+
+
+/*
+|--------------------------------------------------------------------------
+| Date de reprise
+|--------------------------------------------------------------------------
+*/
+'absence_request_resumption_date' => [
+    'label' => 'Date de reprise',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        return data_get(
+            $document,
+            'absence_request.simulation.resumption_date',
+            ''
+        );
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Solde avant déduction
+|--------------------------------------------------------------------------
+*/
+'absence_request_balance_before' => [
+    'label' => 'Solde avant déduction',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        $balance = data_get(
+            $document,
+            'absence_request.leave_transaction.balance_before'
+        );
+
+        return $balance !== null ? $balance : '';
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Jours déduits
+|--------------------------------------------------------------------------
+*/
+'absence_request_days_deducted' => [
+    'label' => 'Jours déduits',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        $days = data_get(
+            $document,
+            'absence_request.leave_transaction.days'
+        );
+
+        return $days !== null ? $days : '';
+    },
+],
+
+/*
+|--------------------------------------------------------------------------
+| Solde après déduction
+|--------------------------------------------------------------------------
+*/
+'absence_request_balance_after' => [
+    'label' => 'Solde après déduction',
+    'type' => 'text',
+
+    'value' => function (array $document, array $workflowMetadata) {
+        $balance = data_get(
+            $document,
+            'absence_request.leave_transaction.balance_after'
+        );
+
+        return $balance !== null ? $balance : '';
+    },
+],
+/*
+|--------------------------------------------------------------------------
+| Nombre de jours imputables
+|--------------------------------------------------------------------------
+|
+| Clé frontend :
+| absence_request_deduct_days
+|
+| Source :
+| absence_request.simulation.summary.deduct_days
+|
+*/
+'absence_request_deduct_days' => [
+    'label' => 'Nombre de jours imputables',
+    'type' => 'text',
+
+    'value' => function (
+        array $document,
+        array $workflowMetadata
+    ) {
+        $days = data_get(
+            $document,
+            'absence_request.simulation.summary.deduct_days'
+        );
+
+        // Préserve la valeur 0 : elle est valide.
+        if ($days === null || $days === '') {
+            return '';
+        }
+
+        return $days !== null && $days !== ''
+            ? $days . ' jour(s)'
+            : '';
+        return $days;
+    },
+],
+
 
             /*
              * ------------------------------------------------------------------
