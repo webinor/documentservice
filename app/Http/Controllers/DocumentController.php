@@ -17,6 +17,7 @@ use App\Models\Misc\AttachmentType;
 use App\Models\Misc\Document;
 use App\Models\Misc\DocumentType;
 use App\Models\Misc\File;
+use App\Services\BeneficiaryEligibilityService;
 use App\Services\Document\DocumentCapabilitiesService;
 use App\Services\Document\DocumentContextService;
 use App\Services\Document\DocumentEnricher;
@@ -1345,14 +1346,25 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
      */
     public function store(
         StoreDocumentRequest $request,
-        DocumentDataManager $documentDataManager
+        DocumentDataManager $documentDataManager,
+        BeneficiaryEligibilityService $eligibilityService
     ) {
         try {
             DB::beginTransaction();
 
             // Récupérer les données validées par le FormRequest
             // return
+
+            // BeneficiaryEligibilityService $eligibilityService
             $validated = $request->validated();
+
+
+               // Récupérer l'identifiant du bénéficiaire validé.
+            $beneficiaryId = (int) $validated["beneficiaire"];
+            
+
+             // Bloquer la création si le bénéficiaire n'est pas éligible.
+            $eligibilityService->assertEligible($beneficiaryId);
             
             // return
 

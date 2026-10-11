@@ -153,9 +153,20 @@ class WorkflowServiceClient
             )
         );
     }
-
-    /**
- * Récupère en une requête les instances associées à plusieurs documents.
+/**
+ * Récupère en une seule requête les instances de workflow
+ * associées à plusieurs documents.
+ *
+ * Le token utilisé dépend du contexte d'appel :
+ *
+ * 1. Si un token Bearer utilisateur est disponible, il est privilégié.
+ * 2. Sinon, le token de service configuré est utilisé.
+ *
+ * Le token est transmis dans l'en-tête Authorization.
+ *
+ * Si le Workflow Service attend spécifiquement X-SERVICE-TOKEN
+ * pour les appels interservices, utiliser cet en-tête à la place
+ * du Bearer pour le token de service.
  *
  * @param array $documentIds
  * @return array
@@ -164,6 +175,16 @@ class WorkflowServiceClient
  */
 public function getInstancesByDocumentIds(array $documentIds): array
 {
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Normalisation des identifiants
+    |--------------------------------------------------------------------------
+    |
+    | On convertit les identifiants en entiers, on supprime les doublons
+    | et on élimine les valeurs invalides.
+    |
+    */
+
     $documentIds = array_values(array_unique(array_filter(
         array_map('intval', $documentIds),
         function ($id) {
@@ -171,39 +192,107 @@ public function getInstancesByDocumentIds(array $documentIds): array
         }
     )));
 
+    /*
+     * Aucun appel HTTP n'est nécessaire sans identifiant valide.
+     */
+
     if (empty($documentIds)) {
         return [];
     }
 
-    $token = request()->bearerToken()
-        ?: config('services.workflow_service.token');
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Sélection du token
+    |--------------------------------------------------------------------------
+    |
+    | On privilégie le token utilisateur de la requête courante.
+    |
+    | Si aucun token utilisateur n'est disponible, on utilise le token
+    | interservices défini dans la configuration Laravel.
+    |
+    */
+
+    $userToken = request()->bearerToken();
+
+    $serviceToken = config('services.workflow_service.token');
+
+    $token = $userToken ?: $serviceToken;
+
+    /*
+     * On vérifie qu'un token est disponible avant l'appel HTTP.
+     */
 
     if (empty($token)) {
         throw new RuntimeException(
-            'Token absent pour appeler le Workflow Service. '
-            . 'Configurez services.workflow_service.token.'
+            'Impossible d’appeler le Workflow Service : '
+            . 'aucun token utilisateur ou token de service n’est configuré.'
         );
     }
 
-    $response = Http::acceptJson()
-        // ->withToken($token)
-        ->withHeaders([
-                'X-SERVICE-TOKEN' => $token,
-            ])
-        ->timeout(20)
-        ->post(
-            $this->baseUrl . '/workflow-instances/by-document-ids',
-            [
-                'document_ids' => $documentIds,
-            ]
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Préparation des en-têtes HTTP
+    |--------------------------------------------------------------------------
+    |
+    | Si le token utilisateur est utilisé, on transmet Authorization: Bearer.
+    |
+    | Si le token de service est utilisé, on transmet X-SERVICE-TOKEN,
+    | conformément au mécanisme d'authentification interservices.
+    |
+    */
+
+    $httpClient = Http::acceptJson()
+        ->timeout(20);
+
+    if (!empty($userToken)) {
+        $httpClient = $httpClient->withToken($userToken);
+    } else {
+        $httpClient = $httpClient->withHeaders([
+            'X-SERVICE-TOKEN' => $serviceToken,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Appel du Workflow Service
+    |--------------------------------------------------------------------------
+    |
+    | Les identifiants sont envoyés en une seule requête POST.
+    |
+    */
+
+    $response = $httpClient->post(
+        $this->baseUrl . '/workflow-instances/by-document-ids',
+        [
+            'document_ids' => $documentIds,
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Gestion des erreurs HTTP
+    |--------------------------------------------------------------------------
+    |
+    | On ne journalise jamais le token dans les exceptions ou les logs.
+    |
+    */
 
     if ($response->failed()) {
         throw new RuntimeException(
-            'Erreur lors de la récupération des instances du Workflow Service. '
-            . 'HTTP ' . $response->status()
+            'Erreur lors de la récupération des instances du '
+            . 'Workflow Service. HTTP '
+            . $response->status()
         );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Validation de la réponse
+    |--------------------------------------------------------------------------
+    |
+    | Le service doit retourner une réponse contenant un tableau data.
+    |
+    */
 
     $data = $response->json('data');
 

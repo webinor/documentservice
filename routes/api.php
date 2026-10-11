@@ -4,6 +4,7 @@ use App\Http\Controllers\AbsenceRequestController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
+use App\Http\Controllers\BeneficiaryEligibilityController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentCapabilitiesController;
 use App\Http\Controllers\DocumentController;
@@ -391,6 +392,10 @@ Route::patch(
 )->whereNumber('receipt')
  ->name('documents.regularization-receipts.physical-receipt');
 
+ Route::get(
+    '/beneficiaries/{beneficiaryId}/eligibility',
+    [BeneficiaryEligibilityController::class, 'show']
+);
 
  /**
  * Confirme la transmission physique des justificatifs
