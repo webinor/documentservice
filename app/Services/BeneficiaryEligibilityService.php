@@ -16,7 +16,7 @@ class BeneficiaryEligibilityService
      *
      * Le blocage commence à la troisième fiche.
      */
-    const MAX_PENDING_REGULARIZATIONS = 1;
+    const MAX_PENDING_REGULARIZATIONS = 2;
 
     /**
      * Statuts de workflow utilisés par la règle métier.
@@ -360,7 +360,7 @@ class BeneficiaryEligibilityService
         
 
         $blocked = $pendingCount
-            > self::MAX_PENDING_REGULARIZATIONS;
+            >= self::MAX_PENDING_REGULARIZATIONS;
 
         $blockingThreshold =
             self::MAX_PENDING_REGULARIZATIONS + 1;
