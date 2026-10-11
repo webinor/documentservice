@@ -153,4 +153,67 @@ class WorkflowServiceClient
             )
         );
     }
+
+    /**
+ * Récupère en une requête les instances associées à plusieurs documents.
+ *
+ * @param array $documentIds
+ * @return array
+ *
+ * @throws RuntimeException
+ */
+public function getInstancesByDocumentIds(array $documentIds): array
+{
+    $documentIds = array_values(array_unique(array_filter(
+        array_map('intval', $documentIds),
+        function ($id) {
+            return $id > 0;
+        }
+    )));
+
+    if (empty($documentIds)) {
+        return [];
+    }
+
+    $token = request()->bearerToken()
+        ?: config('services.workflow_service.token');
+
+    if (empty($token)) {
+        throw new RuntimeException(
+            'Token absent pour appeler le Workflow Service. '
+            . 'Configurez services.workflow_service.token.'
+        );
+    }
+
+    $response = Http::acceptJson()
+        // ->withToken($token)
+        ->withHeaders([
+                'X-SERVICE-TOKEN' => $token,
+            ])
+        ->timeout(20)
+        ->post(
+            $this->baseUrl . '/workflow-instances/by-document-ids',
+            [
+                'document_ids' => $documentIds,
+            ]
+        );
+
+    if ($response->failed()) {
+        throw new RuntimeException(
+            'Erreur lors de la récupération des instances du Workflow Service. '
+            . 'HTTP ' . $response->status()
+        );
+    }
+
+    $data = $response->json('data');
+
+    if (!is_array($data)) {
+        throw new RuntimeException(
+            'Réponse invalide du Workflow Service : '
+            . 'le champ data doit être un tableau.'
+        );
+    }
+
+    return $data;
+}
 }

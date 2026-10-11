@@ -31,7 +31,7 @@ return [
     ],
 
     'internal' =>[
-                'token' => 'wf_8s7d98f7ds98f7ds'
+                'token' => env('INTERNAL_SERVICE_TOKEN') //'wf_8s7d98f7ds98f7ds'
     ],
 
     'user_service' => [
@@ -48,6 +48,7 @@ return [
 
 'workflow_service' => [
     'base_url' => env('WORKFLOW_SERVICE_BASE_URL', 'http://localhost:8094/api/workflows'),
+    'token' => env('WORKFLOW_SERVICE_TOKEN'),
 ],
 
     'frontend_service' => [
