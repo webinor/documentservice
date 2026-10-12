@@ -17,7 +17,7 @@ class BeneficiaryEligibilityService
      *
      * Le blocage commence à la troisième fiche.
      */
-    const MAX_PENDING_REGULARIZATIONS = 3;
+    const MAX_PENDING_REGULARIZATIONS = 6;
 
     /**
      * Statuts de workflow utilisés par la règle métier.
