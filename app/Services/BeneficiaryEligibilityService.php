@@ -43,17 +43,25 @@ class BeneficiaryEligibilityService
      */
     protected $workflowServiceClient;
 
+    /**
+ * Résout les URL frontend des documents.
+ *
+ * @var DocumentUrlResolver
+ */
+protected $documentUrlResolver;
+
 
     protected WorkflowStatusResolver $workflowStatusResolver;
 
     public function __construct(
-        WorkflowStatusResolver $workflowStatusResolver,
-        WorkflowServiceClient $workflowServiceClient
-    ) {
-        $this->workflowServiceClient = $workflowServiceClient;
-        $this->workflowStatusResolver = $workflowStatusResolver;
-
-    }
+    WorkflowStatusResolver $workflowStatusResolver,
+    WorkflowServiceClient $workflowServiceClient,
+    DocumentUrlResolver $documentUrlResolver
+) {
+    $this->workflowServiceClient = $workflowServiceClient;
+    $this->workflowStatusResolver = $workflowStatusResolver;
+    $this->documentUrlResolver = $documentUrlResolver;
+}
 
     /**
      * Détermine si un bénéficiaire peut recevoir un nouveau document.
@@ -305,7 +313,11 @@ class BeneficiaryEligibilityService
              */
 
               if ($workflow['id'] == 1405) {
+
+            $user_connected = request()->get("user"); // récupéré du user-service
+
                 
+            // throw new Exception(json_encode($user_connected), 1);
             // throw new Exception(json_encode($pendingReceipts), 1);
             
             }
@@ -342,6 +354,13 @@ class BeneficiaryEligibilityService
             $pendingSheets[] = [
                 'document_id' => (int) $document->id,
                 'document_uuid' => $document->uuid ?? null,
+                'document_title' => $document->title ?? null,
+                'document_reference' => $document->reference ?? null,
+
+                 // URL frontend calculée selon le type et les permissions.
+                'document_url' => $this->documentUrlResolver->resolve(
+                    $document
+                ),
                 'document_type' => 'REGULARIZATION_SHEET',
                 'workflow_instance_id' => $workflow['id'] ?? null,
                 'workflow_status' => $this->workflowStatusResolver->resolve(self::WORKFLOW_PENDING) ,
