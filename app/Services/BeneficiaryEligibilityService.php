@@ -12,7 +12,6 @@ use Throwable;
 
 class BeneficiaryEligibilityService
 {
-  
     /**
      * Nombre maximum de fiches incomplètes autorisées.
      *
@@ -44,24 +43,28 @@ class BeneficiaryEligibilityService
     protected $workflowServiceClient;
 
     /**
- * Résout les URL frontend des documents.
- *
- * @var DocumentUrlResolver
- */
-protected $documentUrlResolver;
+     * Résout les URL frontend des documents.
+     *
+     * @var DocumentUrlResolver
+     */
+    protected $documentUrlResolver;
 
-
+    /**
+     * Résolveur des statuts du workflow.
+     *
+     * @var WorkflowStatusResolver
+     */
     protected WorkflowStatusResolver $workflowStatusResolver;
 
     public function __construct(
-    WorkflowStatusResolver $workflowStatusResolver,
-    WorkflowServiceClient $workflowServiceClient,
-    DocumentUrlResolver $documentUrlResolver
-) {
-    $this->workflowServiceClient = $workflowServiceClient;
-    $this->workflowStatusResolver = $workflowStatusResolver;
-    $this->documentUrlResolver = $documentUrlResolver;
-}
+        WorkflowStatusResolver $workflowStatusResolver,
+        WorkflowServiceClient $workflowServiceClient,
+        DocumentUrlResolver $documentUrlResolver
+    ) {
+        $this->workflowServiceClient = $workflowServiceClient;
+        $this->workflowStatusResolver = $workflowStatusResolver;
+        $this->documentUrlResolver = $documentUrlResolver;
+    }
 
     /**
      * Détermine si un bénéficiaire peut recevoir un nouveau document.
@@ -79,7 +82,24 @@ protected $documentUrlResolver;
      */
     public function evaluate(int $beneficiaryId): array
     {
+        Log::info(
+            '[BeneficiaryEligibility] Début de la vérification d’éligibilité.',
+            [
+                'beneficiary_id' => $beneficiaryId,
+                'max_pending_regularizations' =>
+                    self::MAX_PENDING_REGULARIZATIONS,
+                'checked_at' => now()->toDateTimeString(),
+            ]
+        );
+
         if ($beneficiaryId <= 0) {
+            Log::warning(
+                '[BeneficiaryEligibility] Vérification impossible : identifiant bénéficiaire invalide.',
+                [
+                    'beneficiary_id' => $beneficiaryId,
+                ]
+            );
+
             return $this->buildInvalidBeneficiaryResponse(
                 $beneficiaryId
             );
@@ -118,6 +138,18 @@ protected $documentUrlResolver;
             })
             ->values();
 
+        Log::info(
+            '[BeneficiaryEligibility] Documents récupérés.',
+            [
+                'beneficiary_id' => $beneficiaryId,
+                'total_documents_found' => $documents->count(),
+                'documents_with_regularization_sheet' =>
+                    $documentsWithSheets->count(),
+                'documents_without_regularization_sheet' =>
+                    $documents->count() - $documentsWithSheets->count(),
+            ]
+        );
+
         /*
          * 3. Récupérer les identifiants des documents.
          *
@@ -130,13 +162,46 @@ protected $documentUrlResolver;
             ->values()
             ->all();
 
-        $workflowInstances = empty($documentIds)
-            ? []
-            : $this->workflowServiceClient
-                ->getInstancesByDocumentIds($documentIds);
+        Log::info(
+            '[BeneficiaryEligibility] Début de la récupération des workflows.',
+            [
+                'beneficiary_id' => $beneficiaryId,
+                'document_count' => count($documentIds),
+                'document_ids' => $documentIds,
+            ]
+        );
 
-        // throw new Exception(json_encode(collect($workflowInstances)->pluck('id')), 1);
-        
+        try {
+            $workflowInstances = empty($documentIds)
+                ? []
+                : $this->workflowServiceClient
+                    ->getInstancesByDocumentIds($documentIds);
+        } catch (Throwable $exception) {
+            Log::error(
+                '[BeneficiaryEligibility] Échec de la récupération des workflows.',
+                [
+                    'beneficiary_id' => $beneficiaryId,
+                    'document_count' => count($documentIds),
+                    'document_ids' => $documentIds,
+                    'exception_class' => get_class($exception),
+                    'exception_message' => $exception->getMessage(),
+                ]
+            );
+
+            // Conserver le comportement initial : propager l'exception.
+            throw $exception;
+        }
+
+        Log::info(
+            '[BeneficiaryEligibility] Workflows récupérés.',
+            [
+                'beneficiary_id' => $beneficiaryId,
+                'documents_to_check' => count($documentIds),
+                'workflow_instances_found' =>
+                    collect($workflowInstances)->count(),
+            ]
+        );
+
         /*
          * 4. Indexer les workflows par document_id.
          */
@@ -146,8 +211,6 @@ protected $documentUrlResolver;
                     ? (int) $workflow['document_id']
                     : 0;
             });
-        // throw new Exception(json_encode(array_keys($workflowsByDocument->toArray())), 1);
-        
 
         $pendingSheets = [];
 
@@ -160,9 +223,6 @@ protected $documentUrlResolver;
         /*
          * 5. Examiner chaque fiche à régulariser.
          */
-
-
-
         foreach ($documentsWithSheets as $document) {
             $sheet = $document->regularization_sheet;
 
@@ -170,8 +230,6 @@ protected $documentUrlResolver;
                 (int) $document->id,
                 collect()
             );
-
-
 
             /*
              * Une instance COMPLETE prévaut sur toute ancienne
@@ -185,12 +243,27 @@ protected $documentUrlResolver;
                 })
                 ->values();
 
-            
-
             if ($completeWorkflows->isNotEmpty()) {
+                Log::debug(
+                    '[BeneficiaryEligibility] Fiche ignorée : workflow COMPLETE.',
+                    [
+                        'beneficiary_id' => $beneficiaryId,
+                        'document_id' => (int) $document->id,
+                        'document_uuid' => $document->uuid ?? null,
+                        'workflow_ids' => $completeWorkflows
+                            ->pluck('id')
+                            ->values()
+                            ->all(),
+                        'reason_code' => 'WORKFLOW_COMPLETE',
+                    ]
+                );
+
                 $completedSheets[] = [
                     'document_id' => (int) $document->id,
-                    'workflow_status' => $this->workflowStatusResolver->resolve(self::WORKFLOW_COMPLETE),
+                    'workflow_status' =>
+                        $this->workflowStatusResolver->resolve(
+                            self::WORKFLOW_COMPLETE
+                        ),
                     'counted' => false,
                     'reason_code' => 'WORKFLOW_COMPLETE',
                     'reason' => 'Le workflow est clôturé. '
@@ -211,9 +284,26 @@ protected $documentUrlResolver;
                 })
                 ->values();
 
-            
-
             if ($pendingWorkflows->isEmpty()) {
+                Log::debug(
+                    '[BeneficiaryEligibility] Fiche non comptabilisée : aucun workflow PENDING.',
+                    [
+                        'beneficiary_id' => $beneficiaryId,
+                        'document_id' => (int) $document->id,
+                        'document_uuid' => $document->uuid ?? null,
+                        'workflow_count' => $documentWorkflows->count(),
+                        'workflow_statuses' => $documentWorkflows
+                            ->pluck('status')
+                            ->filter()
+                            ->unique()
+                            ->values()
+                            ->all(),
+                        'reason_code' => $documentWorkflows->isEmpty()
+                            ? 'WORKFLOW_INSTANCE_NOT_FOUND'
+                            : 'WORKFLOW_NOT_PENDING',
+                    ]
+                );
+
                 if ($documentWorkflows->isEmpty()) {
                     $missingWorkflowSheets[] = [
                         'document_id' => (int) $document->id,
@@ -246,26 +336,31 @@ protected $documentUrlResolver;
              * associés à une autre instance de document.
              */
             $workflow = $pendingWorkflows->first();
-        
-           
-
 
             if (
                 isset($workflow['document_uuid'])
                 && isset($document->uuid)
                 && $workflow['document_uuid'] !== $document->uuid
             ) {
+                Log::warning(
+                    '[BeneficiaryEligibility] Incohérence entre le document et le workflow.',
+                    [
+                        'beneficiary_id' => $beneficiaryId,
+                        'document_id' => (int) $document->id,
+                        'document_uuid' => $document->uuid ?? null,
+                        'workflow_id' => $workflow['id'] ?? null,
+                        'workflow_document_uuid' =>
+                            $workflow['document_uuid'] ?? null,
+                        'reason_code' => 'WORKFLOW_DOCUMENT_MISMATCH',
+                    ]
+                );
+
                 $missingWorkflowSheets[] = [
                     'document_id' => (int) $document->id,
                     'counted' => false,
                     'reason_code' => 'WORKFLOW_DOCUMENT_MISMATCH',
                     'reason' => 'L’identifiant du document ne correspond pas au workflow.',
                 ];
-
-              
-
-            // throw new Exception(json_encode("WORKFLOW_DOCUMENT_MISMATCH"), 1);
-
 
                 continue;
             }
@@ -304,6 +399,21 @@ protected $documentUrlResolver;
                 })
                 ->values();
 
+            Log::debug(
+                '[BeneficiaryEligibility] Analyse des justificatifs physiques.',
+                [
+                    'beneficiary_id' => $beneficiaryId,
+                    'document_id' => (int) $document->id,
+                    'document_uuid' => $document->uuid ?? null,
+                    'document_reference' => $document->reference ?? null,
+                    'workflow_id' => $workflow['id'] ?? null,
+                    'workflow_status' => $workflow['status'] ?? null,
+                    'total_receipts' => $totalReceipts,
+                    'received_receipts' => $receivedReceipts,
+                    'pending_receipts' => $pendingReceipts->count(),
+                ]
+            );
+
             /*
              * Par définition, il faut au moins un justificatif
              * explicitement en attente pour compter la fiche.
@@ -312,16 +422,12 @@ protected $documentUrlResolver;
              * automatiquement cette condition.
              */
 
-              if ($workflow['id'] == 1405) {
+            if ($workflow['id'] == 1405) {
+                $user_connected = request()->get("user");
 
-            $user_connected = request()->get("user"); // récupéré du user-service
-
-                
-            // throw new Exception(json_encode($user_connected), 1);
-            // throw new Exception(json_encode($pendingReceipts), 1);
-            
+                // Conserver ici tes éventuelles vérifications existantes.
             }
-            
+
             if ($pendingReceipts->isEmpty()) {
                 // continue;
             }
@@ -345,7 +451,22 @@ protected $documentUrlResolver;
                 ->values()
                 ->all();
 
-                 
+            /*
+             * Journaliser la fiche avant son ajout au décompte.
+             */
+            Log::info(
+                '[BeneficiaryEligibility] Fiche ajoutée au décompte des fiches en attente.',
+                [
+                    'beneficiary_id' => $beneficiaryId,
+                    'document_id' => (int) $document->id,
+                    'document_uuid' => $document->uuid ?? null,
+                    'document_reference' => $document->reference ?? null,
+                    'workflow_id' => $workflow['id'] ?? null,
+                    'total_receipts' => $totalReceipts,
+                    'received_receipts' => $receivedReceipts,
+                    'pending_receipts' => $pendingReceipts->count(),
+                ]
+            );
 
             /*
              * La fiche compte une seule fois, même si plusieurs
@@ -357,13 +478,17 @@ protected $documentUrlResolver;
                 'document_title' => $document->title ?? null,
                 'document_reference' => $document->reference ?? null,
 
-                 // URL frontend calculée selon le type et les permissions.
+                // URL frontend calculée selon le type et les permissions.
                 'document_url' => $this->documentUrlResolver->resolve(
                     $document
                 ),
+
                 'document_type' => 'REGULARIZATION_SHEET',
                 'workflow_instance_id' => $workflow['id'] ?? null,
-                'workflow_status' => $this->workflowStatusResolver->resolve(self::WORKFLOW_PENDING) ,
+                'workflow_status' =>
+                    $this->workflowStatusResolver->resolve(
+                        self::WORKFLOW_PENDING
+                    ),
                 'incomplete' => true,
                 'counted' => true,
                 'total_receipts' => $totalReceipts,
@@ -383,14 +508,56 @@ protected $documentUrlResolver;
          */
         $pendingCount = count($pendingSheets);
 
-        // throw new Exception(json_encode($pendingSheets), 1);
-        
-
         $blocked = $pendingCount
             >= self::MAX_PENDING_REGULARIZATIONS;
 
         $blockingThreshold =
             self::MAX_PENDING_REGULARIZATIONS + 1;
+
+        /*
+         * Préparer les informations de diagnostic.
+         */
+        $pendingDocumentIds = collect($pendingSheets)
+            ->pluck('document_id')
+            ->values()
+            ->all();
+
+        $eligibilityContext = [
+            'beneficiary_id' => $beneficiaryId,
+            'eligible' => !$blocked,
+            'blocked' => $blocked,
+            'decision' => $blocked
+                ? 'BLOCKED'
+                : 'AUTHORIZED',
+            'reason_code' => $blocked
+                ? 'TOO_MANY_PENDING_REGULARIZATIONS'
+                : 'WITHIN_ALLOWED_THRESHOLD',
+            'pending_incomplete_sheets' => $pendingCount,
+            'maximum_allowed' =>
+                self::MAX_PENDING_REGULARIZATIONS,
+            'blocking_threshold' => $blockingThreshold,
+            'pending_document_ids' => $pendingDocumentIds,
+            'completed_sheets_ignored' => count($completedSheets),
+            'other_status_sheets_ignored' => count($otherStatusSheets),
+            'missing_workflow_sheets' => count($missingWorkflowSheets),
+        ];
+
+        /*
+         * LOG CRITIQUE :
+         * Le bénéficiaire ne peut plus créer de document
+         * lorsque $blocked vaut true.
+         */
+        if ($blocked) {
+            Log::warning(
+                '[BeneficiaryEligibility] BÉNÉFICIAIRE BLOQUÉ : création de document interdite.',
+                $eligibilityContext
+            );
+        } else {
+            Log::info(
+                '[BeneficiaryEligibility] Bénéficiaire autorisé à créer un document.',
+                $eligibilityContext
+            );
+        }
 
         /*
          * 7. Construire une réponse détaillée.
@@ -419,8 +586,7 @@ protected $documentUrlResolver;
                     )
                     : sprintf(
                         'Ce bénéficiaire possède %d fiche(s) à régulariser '
-                         . "Incomplètes : un ou plusieurs justificatifs n’ont pas encore été transmis."
-                        // . 'incomplète(s) dont le workflow est PENDING. '
+                        . "Incomplètes : un ou plusieurs justificatifs n’ont pas encore été transmis."
                         . 'Le maximum autorisé est de %d.',
                         $pendingCount,
                         self::MAX_PENDING_REGULARIZATIONS
@@ -488,6 +654,26 @@ protected $documentUrlResolver;
             empty($result['success'])
             || empty($result['data']['eligible'])
         ) {
+            Log::warning(
+                '[BeneficiaryEligibility] REFUS DE CRÉATION : assertEligible() bloque la requête.',
+                [
+                    'beneficiary_id' => $beneficiaryId,
+                    'reason_code' => $result['data']['reason_code']
+                        ?? 'BENEFICIARY_NOT_ELIGIBLE',
+                    'reason' => $result['data']['reason'] ?? null,
+                    'decision' => $result['data']['decision'] ?? null,
+                    'pending_incomplete_sheets' =>
+                        $result['data']['summary']['pending_incomplete_sheets']
+                        ?? null,
+                    'maximum_allowed' =>
+                        $result['data']['summary']['maximum_allowed']
+                        ?? self::MAX_PENDING_REGULARIZATIONS,
+                    'pending_document_ids' => collect(
+                        $result['data']['pending_regularizations'] ?? []
+                    )->pluck('document_id')->values()->all(),
+                ]
+            );
+
             throw new HttpResponseException(
                 response()->json(
                     [
@@ -502,6 +688,20 @@ protected $documentUrlResolver;
                 )
             );
         }
+
+        Log::info(
+            '[BeneficiaryEligibility] Création autorisée par assertEligible().',
+            [
+                'beneficiary_id' => $beneficiaryId,
+                'decision' => $result['data']['decision'] ?? null,
+                'pending_incomplete_sheets' =>
+                    $result['data']['summary']['pending_incomplete_sheets']
+                    ?? null,
+                'maximum_allowed' =>
+                    $result['data']['summary']['maximum_allowed']
+                    ?? self::MAX_PENDING_REGULARIZATIONS,
+            ]
+        );
 
         return $result;
     }
