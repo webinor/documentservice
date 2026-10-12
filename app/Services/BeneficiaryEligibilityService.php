@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Models\Misc\Document;
 use App\Services\Resolvers\WorkflowStatusResolver;
-use Exception;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -15,9 +13,10 @@ class BeneficiaryEligibilityService
     /**
      * Nombre maximum de fiches incomplètes autorisées.
      *
-     * Le blocage commence à la troisième fiche.
+     * Le blocage commence lorsque le bénéficiaire possède
+     * 6 fiches à régulariser incomplètes ou plus.
      */
-    const MAX_PENDING_REGULARIZATIONS = 6;
+    const MAX_PENDING_REGULARIZATIONS = 3;
 
     /**
      * Statuts de workflow utilisés par la règle métier.
@@ -74,11 +73,17 @@ class BeneficiaryEligibilityService
      * - son workflow est PENDING ;
      * - au moins un justificatif physique est false ou null.
      *
-     * Une fiche COMPLETE ne compte jamais, même si les données
-     * physiques enregistrées en base semblent incohérentes.
+     * Les fiches dont le workflow est COMPLETE sont ignorées.
+     *
+     * Les fiches PENDING dont tous les justificatifs physiques
+     * ont été remis sont également ignorées.
+     *
+     * Une fiche sans justificatif physique n'est pas comptabilisée.
      *
      * @param int $beneficiaryId
      * @return array
+     *
+     * @throws Throwable
      */
     public function evaluate(int $beneficiaryId): array
     {
@@ -111,8 +116,8 @@ class BeneficiaryEligibilityService
          *
          * actor_id identifie le bénéficiaire.
          *
-         * Les justificatifs sont chargés en eager loading pour
-         * éviter une requête SQL par fiche.
+         * Les justificatifs sont chargés en eager loading afin
+         * d'éviter une requête SQL supplémentaire par fiche.
          */
         $documents = Document::query()
             ->where('actor_id', $beneficiaryId)
@@ -153,8 +158,11 @@ class BeneficiaryEligibilityService
         /*
          * 3. Récupérer les identifiants des documents.
          *
-         * Un seul appel batch sera effectué pour ces documents,
-         * au lieu d'un appel HTTP par fiche.
+         * Un seul appel batch est effectué pour tous les documents.
+         *
+         * Le paramètre false demande toutes les instances de workflow,
+         * car ce service doit pouvoir identifier les instances COMPLETE
+         * et les instances PENDING.
          */
         $documentIds = $documentsWithSheets
             ->pluck('id')
@@ -175,7 +183,10 @@ class BeneficiaryEligibilityService
             $workflowInstances = empty($documentIds)
                 ? []
                 : $this->workflowServiceClient
-                    ->getInstancesByDocumentIds($documentIds , false);
+                    ->getInstancesByDocumentIds(
+                        $documentIds,
+                        false
+                    );
         } catch (Throwable $exception) {
             Log::error(
                 '[BeneficiaryEligibility] Échec de la récupération des workflows.',
@@ -188,7 +199,10 @@ class BeneficiaryEligibilityService
                 ]
             );
 
-            // Conserver le comportement initial : propager l'exception.
+            /*
+             * Conserver le comportement initial :
+             * propager l'exception si le Workflow Service est indisponible.
+             */
             throw $exception;
         }
 
@@ -220,6 +234,10 @@ class BeneficiaryEligibilityService
 
         $missingWorkflowSheets = [];
 
+        $fullyReceivedSheets = [];
+
+        $sheetsWithoutReceipts = [];
+
         /*
          * 5. Examiner chaque fiche à régulariser.
          */
@@ -232,13 +250,16 @@ class BeneficiaryEligibilityService
             );
 
             /*
-             * Une instance COMPLETE prévaut sur toute ancienne
-             * instance PENDING associée au même document.
+             * 5.1. Ignorer la fiche si au moins une instance COMPLETE
+             * existe pour ce document.
+             *
+             * Une instance COMPLETE prévaut sur les anciennes
+             * instances PENDING associées au même document.
              */
             $completeWorkflows = $documentWorkflows
                 ->filter(function ($workflow) {
                     return isset($workflow['status'])
-                        && strtoupper($workflow['status'])
+                        && strtoupper(trim($workflow['status']))
                             === self::WORKFLOW_COMPLETE;
                 })
                 ->values();
@@ -267,19 +288,19 @@ class BeneficiaryEligibilityService
                     'counted' => false,
                     'reason_code' => 'WORKFLOW_COMPLETE',
                     'reason' => 'Le workflow est clôturé. '
-                        . 'Les justificatifs sont considérés comme reçus.',
+                        . 'Cette fiche n’est pas comptabilisée.',
                 ];
 
                 continue;
             }
 
             /*
-             * Rechercher une instance PENDING.
+             * 5.2. Rechercher les instances PENDING.
              */
             $pendingWorkflows = $documentWorkflows
                 ->filter(function ($workflow) {
                     return isset($workflow['status'])
-                        && strtoupper($workflow['status'])
+                        && strtoupper(trim($workflow['status']))
                             === self::WORKFLOW_PENDING;
                 })
                 ->values();
@@ -330,10 +351,10 @@ class BeneficiaryEligibilityService
             }
 
             /*
-             * Vérifier la cohérence de l'identifiant du document.
+             * 5.3. Vérifier la cohérence de l'identifiant du document.
              *
-             * Les détails des justificatifs ne doivent pas être
-             * associés à une autre instance de document.
+             * On conserve la vérification sur la première instance
+             * PENDING retenue, conformément à la logique initiale.
              */
             $workflow = $pendingWorkflows->first();
 
@@ -366,13 +387,16 @@ class BeneficiaryEligibilityService
             }
 
             /*
-             * Récupérer les justificatifs de cette fiche.
+             * 5.4. Récupérer les justificatifs de cette fiche.
              */
-            $receipts = $sheet->receipts
-                ?? collect();
+            $receipts = $sheet->receipts ?? collect();
 
             $totalReceipts = $receipts->count();
 
+            /*
+             * Une valeur true, 1 ou '1' signifie que le justificatif
+             * physique a été reçu.
+             */
             $receivedReceipts = $receipts
                 ->filter(function ($receipt) {
                     return $receipt->physical_receipt_received === true
@@ -383,10 +407,7 @@ class BeneficiaryEligibilityService
 
             /*
              * Un justificatif est en attente lorsque sa valeur
-             * est false ou null.
-             *
-             * Les valeurs inconnues ne sont pas assimilées à
-             * une réception confirmée.
+             * est explicitement false, 0, '0' ou null.
              */
             $pendingReceipts = $receipts
                 ->filter(function ($receipt) {
@@ -399,6 +420,8 @@ class BeneficiaryEligibilityService
                 })
                 ->values();
 
+            $pendingReceiptCount = $pendingReceipts->count();
+
             Log::debug(
                 '[BeneficiaryEligibility] Analyse des justificatifs physiques.',
                 [
@@ -410,30 +433,79 @@ class BeneficiaryEligibilityService
                     'workflow_status' => $workflow['status'] ?? null,
                     'total_receipts' => $totalReceipts,
                     'received_receipts' => $receivedReceipts,
-                    'pending_receipts' => $pendingReceipts->count(),
+                    'pending_receipts' => $pendingReceiptCount,
                 ]
             );
 
             /*
-             * Par définition, il faut au moins un justificatif
-             * explicitement en attente pour compter la fiche.
+             * 5.5. Ignorer une fiche qui ne possède aucun justificatif.
              *
-             * Une fiche sans justificatif ne satisfait donc pas
-             * automatiquement cette condition.
+             * Une fiche sans justificatif physique ne doit pas être
+             * considérée automatiquement comme incomplète.
              */
+            if ($totalReceipts === 0) {
+                Log::debug(
+                    '[BeneficiaryEligibility] Fiche ignorée : aucun justificatif physique.',
+                    [
+                        'beneficiary_id' => $beneficiaryId,
+                        'document_id' => (int) $document->id,
+                        'workflow_id' => $workflow['id'] ?? null,
+                        'reason_code' => 'NO_PHYSICAL_RECEIPTS',
+                    ]
+                );
 
-            if ($workflow['id'] == 1405) {
-                $user_connected = request()->get("user");
+                $sheetsWithoutReceipts[] = [
+                    'document_id' => (int) $document->id,
+                    'workflow_instance_id' => $workflow['id'] ?? null,
+                    'counted' => false,
+                    'reason_code' => 'NO_PHYSICAL_RECEIPTS',
+                    'reason' => 'La fiche ne possède aucun justificatif physique.',
+                ];
 
-                // Conserver ici tes éventuelles vérifications existantes.
-            }
-
-            if ($pendingReceipts->isEmpty()) {
-                // continue;
+                continue;
             }
 
             /*
-             * Construire le détail des justificatifs en attente.
+             * 5.6. Ignorer une fiche PENDING dont tous les justificatifs
+             * physiques ont été remis.
+             *
+             * Puisque totalReceipts > 0, l'absence de justificatif en
+             * attente signifie que tous les justificatifs sont reçus.
+             */
+            if ($pendingReceiptCount === 0) {
+                Log::debug(
+                    '[BeneficiaryEligibility] Fiche ignorée : tous les justificatifs physiques ont été remis.',
+                    [
+                        'beneficiary_id' => $beneficiaryId,
+                        'document_id' => (int) $document->id,
+                        'document_uuid' => $document->uuid ?? null,
+                        'workflow_id' => $workflow['id'] ?? null,
+                        'total_receipts' => $totalReceipts,
+                        'received_receipts' => $receivedReceipts,
+                        'reason_code' => 'ALL_PHYSICAL_RECEIPTS_RECEIVED',
+                    ]
+                );
+
+                $fullyReceivedSheets[] = [
+                    'document_id' => (int) $document->id,
+                    'workflow_instance_id' => $workflow['id'] ?? null,
+                    'workflow_status' =>
+                        $this->workflowStatusResolver->resolve(
+                            self::WORKFLOW_PENDING
+                        ),
+                    'counted' => false,
+                    'total_receipts' => $totalReceipts,
+                    'received_receipts' => $receivedReceipts,
+                    'reason_code' => 'ALL_PHYSICAL_RECEIPTS_RECEIVED',
+                    'reason' => 'Tous les justificatifs physiques ont été remis.',
+                ];
+
+                continue;
+            }
+
+            /*
+             * 5.7. À ce stade, la fiche possède au moins un justificatif
+             * physique en attente. Elle doit donc être comptabilisée.
              */
             $pendingReceiptDetails = $pendingReceipts
                 ->map(function ($receipt) {
@@ -451,9 +523,6 @@ class BeneficiaryEligibilityService
                 ->values()
                 ->all();
 
-            /*
-             * Journaliser la fiche avant son ajout au décompte.
-             */
             Log::info(
                 '[BeneficiaryEligibility] Fiche ajoutée au décompte des fiches en attente.',
                 [
@@ -464,7 +533,7 @@ class BeneficiaryEligibilityService
                     'workflow_id' => $workflow['id'] ?? null,
                     'total_receipts' => $totalReceipts,
                     'received_receipts' => $receivedReceipts,
-                    'pending_receipts' => $pendingReceipts->count(),
+                    'pending_receipts' => $pendingReceiptCount,
                 ]
             );
 
@@ -493,12 +562,12 @@ class BeneficiaryEligibilityService
                 'counted' => true,
                 'total_receipts' => $totalReceipts,
                 'received_receipts' => $receivedReceipts,
-                'pending_receipts' => $pendingReceipts->count(),
+                'pending_receipts' => $pendingReceiptCount,
                 'pending_receipt_details' => $pendingReceiptDetails,
                 'reason_code' => 'PHYSICAL_RECEIPTS_PENDING',
                 'reason' => sprintf(
                     '%d justificatif(s) physique(s) en attente de réception.',
-                    $pendingReceipts->count()
+                    $pendingReceiptCount
                 ),
             ];
         }
@@ -512,7 +581,7 @@ class BeneficiaryEligibilityService
             >= self::MAX_PENDING_REGULARIZATIONS;
 
         $blockingThreshold =
-            self::MAX_PENDING_REGULARIZATIONS + 1;
+            self::MAX_PENDING_REGULARIZATIONS;
 
         /*
          * Préparer les informations de diagnostic.
@@ -538,6 +607,8 @@ class BeneficiaryEligibilityService
             'blocking_threshold' => $blockingThreshold,
             'pending_document_ids' => $pendingDocumentIds,
             'completed_sheets_ignored' => count($completedSheets),
+            'fully_received_sheets_ignored' => count($fullyReceivedSheets),
+            'sheets_without_receipts_ignored' => count($sheetsWithoutReceipts),
             'other_status_sheets_ignored' => count($otherStatusSheets),
             'missing_workflow_sheets' => count($missingWorkflowSheets),
         ];
@@ -562,6 +633,16 @@ class BeneficiaryEligibilityService
         /*
          * 7. Construire une réponse détaillée.
          */
+        $reason = sprintf(
+            'Ce bénéficiaire possède %d fiche(s) à régulariser incomplète(s). Le maximum autorisé est de %d.',
+            $pendingCount,
+            self::MAX_PENDING_REGULARIZATIONS
+        );
+
+        if ($blocked) {
+            $reason .= ' La création de nouveaux documents est bloquée jusqu’à la remise des justificatifs physiques en attente.';
+        }
+
         return [
             'success' => true,
             'data' => [
@@ -576,21 +657,7 @@ class BeneficiaryEligibilityService
                     ? 'TOO_MANY_PENDING_REGULARIZATIONS'
                     : 'WITHIN_ALLOWED_THRESHOLD',
 
-                'reason' => $blocked
-                    ? sprintf(
-                        'Ce bénéficiaire possède %d fiches à régulariser '
-                        . "Incomplètes : un ou plusieurs justificatifs n’ont pas encore été transmis."
-                        . 'Le maximum autorisé est de %d.',
-                        $pendingCount,
-                        self::MAX_PENDING_REGULARIZATIONS
-                    )
-                    : sprintf(
-                        'Ce bénéficiaire possède %d fiche(s) à régulariser '
-                        . "Incomplètes : un ou plusieurs justificatifs n’ont pas encore été transmis."
-                        . 'Le maximum autorisé est de %d.',
-                        $pendingCount,
-                        self::MAX_PENDING_REGULARIZATIONS
-                    ),
+                'reason' => $reason,
 
                 'summary' => [
                     'total_regularization_documents' =>
@@ -614,6 +681,12 @@ class BeneficiaryEligibilityService
                     'completed_sheets_ignored' =>
                         count($completedSheets),
 
+                    'fully_received_sheets_ignored' =>
+                        count($fullyReceivedSheets),
+
+                    'sheets_without_receipts_ignored' =>
+                        count($sheetsWithoutReceipts),
+
                     'other_status_sheets_ignored' =>
                         count($otherStatusSheets),
 
@@ -627,6 +700,10 @@ class BeneficiaryEligibilityService
                 'pending_regularizations' => $pendingSheets,
 
                 'completed_regularizations' => $completedSheets,
+
+                'fully_received_regularizations' => $fullyReceivedSheets,
+
+                'regularizations_without_receipts' => $sheetsWithoutReceipts,
 
                 'other_status_regularizations' => $otherStatusSheets,
 
@@ -708,6 +785,9 @@ class BeneficiaryEligibilityService
 
     /**
      * Réponse en cas d'identifiant de bénéficiaire invalide.
+     *
+     * @param int $beneficiaryId
+     * @return array
      */
     protected function buildInvalidBeneficiaryResponse(
         int $beneficiaryId
@@ -726,11 +806,16 @@ class BeneficiaryEligibilityService
                     'maximum_allowed' =>
                         self::MAX_PENDING_REGULARIZATIONS,
                     'blocking_threshold' =>
-                        self::MAX_PENDING_REGULARIZATIONS + 1,
+                        self::MAX_PENDING_REGULARIZATIONS,
                 ],
                 'affected_document_types' =>
                     self::AFFECTED_DOCUMENT_TYPES,
                 'pending_regularizations' => [],
+                'completed_regularizations' => [],
+                'fully_received_regularizations' => [],
+                'regularizations_without_receipts' => [],
+                'other_status_regularizations' => [],
+                'regularizations_without_workflow' => [],
             ],
         ];
     }
