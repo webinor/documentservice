@@ -173,7 +173,7 @@ class WorkflowServiceClient
  *
  * @throws RuntimeException
  */
-public function getInstancesByDocumentIds(array $documentIds): array
+public function getInstancesByDocumentIds(array $documentIds , $relevant = true): array
 {
     /*
     |--------------------------------------------------------------------------
@@ -265,6 +265,7 @@ public function getInstancesByDocumentIds(array $documentIds): array
         $this->baseUrl . '/workflow-instances/by-document-ids',
         [
             'document_ids' => $documentIds,
+            'relevant' => $relevant
         ]
     );
 
