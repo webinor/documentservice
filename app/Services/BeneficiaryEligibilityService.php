@@ -16,7 +16,7 @@ class BeneficiaryEligibilityService
      * Le blocage commence lorsque le bénéficiaire possède
      * 6 fiches à régulariser incomplètes ou plus.
      */
-    const MAX_PENDING_REGULARIZATIONS = 2;
+    const MAX_PENDING_REGULARIZATIONS = 3;
 
     /**
      * Statuts de workflow utilisés par la règle métier.
