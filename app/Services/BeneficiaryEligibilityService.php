@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Models\Misc\Document;
 use App\Services\Resolvers\WorkflowStatusResolver;
-use Exception;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -15,9 +13,10 @@ class BeneficiaryEligibilityService
     /**
      * Nombre maximum de fiches incomplètes autorisées.
      *
-     * Le blocage commence à la troisième fiche.
+     * Le blocage commence lorsque le bénéficiaire atteint
+     * ce nombre de fiches en attente.
      */
-    const MAX_PENDING_REGULARIZATIONS = 6;
+    const MAX_PENDING_REGULARIZATIONS = 3;
 
     /**
      * Statuts de workflow utilisés par la règle métier.
@@ -69,16 +68,21 @@ class BeneficiaryEligibilityService
     /**
      * Détermine si un bénéficiaire peut recevoir un nouveau document.
      *
+     * Le Workflow Service retourne uniquement les instances
+     * admissibles selon les critères métier configurés côté workflow.
+     *
      * Une fiche compte uniquement lorsque :
      * - son type est REGULARIZATION_SHEET ;
-     * - son workflow est PENDING ;
+     * - son workflow retourné est PENDING ;
      * - au moins un justificatif physique est false ou null.
      *
-     * Une fiche COMPLETE ne compte jamais, même si les données
-     * physiques enregistrées en base semblent incohérentes.
+     * Les workflows COMPLETE ne sont plus recherchés ni filtrés
+     * ici : leur admissibilité est gérée par le Workflow Service.
      *
      * @param int $beneficiaryId
      * @return array
+     *
+     * @throws Throwable
      */
     public function evaluate(int $beneficiaryId): array
     {
@@ -153,7 +157,7 @@ class BeneficiaryEligibilityService
         /*
          * 3. Récupérer les identifiants des documents.
          *
-         * Un seul appel batch sera effectué pour ces documents,
+         * Un seul appel batch est effectué pour ces documents,
          * au lieu d'un appel HTTP par fiche.
          */
         $documentIds = $documentsWithSheets
@@ -214,8 +218,6 @@ class BeneficiaryEligibilityService
 
         $pendingSheets = [];
 
-        $completedSheets = [];
-
         $otherStatusSheets = [];
 
         $missingWorkflowSheets = [];
@@ -232,49 +234,11 @@ class BeneficiaryEligibilityService
             );
 
             /*
-             * Une instance COMPLETE prévaut sur toute ancienne
-             * instance PENDING associée au même document.
-             */
-            $completeWorkflows = $documentWorkflows
-                ->filter(function ($workflow) {
-                    return isset($workflow['status'])
-                        && strtoupper($workflow['status'])
-                            === self::WORKFLOW_COMPLETE;
-                })
-                ->values();
-
-            if ($completeWorkflows->isNotEmpty()) {
-                Log::debug(
-                    '[BeneficiaryEligibility] Fiche ignorée : workflow COMPLETE.',
-                    [
-                        'beneficiary_id' => $beneficiaryId,
-                        'document_id' => (int) $document->id,
-                        'document_uuid' => $document->uuid ?? null,
-                        'workflow_ids' => $completeWorkflows
-                            ->pluck('id')
-                            ->values()
-                            ->all(),
-                        'reason_code' => 'WORKFLOW_COMPLETE',
-                    ]
-                );
-
-                $completedSheets[] = [
-                    'document_id' => (int) $document->id,
-                    'workflow_status' =>
-                        $this->workflowStatusResolver->resolve(
-                            self::WORKFLOW_COMPLETE
-                        ),
-                    'counted' => false,
-                    'reason_code' => 'WORKFLOW_COMPLETE',
-                    'reason' => 'Le workflow est clôturé. '
-                        . 'Les justificatifs sont considérés comme reçus.',
-                ];
-
-                continue;
-            }
-
-            /*
-             * Rechercher une instance PENDING.
+             * Le Workflow Service retourne uniquement les workflows
+             * admissibles. On ne recherche donc plus les instances
+             * COMPLETE et on ne les traite plus séparément.
+             *
+             * On recherche directement une instance PENDING.
              */
             $pendingWorkflows = $documentWorkflows
                 ->filter(function ($workflow) {
@@ -309,7 +273,7 @@ class BeneficiaryEligibilityService
                         'document_id' => (int) $document->id,
                         'counted' => false,
                         'reason_code' => 'WORKFLOW_INSTANCE_NOT_FOUND',
-                        'reason' => 'Aucune instance de workflow trouvée.',
+                        'reason' => 'Aucune instance de workflow admissible trouvée.',
                     ];
                 } else {
                     $otherStatusSheets[] = [
@@ -322,7 +286,7 @@ class BeneficiaryEligibilityService
                             ->all(),
                         'counted' => false,
                         'reason_code' => 'WORKFLOW_NOT_PENDING',
-                        'reason' => 'Le workflow ne possède pas le statut PENDING.',
+                        'reason' => 'Aucun workflow admissible ne possède le statut PENDING.',
                     ];
                 }
 
@@ -423,7 +387,7 @@ class BeneficiaryEligibilityService
              */
 
             if ($workflow['id'] == 1405) {
-                $user_connected = request()->get("user");
+                $user_connected = request()->get('user');
 
                 // Conserver ici tes éventuelles vérifications existantes.
             }
@@ -537,7 +501,6 @@ class BeneficiaryEligibilityService
                 self::MAX_PENDING_REGULARIZATIONS,
             'blocking_threshold' => $blockingThreshold,
             'pending_document_ids' => $pendingDocumentIds,
-            'completed_sheets_ignored' => count($completedSheets),
             'other_status_sheets_ignored' => count($otherStatusSheets),
             'missing_workflow_sheets' => count($missingWorkflowSheets),
         ];
@@ -578,16 +541,12 @@ class BeneficiaryEligibilityService
 
                 'reason' => $blocked
                     ? sprintf(
-                        'Ce bénéficiaire possède %d fiches à régulariser '
-                        . "Incomplètes : un ou plusieurs justificatifs n’ont pas encore été transmis."
-                        . 'Le maximum autorisé est de %d.',
+                        'Ce bénéficiaire possède %d fiche(s) à régulariser incomplète(s) : un ou plusieurs justificatifs n’ont pas encore été transmis. Le maximum autorisé est de %d.',
                         $pendingCount,
                         self::MAX_PENDING_REGULARIZATIONS
                     )
                     : sprintf(
-                        'Ce bénéficiaire possède %d fiche(s) à régulariser '
-                        . "Incomplètes : un ou plusieurs justificatifs n’ont pas encore été transmis."
-                        . 'Le maximum autorisé est de %d.',
+                        'Ce bénéficiaire possède %d fiche(s) à régulariser incomplète(s) : un ou plusieurs justificatifs n’ont pas encore été transmis. Le maximum autorisé est de %d.',
                         $pendingCount,
                         self::MAX_PENDING_REGULARIZATIONS
                     ),
@@ -611,9 +570,6 @@ class BeneficiaryEligibilityService
                             - self::MAX_PENDING_REGULARIZATIONS
                     ),
 
-                    'completed_sheets_ignored' =>
-                        count($completedSheets),
-
                     'other_status_sheets_ignored' =>
                         count($otherStatusSheets),
 
@@ -625,8 +581,6 @@ class BeneficiaryEligibilityService
                     self::AFFECTED_DOCUMENT_TYPES,
 
                 'pending_regularizations' => $pendingSheets,
-
-                'completed_regularizations' => $completedSheets,
 
                 'other_status_regularizations' => $otherStatusSheets,
 
