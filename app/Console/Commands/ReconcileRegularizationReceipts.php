@@ -18,9 +18,11 @@ class ReconcileRegularizationReceipts extends Command
      * Simulation :
      * php artisan regularization-receipts:reconcile
      * php artisan regularization-receipts:reconcile --safe
+     * php artisan regularization-receipts:reconcile --safe --chunk=50
      *
      * Exécution :
      * php artisan regularization-receipts:reconcile --exec
+     * php artisan regularization-receipts:reconcile --exec --chunk=50
      */
     protected $signature = 'regularization-receipts:reconcile
                             {--safe : Simule les corrections sans modifier la base}
@@ -28,7 +30,7 @@ class ReconcileRegularizationReceipts extends Command
                             {--chunk=100 : Nombre de documents par lot}';
 
     protected $description =
-        'Réconcilie les justificatifs physiques des fiches à régulariser dont le workflow est terminé.';
+        'Réconcilie les justificatifs physiques des fiches à régulariser ayant un workflow admissible.';
 
     /**
      * Client du Workflow Service.
@@ -67,7 +69,7 @@ class ReconcileRegularizationReceipts extends Command
     public function handle()
     {
         /*
-         * Les deux options ne peuvent pas être utilisées ensemble.
+         * Les options SAFE et EXEC ne peuvent pas être utilisées ensemble.
          */
         if ($this->option('safe') && $this->option('exec')) {
             $this->error(
@@ -107,6 +109,10 @@ class ReconcileRegularizationReceipts extends Command
 
         $this->line('Taille des lots : ' . $chunkSize);
 
+        $this->comment(
+            'Critères Workflow : statut COMPLETE ou signature de régularisation.'
+        );
+
         if (!$this->executeChanges) {
             $this->comment(
                 'Mode SAFE : aucune modification ne sera effectuée.'
@@ -114,10 +120,9 @@ class ReconcileRegularizationReceipts extends Command
         }
 
         /*
-         * Sélection des documents de type FAR.
+         * Sélection des documents FAR.
          *
-         * On utilise le code métier du type de document plutôt qu'un ID
-         * numérique fixé dans le code.
+         * On utilise le code métier du type de document.
          */
         $documentQuery = Document::query()
             ->whereHas('document_type', function ($query) {
@@ -173,11 +178,11 @@ class ReconcileRegularizationReceipts extends Command
         $this->stats = [
             'documents_far' => 0,
             'documents_examined' => 0,
-            'workflows_complete' => 0,
+            'workflows_admissibles' => 0,
             'sheets_without_model' => 0,
             'documents_without_workflow' => 0,
+            'documents_without_admissible_workflow' => 0,
             'documents_with_duplicate_workflows' => 0,
-            'documents_with_non_complete_workflow' => 0,
             'documents_with_uuid_mismatch' => 0,
             'sheets_without_receipts' => 0,
             'receipts_total' => 0,
@@ -208,13 +213,17 @@ class ReconcileRegularizationReceipts extends Command
             ->all();
 
         /*
-         * Récupération batch des instances de workflow.
+         * Récupération batch des instances admissibles.
+         *
+         * Le Workflow Service doit retourner uniquement les instances :
+         * - dont le statut est COMPLETE ;
+         * - ou possédant une signature REGULARIZATION_ADVANCE
+         *   ou REGULARIZATION_SETTLEMENT.
          */
         try {
             $workflowInstances =
-                $this->workflowServiceClient->getInstancesByDocumentIds(
-                    $documentIds
-                );
+                $this->workflowServiceClient
+                    ->getInstancesByDocumentIds($documentIds);
         } catch (Throwable $exception) {
             $this->stats['errors']++;
 
@@ -274,9 +283,6 @@ class ReconcileRegularizationReceipts extends Command
                     . 'une instance ne contient pas de document_id valide.'
                 );
 
-                /*
-                 * On poursuit l'analyse des autres instances.
-                 */
                 continue;
             }
 
@@ -304,6 +310,9 @@ class ReconcileRegularizationReceipts extends Command
 
     /**
      * Traite une fiche à régulariser.
+     *
+     * Le statut du workflow n'est pas revérifié ici :
+     * le Workflow Service a déjà filtré les instances admissibles.
      *
      * @param Document $document
      * @param array $workflows
@@ -347,8 +356,8 @@ class ReconcileRegularizationReceipts extends Command
         );
 
         /*
-         * On conserve uniquement les instances qui correspondent
-         * au type métier regularization_sheet.
+         * On conserve uniquement les instances du type métier
+         * regularization_sheet.
          */
         $matchingTypeWorkflows = array_values(
             array_filter(
@@ -364,22 +373,22 @@ class ReconcileRegularizationReceipts extends Command
         );
 
         /*
-         * Aucune instance du bon type.
+         * Aucune instance admissible du bon type.
          */
         if (empty($matchingTypeWorkflows)) {
             if (empty($workflows)) {
                 $this->stats['documents_without_workflow']++;
 
                 $this->warn(
-                    'ANOMALIE : aucune instance de workflow trouvée.'
+                    'ANOMALIE : aucune instance de workflow admissible trouvée.'
                 );
             } else {
                 $this->stats[
-                    'documents_with_non_complete_workflow'
+                    'documents_without_admissible_workflow'
                 ]++;
 
                 $this->warn(
-                    'ANOMALIE : aucun workflow de type '
+                    'ANOMALIE : aucune instance admissible de type '
                     . 'regularization_sheet parmi les instances retournées.'
                 );
 
@@ -392,44 +401,16 @@ class ReconcileRegularizationReceipts extends Command
         $this->displayWorkflows($matchingTypeWorkflows);
 
         /*
-         * On recherche les instances dont le statut est COMPLETE.
-         */
-        $completeWorkflows = array_values(
-            array_filter(
-                $matchingTypeWorkflows,
-                function ($workflow) {
-                    return isset($workflow['status'])
-                        && $workflow['status'] === 'COMPLETE';
-                }
-            )
-        );
-
-        /*
-         * Aucune instance COMPLETE.
-         */
-        if (empty($completeWorkflows)) {
-            $this->stats[
-                'documents_with_non_complete_workflow'
-            ]++;
-
-            $this->warn(
-                'IGNORÉ : aucune instance COMPLETE pour cette fiche.'
-            );
-
-            return;
-        }
-
-        /*
-         * Plusieurs instances COMPLETE :
+         * Plusieurs instances admissibles pour le même document :
          * on ne choisit pas arbitrairement laquelle utiliser.
          */
-        if (count($completeWorkflows) > 1) {
+        if (count($matchingTypeWorkflows) > 1) {
             $this->stats[
                 'documents_with_duplicate_workflows'
             ]++;
 
             $this->warn(
-                'ANOMALIE : plusieurs instances COMPLETE pour ce document.'
+                'ANOMALIE : plusieurs instances admissibles pour ce document.'
             );
 
             $this->warn(
@@ -440,10 +421,9 @@ class ReconcileRegularizationReceipts extends Command
         }
 
         /*
-         * IMPORTANT :
-         * récupérer le workflow avant de lire ses propriétés.
+         * Une seule instance admissible.
          */
-        $workflow = $completeWorkflows[0];
+        $workflow = $matchingTypeWorkflows[0];
 
         /*
          * Vérification de l'identité du document par UUID.
@@ -485,12 +465,13 @@ class ReconcileRegularizationReceipts extends Command
             return;
         }
 
-        $this->stats['workflows_complete']++;
+        $this->stats['workflows_admissibles']++;
 
         $this->line(
             'Workflow retenu : #'
             . (isset($workflow['id']) ? $workflow['id'] : 'INCONNU')
-            . ' | status = COMPLETE'
+            . ' | status = '
+            . (isset($workflow['status']) ? $workflow['status'] : 'NULL')
         );
 
         /*
@@ -607,6 +588,11 @@ class ReconcileRegularizationReceipts extends Command
     protected function reportReceipt(
         RegularizationReceipt $receipt
     ) {
+        /*
+         * On compare explicitement à true/false.
+         * Cela suppose que le modèle convertit correctement
+         * physical_receipt_received en booléen.
+         */
         $received = $receipt->physical_receipt_received === true;
 
         if ($received) {
@@ -682,10 +668,11 @@ class ReconcileRegularizationReceipts extends Command
                         $receipt->physical_receipt_received = true;
 
                         /*
-                         * La date enregistrée correspond à la réconciliation,
-                         * pas nécessairement à la réception physique réelle.
-                         *
                          * Une date existante est conservée.
+                         *
+                         * Si elle est absente, on enregistre la date
+                         * de réconciliation. Cette date ne prouve pas
+                         * à elle seule la date réelle de réception physique.
                          */
                         if (
                             $receipt->physical_receipt_received_at === null
@@ -694,7 +681,7 @@ class ReconcileRegularizationReceipts extends Command
                         }
 
                         /*
-                         * Ne pas inventer l'identité d'un employé.
+                         * L'identité de l'employé n'étant pas connue,
                          * physical_receipt_received_by reste inchangé.
                          */
                         $receipt->save();
@@ -759,23 +746,23 @@ class ReconcileRegularizationReceipts extends Command
                 $this->stats['documents_examined'],
             ],
             [
-                'Workflows COMPLETE retenus',
-                $this->stats['workflows_complete'],
+                'Workflows admissibles retenus',
+                $this->stats['workflows_admissibles'],
             ],
             [
                 'Fiches sans modèle associé',
                 $this->stats['sheets_without_model'],
             ],
             [
-                'Documents sans workflow',
+                'Documents sans workflow admissible retourné',
                 $this->stats['documents_without_workflow'],
             ],
             [
-                'Documents sans workflow COMPLETE admissible',
-                $this->stats['documents_with_non_complete_workflow'],
+                'Documents sans workflow admissible du bon type',
+                $this->stats['documents_without_admissible_workflow'],
             ],
             [
-                'Documents avec plusieurs workflows COMPLETE',
+                'Documents avec plusieurs workflows admissibles',
                 $this->stats['documents_with_duplicate_workflows'],
             ],
             [
