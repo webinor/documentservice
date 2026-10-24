@@ -3,6 +3,7 @@
 namespace App\Services\Mission;
 
 use App\Models\Misc\Document;
+use App\Services\Financial\PurchaseFinancialSummaryService;
 use App\Services\Regularization\NoteFinancialSummaryService;
 use App\Services\Regularization\RegularizationFinancialSummaryService;
 use App\Services\Regularization\TaxiFinancialSummaryService;
@@ -12,6 +13,16 @@ use Illuminate\Support\Str;
 
 class MissionFinancialSummaryService
 {
+
+
+
+ protected PurchaseFinancialSummaryService $purchase_financial_summary_service;
+
+    public function __construct(
+        PurchaseFinancialSummaryService $purchase_financial_summary_service
+    ) {
+        $this->purchase_financial_summary_service = $purchase_financial_summary_service;
+    }
     /**
      * Construire le résumé financier complet
      */
@@ -49,6 +60,15 @@ class MissionFinancialSummaryService
                       
         return app(NoteFinancialSummaryService::class)->build($document);
         // throw new Exception("Document is a regularization.");
+
+        }
+
+          if ($document->document_type->slug == "achat") {
+                      
+            //   throw new Exception("Document is a purchase.");
+
+        return $this->purchase_financial_summary_service->build($document->id);
+        
 
         }
 

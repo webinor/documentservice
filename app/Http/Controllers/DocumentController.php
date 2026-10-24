@@ -1360,11 +1360,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
 
                // Récupérer l'identifiant du bénéficiaire validé.
-            $beneficiaryId = (int) $validated["beneficiaire"];
+            // $beneficiaryId = (int) $validated["beneficiaire"] ?? null;
             
 
              // Bloquer la création si le bénéficiaire n'est pas éligible.
-            $eligibilityService->assertEligible($beneficiaryId);
+            // $eligibilityService->assertEligible($beneficiaryId);
             
             // return
 
@@ -1500,8 +1500,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "updated_at" => now(),
                     "reference" => $reference,
                     // "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
-                    "actor_type" => "EMPLOYEE",
-                    "actor_id" =>  $validated["actor"] ?? $validated["actor_collaborator"] ??  $validated["beneficiaire"] ?? 0,
+                    "actor_type" => $documentType->code == "PURCHASE_REQUEST" ? "DEPARTMENT" : "EMPLOYEE",
+                    "actor_id" =>  $validated["actor"] ?? $validated["actor_collaborator"] ??  $validated["beneficiaire"] ?? $validated['destination_service_id'] ?? 0,
                     // autres champs génériques...
                 ]);
 

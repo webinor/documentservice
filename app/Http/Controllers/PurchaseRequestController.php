@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePurchaseRequestRequest;
 use App\Http\Requests\UpdatePurchaseRequestRequest;
+use App\Models\Misc\Document;
 use App\Models\PurchaseRequest;
 
 class PurchaseRequestController extends Controller
@@ -17,6 +18,7 @@ class PurchaseRequestController extends Controller
     {
         //
     }
+    
 
     /**
      * Show the form for creating a new resource.
@@ -39,15 +41,48 @@ class PurchaseRequestController extends Controller
         //
     }
 
+    // /**
+    //  * Display the specified resource.
+    //  *
+    //  * @param  \App\Models\PurchaseRequest  $purchaseRequest
+    //  * @return \Illuminate\Http\Response
+    //  */
+    // public function show(PurchaseRequest $purchaseRequest)
+    // {
+    //     //
+    // }
     /**
-     * Display the specified resource.
+     * Récupère la demande d'achat associée au document.
      *
-     * @param  \App\Models\PurchaseRequest  $purchaseRequest
-     * @return \Illuminate\Http\Response
+     * @param  int|string  $document
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function show(PurchaseRequest $purchaseRequest)
+    public function show($document)
     {
-        //
+        $documentModel = Document::where('uuid', $document)->with('purchase_request.purchase_request_items')->first();
+
+        if (!$documentModel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document introuvable.',
+            ], 404);
+        }
+
+        // À adapter selon la relation réelle entre Document
+        // et purchase_request dans ton application.
+        $purchase_request = $documentModel->purchase_request;
+
+        if (!$purchase_request) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucune demande d’achat associée à ce document.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $purchase_request,
+        ]);
     }
 
     /**

@@ -104,6 +104,12 @@ class DocumentValidationRules
                     ]),
                 ],
 
+                'type' => [
+    'sometimes',
+    'required',
+    'in:INTERNAL,EXTERNAL',
+],
+
                 'destination_service_id' => 'nullable|numeric',
 
                 'priority' => [

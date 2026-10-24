@@ -61,17 +61,37 @@ class PurchaseRequestItemController extends Controller
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdatePurchaseRequestItemRequest  $request
-     * @param  \App\Models\PurchaseRequestItem  $purchaseRequestItem
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdatePurchaseRequestItemRequest $request, PurchaseRequestItem $purchaseRequestItem)
-    {
-        //
+  
+/**
+ * Met à jour un article d'une demande d'achat.
+ *
+ * @param  \App\Http\Requests\UpdatePurchaseRequestItemRequest  $request
+ * @param  \App\Models\PurchaseRequestItem  $purchaseRequestItem
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function update(
+    UpdatePurchaseRequestItemRequest $request,
+     $doc_uuid,
+    PurchaseRequestItem $item
+) {
+    $validated = $request->validated();
+
+    if (empty($validated)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Aucune donnée à mettre à jour.',
+        ], 422);
     }
+
+    $item->fill($validated);
+    $item->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'L’article de la demande d’achat a été mis à jour avec succès.',
+        'data' => $item->fresh(),
+    ]);
+}
 
     /**
      * Remove the specified resource from storage.

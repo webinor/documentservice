@@ -42,4 +42,33 @@ class PurchaseRequest extends Model
     }
 
 
+    /**
+ * Devis fournisseurs associés à la demande d'achat.
+ */
+public function supplierQuotes(): HasMany
+{
+    return $this->hasMany(
+        PurchaseSupplierQuote::class,
+        'purchase_request_id'
+    );
+}
+
+/**
+ * Bons de commande issus de cette demande.
+ */
+public function requestOrders(): HasMany
+{
+    return $this->hasMany(
+        RequestOrder::class,
+        'purchase_request_id'
+    );
+}
+
+public function financialCommitments(): HasMany
+{
+    return $this->hasMany(
+        FinancialCommitment::class,
+        'purchase_request_id'
+    );
+}
 }

@@ -4,6 +4,7 @@ namespace App\Models\Finance;
 
 use App\Models\FeeInvoice;
 use App\Models\FeeNote;
+use App\Models\FinancialCommitment;
 use App\Models\ItSupplier;
 use App\Models\LedgerCode;
 use App\Models\MedicalSupplier;
@@ -32,6 +33,14 @@ class InvoiceProvider extends Model
         return null; // ou return '';
     }
     return \Carbon\Carbon::parse($value)->format('d-m-Y'); 
+}
+
+public function financialCommitment(): BelongsTo
+{
+    return $this->belongsTo(
+        FinancialCommitment::class,
+        'financial_commitment_id'
+    );
 }
 
 /**

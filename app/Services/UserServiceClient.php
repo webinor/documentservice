@@ -10,6 +10,7 @@ class UserServiceClient
 {
     protected string $defaulUrl ;
     protected static $actorCache = [];
+  
 
     public function __construct() {
         $this->defaulUrl =  config("services.user_service.base_url");

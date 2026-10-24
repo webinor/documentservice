@@ -29,7 +29,12 @@ use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
+use App\Http\Controllers\PaymentTermController;
 use App\Http\Controllers\PublicHolidayController;
+use App\Http\Controllers\PurchaseRequestController;
+use App\Http\Controllers\PurchaseRequestItemController;
+use App\Http\Controllers\PurchaseRequestStatusController;
+use App\Http\Controllers\PurchaseSupplierQuoteController;
 use App\Http\Controllers\RegularizationItemController;
 use App\Http\Controllers\RegularizationReceiptController;
 use App\Http\Controllers\SettlementController;
@@ -192,7 +197,10 @@ Route::get('/{document}/leave-requests/pdf',[AbsenceRequestController::class,'pd
 Route::post('/leave/generate',[LeaveDocumentController::class,'generate'])->name('leave-requests.generate');
 
 
-
+Route::get(
+        '/payment-terms',
+        [PaymentTermController::class, 'index']
+    )->name('payment-terms.index');
 
 Route::post(
     '/absence/simulate',
@@ -397,6 +405,64 @@ Route::patch(
     [BeneficiaryEligibilityController::class, 'show']
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| Demandes d'achat
+|--------------------------------------------------------------------------
+|
+| Ces routes doivent être déclarées avant les routes génériques
+| susceptibles de capturer l'URL /documents/{document}.
+|
+*/
+
+Route::prefix('{document}/purchase-request')
+    ->group(function () {
+
+        // Consulter la demande d'achat et ses articles
+        Route::get(
+            '/',
+            [PurchaseRequestController::class, 'show']
+        )->name('documents.purchase-request.show');
+
+        // Modifier les informations générales de la demande
+        Route::put(
+            '/',
+            [PurchaseRequestController::class, 'update']
+        )->name('documents.purchase-request.update');
+
+        Route::patch(
+            '/',
+            [PurchaseRequestController::class, 'update']
+        )->name('documents.purchase-request.patch');
+
+        // Ajouter un article à la demande
+        Route::post(
+            '/items',
+            [PurchaseRequestItemController::class, 'store']
+        )->name('documents.purchase-request.items.store');
+
+        // Modifier un article
+        Route::put(
+            '/items/{item}',
+            [PurchaseRequestItemController::class, 'update']
+        )->name('documents.purchase-request.items.update');
+
+        Route::patch(
+            '/items/{item}',
+            [PurchaseRequestItemController::class, 'update']
+        )->name('documents.purchase-request.items.patch');
+
+        // Supprimer un article
+        Route::delete(
+            '/items/{item}',
+            [PurchaseRequestItemController::class, 'destroy']
+        )->name('documents.purchase-request.items.destroy');
+    });
+
+
+
+
  /**
  * Confirme la transmission physique des justificatifs
  * d'une fiche de régularisation.
@@ -441,6 +507,59 @@ Route::post(
             MissionFinancialSummaryController::class,
             "show",
         ]);
+
+       
+
+/*
+|--------------------------------------------------------------------------
+| Devis fournisseurs d'une demande d'achat
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('purchase-requests/{purchaseRequestId}/quotes')
+    ->group(function () {
+
+        // Récupérer tous les devis d'une demande d'achat.
+        Route::get(
+            '/',
+            [PurchaseSupplierQuoteController::class, 'index']
+        );
+
+        // Ajouter un devis fournisseur.
+        Route::post(
+            '/',
+            [PurchaseSupplierQuoteController::class, 'store']
+        );
+
+        // Consulter un devis particulier.
+        Route::get(
+            '/{quoteId}',
+            [PurchaseSupplierQuoteController::class, 'show']
+        );
+
+        // Modifier un devis.
+        Route::put(
+            '/{quoteId}',
+            [PurchaseSupplierQuoteController::class, 'update']
+        );
+
+        // Supprimer un devis.
+        Route::delete(
+            '/{quoteId}',
+            [PurchaseSupplierQuoteController::class, 'destroy']
+        );
+
+        // Désigner le devis retenu.
+        Route::put(
+            '/{quoteId}/select',
+            [PurchaseSupplierQuoteController::class, 'select']
+        );
+    });
+
+        Route::post(
+    '/purchase-requests/{purchaseRequestId}/status/recalculate',
+    [PurchaseRequestStatusController::class, 'recalculate']
+);
 
         //  Route::get("/{document}/financial-summary", [
         //     MissionFinancialSummaryController::class,
