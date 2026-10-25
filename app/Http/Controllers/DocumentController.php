@@ -2638,7 +2638,7 @@ private function getFilteredDocuments(Request $request)
         return $documentsEnrich;
     }
 
-    public function getDocumentsByIds(Request $request)
+    public function OldgetDocumentsByIds(Request $request)
 {
     $perfStart = microtime(true);
 
@@ -2743,7 +2743,7 @@ private function getFilteredDocuments(Request $request)
     return response()->json($formattedDocuments);
 }
 
-    public function OldgetDocumentsByIds(Request $request)
+    public function getDocumentsByIds(Request $request)
     {
 
       $ids = $request->input("ids", []);
