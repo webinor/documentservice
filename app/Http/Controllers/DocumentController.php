@@ -1820,7 +1820,533 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         )[0];
     }
 
-    private function getFilteredDocuments(Request $request)
+
+private function getFilteredDocuments(Request $request)
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Instrumentation des performances
+    |--------------------------------------------------------------------------
+    */
+
+    $perfStart = microtime(true);
+    $perfLast = $perfStart;
+
+    $logPerf = function (
+        string $step,
+        array $context = []
+    ) use (&$perfLast, $perfStart) {
+        $now = microtime(true);
+
+        logger()->info('DOCUMENT FILTERED - PERF', array_merge([
+            'step' => $step,
+            'step_ms' => round(($now - $perfLast) * 1000, 2),
+            'total_ms' => round(($now - $perfStart) * 1000, 2),
+        ], $context));
+
+        $perfLast = $now;
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Initialisation des paramètres
+    |--------------------------------------------------------------------------
+    */
+
+    $DOC_CONFIG = config('document_types');
+
+    $ids = $request->input('ids', []);
+    $userId = $request->input('userId', null);
+    $from = $request->input('from', null);
+    $documentTypes = $request->input('documentTypes', []);
+    $filters = $request->input('filters', []);
+
+    $shouldEnrich = filter_var(
+        $request->input('shouldEnrich', true),
+        FILTER_VALIDATE_BOOLEAN
+    );
+
+    $isStat = filter_var(
+        $request->input('isStat', true),
+        FILTER_VALIDATE_BOOLEAN
+    );
+
+    $logPerf('01_INITIALISATION', [
+        'ids_count' => is_countable($ids) ? count($ids) : null,
+        'document_types_input_type' => gettype($documentTypes),
+        'filters_count' => is_array($filters) ? count($filters) : null,
+        'should_enrich' => $shouldEnrich,
+        'is_stat' => $isStat,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Détermination de la ville de l'utilisateur
+    |--------------------------------------------------------------------------
+    */
+
+    $cityStart = microtime(true);
+
+    $currentUser = $request->get('user', []);
+    $currentUserCity = data_get(
+        $currentUser,
+        'employee.assignment_place'
+    );
+
+    if (
+        !isset($filters['city'])
+        && $currentUserCity === 'YAOUNDE'
+    ) {
+        $filters['city'] = $currentUserCity;
+    }
+
+    $logPerf('02_USER_CITY', [
+        'duration_ms' => round(
+            (microtime(true) - $cityStart) * 1000,
+            2
+        ),
+        'city_filter_applied' => isset($filters['city']),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Normalisation des types de documents
+    |--------------------------------------------------------------------------
+    */
+
+    $typeStart = microtime(true);
+
+    if (is_int($documentTypes)) {
+        $documentTypes = [
+            $this->getDocumentTypeCodeById($documentTypes),
+        ];
+    }
+
+    if (is_string($documentTypes)) {
+        $documentTypes = [$documentTypes];
+    }
+
+    if (is_array($documentTypes)) {
+        $documentTypes = array_values(
+            array_filter($documentTypes)
+        );
+    }
+
+    $logPerf('03_NORMALIZE_DOCUMENT_TYPES', [
+        'duration_ms' => round(
+            (microtime(true) - $typeStart) * 1000,
+            2
+        ),
+        'document_types_count' => is_array($documentTypes)
+            ? count($documentTypes)
+            : null,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Construction de la requête de base
+    |--------------------------------------------------------------------------
+    */
+
+    $queryStart = microtime(true);
+
+    $query = Document::query();
+
+    $query->whereIn('id', $ids);
+
+    /*
+     * Filtre sur le créateur ou le bénéficiaire.
+     */
+    if (!empty($userId)) {
+        $query->where(function ($q) use (
+            $userId,
+            $documentTypes
+        ) {
+            $q->where('created_by', $userId);
+
+            $q->orWhereHas(
+                $documentTypes[0],
+                function ($qr) use ($userId) {
+                    $qr->where('beneficiary', $userId);
+                }
+            );
+        });
+    }
+
+    /*
+     * Filtre sur les relations des types de documents.
+     */
+    if (!empty($documentTypes)) {
+        $query->where(function ($q) use ($documentTypes) {
+            foreach ($documentTypes as $relation) {
+                $q->whereHas($relation);
+            }
+        });
+    }
+
+    $logPerf('04_BUILD_BASE_QUERY', [
+        'duration_ms' => round(
+            (microtime(true) - $queryStart) * 1000,
+            2
+        ),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Filtres simples
+    |--------------------------------------------------------------------------
+    */
+
+    $simpleFiltersStart = microtime(true);
+
+    if (!empty($filters['status_paid'])) {
+        $statuses = is_array($filters['status_paid'])
+            ? $filters['status_paid']
+            : explode(',', $filters['status_paid']);
+
+        $query->whereIn('status', $statuses);
+    }
+
+    if (!empty($filters['employee_id'])) {
+        $query->whereActorId($filters['employee_id']);
+    }
+
+    if (!empty($filters['accounting_entry_number'])) {
+        $query->whereHas(
+            'document_references',
+            function ($q) use ($filters) {
+                $q->where(
+                    'reference',
+                    'like',
+                    '%' . $filters['accounting_entry_number'] . '%'
+                );
+            }
+        );
+    }
+
+    if (!empty($filters['reference'])) {
+        $query->where(
+            'reference',
+            'like',
+            '%' . $filters['reference'] . '%'
+        );
+    }
+
+    if (!empty($filters['supplier_type'])) {
+        $query->whereHas(
+            'invoice_provider.' . $filters['supplier_type']
+        );
+    }
+
+    if (!empty($filters['status'])) {
+        $query->whereStatus($filters['status']);
+    }
+
+    if (!empty($filters['document_type_id'])) {
+        $documentTypeId = $filters['document_type_id'];
+
+        $query->whereHas(
+            'document_type',
+            function ($q) use ($documentTypeId) {
+                $q->whereId($documentTypeId);
+            }
+        );
+    }
+
+    if (!empty($filters['fournisseur_id'])) {
+        $fournisseurId = $filters['fournisseur_id'];
+
+        $query->whereHas(
+            'invoice_provider',
+            function ($q) use ($fournisseurId) {
+                $q->where('id', $fournisseurId);
+            }
+        );
+    }
+
+    /*
+     * Normalisation des dates.
+     */
+    if (!empty($filters['date_start'])) {
+        $filters['date_start'] = Carbon::parse(
+            $filters['date_start']
+        )->format('Y-m-d');
+    }
+
+    if (!empty($filters['date_end'])) {
+        $filters['date_end'] = Carbon::parse(
+            $filters['date_end']
+        )->format('Y-m-d');
+    }
+
+    if (
+        !empty($filters['date_start'])
+        && !empty($filters['date_end'])
+    ) {
+        $query->whereBetween('created_at', [
+            $filters['date_start'],
+            $filters['date_end'],
+        ]);
+    } elseif (!empty($filters['date_start'])) {
+        $query->whereDate(
+            'created_at',
+            '>=',
+            $filters['date_start']
+        );
+    } elseif (!empty($filters['date_end'])) {
+        $query->whereDate(
+            'created_at',
+            '<=',
+            $filters['date_end']
+        );
+    }
+
+    $logPerf('05_SIMPLE_FILTERS', [
+        'duration_ms' => round(
+            (microtime(true) - $simpleFiltersStart) * 1000,
+            2
+        ),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Application des filtres métier
+    |--------------------------------------------------------------------------
+    |
+    | Cette étape peut déclencher des appels aux microservices User
+    | et Workflow, selon les filtres actifs.
+    |--------------------------------------------------------------------------
+    */
+
+    $filterServiceStart = microtime(true);
+
+    $query = $this->documentFilterService->apply(
+        $query,
+        $filters,
+        $documentTypes
+    );
+
+    $logPerf('06_DOCUMENT_FILTER_SERVICE', [
+        'duration_ms' => round(
+            (microtime(true) - $filterServiceStart) * 1000,
+            2
+        ),
+        'active_filter_keys' => array_keys(
+            array_filter(
+                $filters,
+                function ($value) {
+                    return $value !== null
+                        && $value !== ''
+                        && $value !== [];
+                }
+            )
+        ),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. Chargement des relations
+    |--------------------------------------------------------------------------
+    */
+
+    $relationsStart = microtime(true);
+
+    $query->with(
+        array_merge(['document_type'], $documentTypes)
+    );
+
+    $logPerf('07_CONFIGURE_RELATIONS', [
+        'duration_ms' => round(
+            (microtime(true) - $relationsStart) * 1000,
+            2
+        ),
+        'relations_count' => count(
+            array_unique(
+                array_merge(['document_type'], $documentTypes)
+            )
+        ),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. Mode statistiques
+    |--------------------------------------------------------------------------
+    */
+
+    if ($isStat) {
+        $countStart = microtime(true);
+
+        $count = $query->count();
+
+        $logPerf('08_STAT_COUNT', [
+            'duration_ms' => round(
+                (microtime(true) - $countStart) * 1000,
+                2
+            ),
+            'count' => $count,
+        ]);
+
+        return $count;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 9. Exécution SQL et chargement des relations
+    |--------------------------------------------------------------------------
+    */
+
+    $databaseStart = microtime(true);
+
+    $documents = $query->orderByDesc('id')->get();
+
+    $logPerf('09_DATABASE_GET_WITH_RELATIONS', [
+        'duration_ms' => round(
+            (microtime(true) - $databaseStart) * 1000,
+            2
+        ),
+        'documents_count' => $documents->count(),
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 10. Initialisation des statistiques d'enrichissement
+    |--------------------------------------------------------------------------
+    */
+
+    $enrichmentStats = [
+        'documents_processed' => 0,
+        'total_enrichment_ms' => 0,
+        'max_enrichment_ms' => 0,
+        'slow_enrichments_count' => 0,
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | 11. Enrichissement des documents
+    |--------------------------------------------------------------------------
+    */
+
+    $enrichmentStart = microtime(true);
+
+    $documentsEnrich = $documents->map(function ($doc) use (
+        $documentTypes,
+        $shouldEnrich,
+        &$enrichmentStats
+    ) {
+        $type = $doc->document_type;
+
+        $handlerClass = $type->enrichment_handler_class;
+
+        /*
+         * Données communes à tous les documents.
+         */
+        $base = [
+            'id' => $doc->id,
+            'code' => $doc->code,
+            'amount' => $doc->dynamic_amount,
+            'title' => $doc->title,
+            'date_due' => $doc->date_due,
+            'document_type_name' => $doc->document_type->name,
+            'document_type_slug' => $doc->document_type->slug,
+            'document_type_id' => $doc->document_type_id,
+            'type' => $doc->document_type->name,
+            'status' => $doc->status,
+            'created_at' => $doc->created_at,
+            'created_by' => $doc->created_by,
+        ];
+
+        /*
+         * Préserver le comportement existant lorsque
+         * l'enrichissement est désactivé.
+         */
+        if (!$shouldEnrich) {
+            return $base;
+        }
+
+        if (!$handlerClass) {
+            throw new Exception(
+                "Aucun enricher pour $type",
+                1
+            );
+
+            return $this->legacyDocumentEnricher->enrich(
+                $doc,
+                $base,
+                $documentTypes
+            );
+        }
+
+        /*
+         * Mesure individuelle de l'enrichissement.
+         */
+        $singleEnrichmentStart = microtime(true);
+
+        $enrichedDoc = $this->documentEnrichmentManager->enrich(
+            $doc,
+            $base
+        );
+
+        $durationMs = round(
+            (microtime(true) - $singleEnrichmentStart) * 1000,
+            2
+        );
+
+        $enrichmentStats['documents_processed']++;
+
+        $enrichmentStats['total_enrichment_ms'] += $durationMs;
+
+        $enrichmentStats['max_enrichment_ms'] = max(
+            $enrichmentStats['max_enrichment_ms'],
+            $durationMs
+        );
+
+        if ($durationMs >= 100) {
+            $enrichmentStats['slow_enrichments_count']++;
+        }
+
+        return $enrichedDoc;
+    });
+
+    $totalEnrichmentDurationMs = round(
+        (microtime(true) - $enrichmentStart) * 1000,
+        2
+    );
+
+    $logPerf('10_DOCUMENT_ENRICHMENT', [
+        'duration_ms' => $totalEnrichmentDurationMs,
+        'should_enrich' => $shouldEnrich,
+        'documents_count' => $documents->count(),
+        'documents_processed' => $enrichmentStats['documents_processed'],
+        'sum_individual_enrichment_ms' => round(
+            $enrichmentStats['total_enrichment_ms'],
+            2
+        ),
+        'average_enrichment_ms' => $enrichmentStats['documents_processed'] > 0
+            ? round(
+                $enrichmentStats['total_enrichment_ms']
+                    / $enrichmentStats['documents_processed'],
+                2
+            )
+            : 0,
+        'max_enrichment_ms' => $enrichmentStats['max_enrichment_ms'],
+        'slow_enrichments_count' => $enrichmentStats['slow_enrichments_count'],
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 12. Retour
+    |--------------------------------------------------------------------------
+    */
+
+    $logPerf('11_RETURN_DOCUMENTS', [
+        'documents_count' => $documentsEnrich->count(),
+    ]);
+
+    return $documentsEnrich;
+}
+
+
+    private function OldgetFilteredDocuments(Request $request)
     {
         $DOC_CONFIG = config("document_types");
 
