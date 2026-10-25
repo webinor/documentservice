@@ -2113,6 +2113,111 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
     }
 
     public function getDocumentsByIds(Request $request)
+{
+    $perfStart = microtime(true);
+
+    $logPerf = function (string $step, array $context = []) use (
+        &$perfStart
+    ) {
+        logger()->info(
+            'DOCUMENT BY IDS - PERF',
+            array_merge([
+                'step' => $step,
+                'total_ms' => round(
+                    (microtime(true) - $perfStart) * 1000,
+                    2
+                ),
+            ], $context)
+        );
+    };
+
+    $ids = $request->input('ids', []);
+    $from = $request->input('from', null);
+
+    $isStat = filter_var(
+        $request->input('isStat', false),
+        FILTER_VALIDATE_BOOLEAN
+    );
+
+    $logPerf('01_INITIALISATION', [
+        'ids_count' => is_countable($ids) ? count($ids) : null,
+        'is_stat' => $isStat,
+        'from' => $from,
+    ]);
+
+    /*
+     * Chemin spécifique aux commandes.
+     */
+    if ($from == 'command') {
+        $queryStart = microtime(true);
+
+        $query = Document::query();
+        $query->whereIn('id', $ids);
+
+        $documents = $query->get();
+
+        $logPerf('02_COMMAND_QUERY', [
+            'duration_ms' => round(
+                (microtime(true) - $queryStart) * 1000,
+                2
+            ),
+            'documents_count' => $documents->count(),
+        ]);
+
+        return $documents;
+    }
+
+    /*
+     * Récupération, filtrage et enrichissement.
+     */
+    $documents = $this->getFilteredDocuments($request);
+
+    $logPerf('03_GET_FILTERED_DOCUMENTS', [
+        'result_type' => is_object($documents)
+            ? get_class($documents)
+            : gettype($documents),
+        'result_count' => is_countable($documents)
+            ? count($documents)
+            : null,
+    ]);
+
+    if ($isStat) {
+        $logPerf('04_RETURN_STATISTICS');
+
+        return response()->json([
+            $documents,
+        ]);
+    }
+
+    /*
+     * Formatage final de la réponse.
+     */
+    $formatRules = [
+        'amount' => fn($v) => number_format($v, 0, ',', '.'),
+    ];
+
+    $formatStart = microtime(true);
+
+    $formattedDocuments = $documents->map(
+        fn($doc) => $this->formatRecursive($doc, $formatRules)
+    );
+
+    $logPerf('05_FORMAT_RECURSIVE', [
+        'duration_ms' => round(
+            (microtime(true) - $formatStart) * 1000,
+            2
+        ),
+        'documents_count' => $formattedDocuments->count(),
+    ]);
+
+    $logPerf('06_RETURN_RESPONSE', [
+        'documents_count' => $formattedDocuments->count(),
+    ]);
+
+    return response()->json($formattedDocuments);
+}
+
+    public function OldgetDocumentsByIds(Request $request)
     {
 
       $ids = $request->input("ids", []);
