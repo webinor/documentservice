@@ -406,6 +406,40 @@ Route::patch(
 );
 
 
+ /*
+|--------------------------------------------------------------------------
+| Pièces jointes des devis fournisseurs
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('purchase-requests/{purchaseRequestId}/quotes/{quoteId}/files')
+    ->group(function () {
+
+        // Ajouter une ou plusieurs pièces jointes à un devis.
+        Route::post(
+            '/',
+            [PurchaseSupplierQuoteController::class, 'storeFiles']
+        );
+
+        // Visualiser une pièce jointe.
+        Route::get(
+            '/{fileId}/view',
+            [PurchaseSupplierQuoteController::class, 'viewFile']
+        );
+
+        // Télécharger une pièce jointe.
+        Route::get(
+            '/{fileId}/download',
+            [PurchaseSupplierQuoteController::class, 'downloadFile']
+        );
+
+        // Supprimer une pièce jointe sans supprimer le devis.
+        Route::delete(
+            '/{fileId}',
+            [PurchaseSupplierQuoteController::class, 'destroyFile']
+        );
+    });
+
 /*
 |--------------------------------------------------------------------------
 | Demandes d'achat
@@ -419,6 +453,9 @@ Route::patch(
 Route::prefix('{document}/purchase-request')
     ->group(function () {
 
+
+   
+
         // Consulter la demande d'achat et ses articles
         Route::get(
             '/',
@@ -428,6 +465,11 @@ Route::prefix('{document}/purchase-request')
         // Modifier les informations générales de la demande
         Route::put(
             '/',
+            [PurchaseRequestController::class, 'update']
+        )->name('documents.purchase-request.update');
+
+          Route::put(
+            '/{purchaseRequest}',
             [PurchaseRequestController::class, 'update']
         )->name('documents.purchase-request.update');
 
@@ -560,6 +602,9 @@ Route::prefix('purchase-requests/{purchaseRequestId}/quotes')
     '/purchase-requests/{purchaseRequestId}/status/recalculate',
     [PurchaseRequestStatusController::class, 'recalculate']
 );
+
+
+
 
         //  Route::get("/{document}/financial-summary", [
         //     MissionFinancialSummaryController::class,

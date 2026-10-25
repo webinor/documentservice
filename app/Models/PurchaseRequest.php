@@ -18,7 +18,10 @@ class PurchaseRequest extends Model
         'destination_service_id',
         'priority',
         'requested_by',
-        'document_id'
+        'document_id',
+        'client_id',
+        'category',
+        'type'
     ]; 
 
     /**

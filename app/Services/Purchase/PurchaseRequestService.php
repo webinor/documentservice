@@ -24,6 +24,11 @@ class PurchaseRequestService
             'category' =>
                 $validated['category'] ?? null,
 
+            'type' =>
+                $validated['type'] ?? null,
+
+            
+
             'priority' =>
                 $validated['priority'] ?? 'MEDIUM',
 
@@ -67,6 +72,9 @@ class PurchaseRequestService
 
             'category' =>
                 $validated['category'] ?? null,
+
+                 'type' =>
+                $validated['type'] ?? null,
 
             'priority' =>
                 $validated['priority'] ?? 'MEDIUM',

@@ -10,6 +10,7 @@ use App\Services\Supplier\SupplierServiceClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
@@ -94,7 +95,7 @@ $quotes = $quotes->map(function ($quote) use ($suppliersById) {
         return response()->json([
             'success' => true,
             'message' => 'Devis récupéré avec succès.',
-            'data' => $quote->load('file'),
+            'data' => $quote->load('files'),
         ], Response::HTTP_OK);
     }
 
@@ -177,7 +178,8 @@ public function store(
             'comment',
             'selection_reason',
             'quote_date',
-            'delivery_days'
+            'delivery_days',
+            'client_id'
         ];
 
         $updates = [];
@@ -198,14 +200,17 @@ public function store(
                     $quote->update($updates);
                 }
 
-                // Si un nouveau fichier est envoyé, il remplace
-                // le fichier précédemment associé au devis.
-                if ($request->hasFile('attachment')) {
-                    $this->replaceFile(
-                        $quote,
-                        $request->file('attachment')
-                    );
-                }
+           
+                /*
+ * Compatibilité avec l'ancien formulaire.
+ * Un nouveau fichier est ajouté sans supprimer les fichiers existants.
+ */
+if ($request->hasFile('attachment')) {
+    $this->attachFile(
+        $quote,
+        $request->file('attachment')
+    );
+}
             });
 
             return response()->json([
@@ -236,18 +241,24 @@ public function store(
     {
         $quote = $this->findQuote($purchaseRequestId, $quoteId);
 
-        if ($quote->status === 'SELECTED') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Un devis sélectionné ne peut pas être supprimé.',
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        // if ($quote->status === 'SELECTED') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Un devis sélectionné ne peut pas être supprimé.',
+        //     ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        // }
 
         try {
             DB::transaction(function () use ($quote) {
-                $this->deleteAssociatedFile($quote);
+                foreach ($quote->files as $file) {
+    if (!empty($file->path)) {
+        Storage::disk('public')->delete($file->path);
+    }
 
-                $quote->delete();
+    $file->delete();
+}
+
+$quote->delete();
             });
 
             return response()->json([
@@ -447,4 +458,218 @@ public function store(
 
         $file->delete();
     }
+
+
+    /**
+ * Ajoute une ou plusieurs pièces jointes à un devis fournisseur.
+ *
+ * POST /purchase-requests/{purchaseRequestId}/quotes/{quoteId}/files
+ *
+ * Le champ attendu est files[].
+ *
+ * @param Request $request
+ * @param int|string $purchaseRequestId
+ * @param int|string $quoteId
+ * @return JsonResponse
+ */
+public function storeFiles(
+    Request $request,
+    $purchaseRequestId,
+    $quoteId
+): JsonResponse {
+    $quote = $this->findQuote($purchaseRequestId, $quoteId);
+
+
+    Log::debug('DOCUMENTS - Fichiers reçus', [
+    'has_files' => $request->hasFile('files'),
+    'file_keys' => array_keys($request->allFiles()),
+    'files_is_array' => is_array($request->file('files')),
+    'files_count' => is_array($request->file('files'))
+        ? count($request->file('files'))
+        : ($request->hasFile('files') ? 1 : 0),
+    'files' => collect(
+        is_array($request->file('files'))
+            ? $request->file('files')
+            : array_filter([$request->file('files')])
+    )->map(function ($file) {
+        return [
+            'name' => $file->getClientOriginalName(),
+            'valid' => $file->isValid(),
+            'size' => $file->getSize(),
+        ];
+    })->values()->all(),
+]);
+
+    $validated = $request->validate([
+        'files' => 'required|array|min:1|max:10',
+        'files.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:20480',
+    ]);
+
+    $storedFiles = [];
+
+    try {
+        foreach ($validated['files'] as $uploadedFile) {
+            $storedFiles[] = $this->attachFile($quote, $uploadedFile);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pièce(s) jointe(s) enregistrée(s) avec succès.',
+            'data' => $quote->fresh()->load('files'),
+        ], Response::HTTP_CREATED);
+
+    } catch (Throwable $exception) {
+        report($exception);
+
+        /*
+         * Nettoyage des fichiers créés pendant cette requête
+         * si l'ajout d'une des pièces jointes échoue.
+         */
+        foreach ($storedFiles as $file) {
+            if (!empty($file->path)) {
+                Storage::disk('public')->delete($file->path);
+            }
+
+            $file->delete();
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Impossible d’enregistrer les pièces jointes.',
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
+/**
+ * Affiche une pièce jointe dans le navigateur.
+ *
+ * @param int|string $purchaseRequestId
+ * @param int|string $quoteId
+ * @param int|string $fileId
+ * @return Response|\Illuminate\Http\JsonResponse
+ */
+public function viewFile(
+    $purchaseRequestId,
+    $quoteId,
+    $fileId
+) {
+    $quote = $this->findQuote($purchaseRequestId, $quoteId);
+
+    $file = $quote->files()
+        ->where('id', $fileId)
+        ->firstOrFail();
+
+    if (
+        empty($file->path) ||
+        !Storage::disk('public')->exists($file->path)
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Le fichier demandé est introuvable.',
+        ], Response::HTTP_NOT_FOUND);
+    }
+
+    $mimeType = Storage::disk('public')->mimeType($file->path)
+        ?: 'application/octet-stream';
+
+    $filename = basename($file->path);
+
+    return Storage::disk('public')->response(
+        $file->path,
+        $filename,
+        [
+            'Content-Type' => $mimeType,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ],
+        'inline'
+    );
+}
+
+/**
+ * Télécharge une pièce jointe.
+ *
+ * @param int|string $purchaseRequestId
+ * @param int|string $quoteId
+ * @param int|string $fileId
+ * @return Response|\Illuminate\Http\JsonResponse
+ */
+public function downloadFile(
+    $purchaseRequestId,
+    $quoteId,
+    $fileId
+) {
+    $quote = $this->findQuote($purchaseRequestId, $quoteId);
+
+    $file = $quote->files()
+        ->where('id', $fileId)
+        ->firstOrFail();
+
+    if (
+        empty($file->path) ||
+        !Storage::disk('public')->exists($file->path)
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Le fichier demandé est introuvable.',
+        ], Response::HTTP_NOT_FOUND);
+    }
+
+    return Storage::disk('public')->download(
+        $file->path,
+        basename($file->path)
+    );
+}
+
+/**
+ * Supprime une pièce jointe d'un devis fournisseur.
+ *
+ * @param int|string $purchaseRequestId
+ * @param int|string $quoteId
+ * @param int|string $fileId
+ * @return JsonResponse
+ */
+public function destroyFile(
+    $purchaseRequestId,
+    $quoteId,
+    $fileId
+): JsonResponse {
+    $quote = $this->findQuote($purchaseRequestId, $quoteId);
+
+    $file = $quote->files()
+        ->where('id', $fileId)
+        ->firstOrFail();
+
+    try {
+        DB::transaction(function () use ($file) {
+            $file->delete();
+        });
+
+        /*
+         * Le fichier physique est supprimé après la transaction SQL.
+         * Une erreur de stockage ne doit pas rétablir les métadonnées
+         * déjà supprimées en base.
+         */
+        if (!empty($file->path)) {
+            Storage::disk('public')->delete($file->path);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pièce jointe supprimée avec succès.',
+            'data' => [
+                'id' => (int) $fileId,
+            ],
+        ], Response::HTTP_OK);
+
+    } catch (Throwable $exception) {
+        report($exception);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Impossible de supprimer la pièce jointe.',
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
 }

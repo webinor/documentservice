@@ -7,24 +7,27 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdatePurchaseRequestRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Détermine si l'utilisateur est autorisé à effectuer cette modification.
      *
      * @return bool
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Règles de validation des données reçues.
      *
      * @return array
      */
     public function rules()
     {
         return [
-            //
+            // Le client peut être défini ou retiré de la demande d'achat.
+            // S'il est renseigné, il doit exister dans la table clients.
+            'client_id' => 'sometimes|nullable|integer',
+            'type' => 'sometimes|nullable|string',
         ];
     }
 }

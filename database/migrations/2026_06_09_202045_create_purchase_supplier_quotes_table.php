@@ -34,7 +34,7 @@ class CreatePurchaseSupplierQuotesTable extends Migration
              * Informations devis
              */
             $table->string('reference')->nullable();
-            $table->decimal('amount', 18, 2)->default(0);
+            $table->decimal('amount', 18, 2)->nullable();
 
             /**
              * Observations achats

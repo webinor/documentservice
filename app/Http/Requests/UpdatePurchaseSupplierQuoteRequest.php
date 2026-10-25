@@ -38,6 +38,13 @@ class UpdatePurchaseSupplierQuoteRequest extends FormRequest
                 'min:1',
             ],
 
+              'client_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+
             // Référence du devis fournisseur.
             'reference' => [
                 'sometimes',
@@ -112,6 +119,7 @@ class UpdatePurchaseSupplierQuoteRequest extends FormRequest
         $validator->after(function ($validator) {
             $allowedFields = [
                 'supplier_id',
+                'client_id',
                 'reference',
                 'amount',
                 'comment',

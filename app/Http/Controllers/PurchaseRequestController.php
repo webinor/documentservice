@@ -96,17 +96,35 @@ class PurchaseRequestController extends Controller
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdatePurchaseRequestRequest  $request
-     * @param  \App\Models\PurchaseRequest  $purchaseRequest
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdatePurchaseRequestRequest $request, PurchaseRequest $purchaseRequest)
-    {
-        //
+/**
+ * Met à jour une demande d'achat.
+ *
+ * @param UpdatePurchaseRequestRequest $request
+ * @param string $document
+ * @param PurchaseRequest $purchaseRequest
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function update(
+    UpdatePurchaseRequestRequest $request,
+    string $document,
+    PurchaseRequest $purchaseRequest
+) {
+    $validated = $request->validated();
+
+    // Pour un achat interne, aucun client ne doit être associé.
+    if (isset($validated['type']) && $validated['type'] === 'INTERNAL') {
+        $validated['client_id'] = null;
     }
+
+    // Mettre à jour uniquement les champs autorisés et validés.
+    $purchaseRequest->fill($validated);
+    $purchaseRequest->save();
+
+    return response()->json([
+        'message' => 'La demande d’achat a été mise à jour avec succès.',
+        'data' => $purchaseRequest->fresh(),
+    ]);
+}
 
     /**
      * Remove the specified resource from storage.

@@ -27,7 +27,8 @@ class PurchaseSupplierQuote extends Model
         'updated_by',
         'selection_reason',
         'quote_date',
-        'delivery_days'
+        'delivery_days',
+        'client_id'
     ];
 
     protected $casts = [
