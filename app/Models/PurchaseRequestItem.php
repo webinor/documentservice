@@ -13,6 +13,11 @@ class PurchaseRequestItem extends Model
         'designation',
         'requested_quantity',
         'approved_quantity',
+
+        'requested_amount',
+        'approved_amount',
+
+
         'specification',
         'purchase_request_id',
         'notice'

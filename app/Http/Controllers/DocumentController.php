@@ -1866,6 +1866,11 @@ private function getFilteredDocuments(Request $request)
         FILTER_VALIDATE_BOOLEAN
     );
 
+    $shouldEnrichBatch = filter_var(
+        $request->input('shouldEnrichBatch', false),
+        FILTER_VALIDATE_BOOLEAN
+    );
+
     $isStat = filter_var(
         $request->input('isStat', true),
         FILTER_VALIDATE_BOOLEAN
@@ -2195,17 +2200,10 @@ private function getFilteredDocuments(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    $databaseStart = microtime(true);
 
     $documents = $query->orderByDesc('id')->get();
 
-    $logPerf('09_DATABASE_GET_WITH_RELATIONS', [
-        'duration_ms' => round(
-            (microtime(true) - $databaseStart) * 1000,
-            2
-        ),
-        'documents_count' => $documents->count(),
-    ]);
+   
 
     /*
     |--------------------------------------------------------------------------
@@ -2213,24 +2211,24 @@ private function getFilteredDocuments(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    $enrichmentStats = [
-        'documents_processed' => 0,
-        'total_enrichment_ms' => 0,
-        'max_enrichment_ms' => 0,
-        'slow_enrichments_count' => 0,
-    ];
+    
+    if ($shouldEnrichBatch) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | 11. Enrichissement des documents
-    |--------------------------------------------------------------------------
-    */
+    // throw new Exception($shouldEnrichBatch, 1);
+    
+         
+         $enrichedDocs = $this->documentEnrichmentManager->enrichBatch($documents);
 
-    $enrichmentStart = microtime(true);
+    // throw new Exception(json_encode($enrichedDocs), 1);
+
+    
+    }
+    
 
     $documentsEnrich = $documents->map(function ($doc) use (
         $documentTypes,
         $shouldEnrich,
+        $shouldEnrichBatch,
         &$enrichmentStats
     ) {
         $type = $doc->document_type;
@@ -2259,7 +2257,7 @@ private function getFilteredDocuments(Request $request)
          * Préserver le comportement existant lorsque
          * l'enrichissement est désactivé.
          */
-        if (!$shouldEnrich) {
+        if (!$shouldEnrich && !$shouldEnrichBatch) {
             return $base;
         }
 
@@ -2269,78 +2267,22 @@ private function getFilteredDocuments(Request $request)
                 1
             );
 
-            return $this->legacyDocumentEnricher->enrich(
-                $doc,
-                $base,
-                $documentTypes
-            );
         }
 
-        /*
-         * Mesure individuelle de l'enrichissement.
-         */
-        $singleEnrichmentStart = microtime(true);
-
+       
+        
         $enrichedDoc = $this->documentEnrichmentManager->enrich(
             $doc,
             $base
         );
 
-        $durationMs = round(
-            (microtime(true) - $singleEnrichmentStart) * 1000,
-            2
-        );
-
-        $enrichmentStats['documents_processed']++;
-
-        $enrichmentStats['total_enrichment_ms'] += $durationMs;
-
-        $enrichmentStats['max_enrichment_ms'] = max(
-            $enrichmentStats['max_enrichment_ms'],
-            $durationMs
-        );
-
-        if ($durationMs >= 100) {
-            $enrichmentStats['slow_enrichments_count']++;
-        }
-
+       
         return $enrichedDoc;
     });
 
-    $totalEnrichmentDurationMs = round(
-        (microtime(true) - $enrichmentStart) * 1000,
-        2
-    );
 
-    $logPerf('10_DOCUMENT_ENRICHMENT', [
-        'duration_ms' => $totalEnrichmentDurationMs,
-        'should_enrich' => $shouldEnrich,
-        'documents_count' => $documents->count(),
-        'documents_processed' => $enrichmentStats['documents_processed'],
-        'sum_individual_enrichment_ms' => round(
-            $enrichmentStats['total_enrichment_ms'],
-            2
-        ),
-        'average_enrichment_ms' => $enrichmentStats['documents_processed'] > 0
-            ? round(
-                $enrichmentStats['total_enrichment_ms']
-                    / $enrichmentStats['documents_processed'],
-                2
-            )
-            : 0,
-        'max_enrichment_ms' => $enrichmentStats['max_enrichment_ms'],
-        'slow_enrichments_count' => $enrichmentStats['slow_enrichments_count'],
-    ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | 12. Retour
-    |--------------------------------------------------------------------------
-    */
-
-    $logPerf('11_RETURN_DOCUMENTS', [
-        'documents_count' => $documentsEnrich->count(),
-    ]);
+  
 
     return $documentsEnrich;
 }
@@ -2622,8 +2564,7 @@ private function getFilteredDocuments(Request $request)
 
            
 
-            // $enrichedDoc['user_capabilities'] = []; 
-            // $enrichedDoc['user_capabilities']['canCancel'] = $canCancel;
+    
 
             return $enrichedDoc;
 
@@ -2904,6 +2845,7 @@ public function batchEnrich(
             $workflowContext = null;
 
             if ($includeWorkflowContext) {
+                
                 $workflowContext =
                     $documentViewService->getWorkflowStatusStatus(
                         $document->id
@@ -2924,8 +2866,7 @@ public function batchEnrich(
             $capabilities = null;
 
             if ($includeCapabilities) {
-                $capabilities =
-                    $documentCapabilitiesService->resolve(
+                $capabilities = $documentCapabilitiesService->resolve(
                         $enrichedDocument,
                         $workflowContext,
                         $user

@@ -19,7 +19,7 @@ class PurchaseFinancialSummaryService
      *
      * @var int
      */
-    private const MINIMUM_QUOTES_REQUIRED = 2;
+    private const MINIMUM_QUOTES_REQUIRED = 1;
 
     /**
      * Nombre minimum de devis sélectionnés.
@@ -73,6 +73,68 @@ class PurchaseFinancialSummaryService
         $items = DB::table('purchase_request_items')
             ->where('purchase_request_id', $purchaseRequest->id)
             ->get();
+
+       $requestedQuantityTotal = 0;
+$approvedQuantityTotal = 0;
+$effectiveQuantityTotal = 0;
+
+$requestedAmountTotal = 0;
+$approvedAmountTotal = 0;
+$effectiveAmountTotal = 0;
+
+$itemsWithoutQuantity = 0;
+$itemsWithoutAmount = 0;
+
+foreach ($items as $item) {
+    $requestedQuantity = $item->requested_quantity;
+    $approvedQuantity = $item->approved_quantity;
+
+    $requestedUnitPrice = $item->requested_amount;
+    $approvedUnitPrice = $item->approved_amount;
+
+    // Totaux des quantités
+    $requestedQuantityTotal += (int) ($requestedQuantity ?? 0);
+    $approvedQuantityTotal += (int) ($approvedQuantity ?? 0);
+
+    $effectiveQuantity = $approvedQuantity !== null
+        ? (int) $approvedQuantity
+        : (int) ($requestedQuantity ?? 0);
+
+    $effectiveQuantityTotal += $effectiveQuantity;
+
+    if ($requestedQuantity === null && $approvedQuantity === null) {
+        $itemsWithoutQuantity++;
+    }
+
+    // Montant total demandé : quantité demandée × prix unitaire demandé
+    if ($requestedQuantity !== null && $requestedUnitPrice !== null) {
+        $requestedAmountTotal +=
+            (float) $requestedQuantity * (float) $requestedUnitPrice;
+    }
+
+    // Montant total approuvé : quantité approuvée × prix unitaire approuvé
+    if ($approvedQuantity !== null && $approvedUnitPrice !== null) {
+        $approvedAmountTotal +=
+            (float) $approvedQuantity * (float) $approvedUnitPrice;
+    }
+
+    // Valeurs retenues : les valeurs approuvées priment sur les valeurs demandées
+    $effectiveUnitPrice = $approvedUnitPrice !== null
+        ? (float) $approvedUnitPrice
+        : ($requestedUnitPrice !== null
+            ? (float) $requestedUnitPrice
+            : null);
+
+    if (
+        $effectiveQuantity > 0 &&
+        $effectiveUnitPrice !== null
+    ) {
+        $effectiveAmountTotal +=
+            $effectiveQuantity * $effectiveUnitPrice;
+    } else {
+        $itemsWithoutAmount++;
+    }
+}
 
         /*
          * Récupération de tous les devis de la demande.
@@ -298,24 +360,42 @@ $selectedQuoteFiles = $selectedQuote
             'purchase_request_id' => (int) $purchaseRequest->id,
 
             'purchase_request' => [
-                'type' => $purchaseRequest->type ?? null,
-                'status' => $purchaseRequest->status,
-                'priority' => $purchaseRequest->priority,
-                'destination_service_id' =>
-                    $purchaseRequest->destination_service_id,
-            ],
+    'type' => $purchaseRequest->type ?? null,
+    'status' => $purchaseRequest->status,
+    'priority' => $purchaseRequest->priority,
+    'destination_service_id' =>
+        $purchaseRequest->destination_service_id,
 
-            'items' => [
-                'count' => $items->count(),
+    // Montant total initialement demandé.
+    'requested_amount' => round($requestedAmountTotal, 2),
 
-                'requested_quantity_total' => (float) $items->sum(
-                    'requested_quantity'
-                ),
+    // Total des montants approuvés renseignés.
+    'approved_amount' => round($approvedAmountTotal, 2),
 
-                'approved_quantity_total' => (float) $items->sum(
-                    'approved_quantity'
-                ),
-            ],
+    // Montant effectif : approuvé si disponible, sinon demandé.
+    'amount' => round($effectiveAmountTotal, 2),
+
+    // Nombre d'articles sans montant demandé ni approuvé.
+    'items_without_amount' => $itemsWithoutAmount,
+],
+
+           'items' => [
+    'count' => $items->count(),
+
+    // Quantités
+    'requested_quantity_total' => $requestedQuantityTotal,
+    'approved_quantity_total' => $approvedQuantityTotal,
+    'quantity' => $effectiveQuantityTotal,
+
+    // Montants calculés à partir des prix unitaires
+    'requested_amount' => round($requestedAmountTotal, 2),
+    'approved_amount' => round($approvedAmountTotal, 2),
+    'amount' => round($effectiveAmountTotal, 2),
+
+    // Anomalies
+    'items_without_quantity' => $itemsWithoutQuantity,
+    'items_without_amount' => $itemsWithoutAmount,
+],
 
             /*
              * Devis sélectionné.

@@ -48,6 +48,9 @@ class PurchaseRequestService
                 'requested_quantity' =>
                     $item['quantite'] ?? 1,
 
+                  'requested_amount' =>
+                    $item['montant'] ?? null,
+
                 'specification' =>
                     $item['specification'] ?? null,
             ]);
@@ -101,6 +104,9 @@ class PurchaseRequestService
 
                 'requested_quantity' =>
                     $item['quantite'] ?? 1,
+
+                'requested_amount' =>
+                    $item['montant'] ?? null,
 
                 'specification' =>
                     $item['specification'] ?? null,

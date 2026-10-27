@@ -31,6 +31,7 @@ use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\PaymentTermController;
 use App\Http\Controllers\PublicHolidayController;
+use App\Http\Controllers\PurchaseRequestApprovalReadinessController;
 use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\PurchaseRequestItemController;
 use App\Http\Controllers\PurchaseRequestStatusController;
@@ -550,6 +551,11 @@ Route::post(
             "show",
         ]);
 
+
+        Route::get(
+    '/{documentId}/purchase-request-approval-readiness',
+    [PurchaseRequestApprovalReadinessController::class, 'show']
+)->whereNumber('documentId');
        
 
 /*

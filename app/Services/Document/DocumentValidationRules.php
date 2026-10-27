@@ -90,8 +90,8 @@ class DocumentValidationRules
                 'description' => 'nullable|string',
                 
                 'category' => [
-                    'required',
-                    'string',
+                    'nullable',
+                    // 'string',
                     Rule::in([
                         'IT_EQUIPMENT',
                         'SOFTWARE',
@@ -113,7 +113,7 @@ class DocumentValidationRules
                 'destination_service_id' => 'nullable|numeric',
 
                 'priority' => [
-                    'required',
+                    'nullable',
                     'string',
                     Rule::in([
                         'LOW',
@@ -127,6 +127,7 @@ class DocumentValidationRules
                 
                 'libelles.*.libelle' => 'required|string',
                 'libelles.*.quantite' => 'required|numeric|min:1',
+                'libelles.*.montant' => 'sometimes|numeric|min:1',
                 'libelles.*.specification' => 'nullable|string',
 
                 'attachments' => 'nullable',

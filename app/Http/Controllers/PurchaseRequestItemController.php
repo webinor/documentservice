@@ -69,9 +69,10 @@ class PurchaseRequestItemController extends Controller
  * @param  \App\Models\PurchaseRequestItem  $purchaseRequestItem
  * @return \Illuminate\Http\JsonResponse
  */
+
 public function update(
     UpdatePurchaseRequestItemRequest $request,
-     $doc_uuid,
+    $doc_uuid,
     PurchaseRequestItem $item
 ) {
     $validated = $request->validated();
@@ -81,6 +82,18 @@ public function update(
             'success' => false,
             'message' => 'Aucune donnée à mettre à jour.',
         ], 422);
+    }
+
+    // Convertir les valeurs numériques égales à 0 en null.
+    foreach (['approved_quantity', 'approved_amount'] as $field) {
+        if (
+            array_key_exists($field, $validated)
+            && $validated[$field] !== null
+            && is_numeric($validated[$field])
+            && (float) $validated[$field] === 0.0
+        ) {
+            $validated[$field] = null;
+        }
     }
 
     $item->fill($validated);
