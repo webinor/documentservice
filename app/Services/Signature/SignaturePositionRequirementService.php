@@ -4,6 +4,8 @@ namespace App\Services\Signature;
 
 use App\Models\DocumentSignaturePosition;
 use App\Models\Misc\Document;
+use App\Models\PurchaseRequest;
+use App\Models\PurchaseSupplierQuote;
 use Illuminate\Support\Facades\Log;
 
 class SignaturePositionRequirementService
@@ -646,4 +648,299 @@ class SignaturePositionRequirementService
                 $invalidFiles,
         ];
     }
+
+    /**
+ * Vérifie que l'utilisateur a positionné sa signature sur
+ * chaque page de chaque fichier des devis fournisseurs.
+ *
+ * Parcours métier :
+ *
+ * Document
+ *    ↓
+ * PurchaseRequest
+ *    ↓
+ * PurchaseSupplierQuote
+ *    ↓
+ * File
+ *    ↓
+ * DocumentSignaturePosition
+ *
+ * Une page est considérée comme positionnée si une ligne existe
+ * pour le document, le fichier, l'utilisateur, le type de signature
+ * SUPPLIER_QUOTE et le numéro de page.
+ *
+ * @param string $documentUuid
+ * @param int $userId
+ * @return array
+ */
+public function checkAllSupplierQuotePagesPositioned(
+    string $documentUuid,
+    int $userId
+): array {
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Rechercher le document
+    |--------------------------------------------------------------------------
+    */
+
+    $document = Document::query()
+        ->where('uuid', $documentUuid)
+        ->first();
+
+    if (!$document) {
+        return [
+            'document_id' => null,
+            'document_uuid' => $documentUuid,
+            'user_id' => $userId,
+            'all_pages_positioned' => false,
+            'quotes_count' => 0,
+            'files_count' => 0,
+            'total_pages' => 0,
+            'positioned_pages' => 0,
+            'missing_pages_count' => 0,
+            'missing_pages' => [],
+            'invalid_files' => [],
+            'message' => 'Document introuvable.',
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Rechercher la demande d'achat
+    |--------------------------------------------------------------------------
+    |
+    | PurchaseRequest référence le document via document_id.
+    | On interroge directement cette clé pour ne pas dépendre
+    | du nom d'une éventuelle relation définie sur Document.
+    |
+    */
+
+    $purchaseRequest = PurchaseRequest::query()
+        ->where('document_id', $document->id)
+        ->first();
+
+    if (!$purchaseRequest) {
+        return [
+            'document_id' => $document->id,
+            'document_uuid' => $documentUuid,
+            'user_id' => $userId,
+            'all_pages_positioned' => false,
+            'quotes_count' => 0,
+            'files_count' => 0,
+            'total_pages' => 0,
+            'positioned_pages' => 0,
+            'missing_pages_count' => 0,
+            'missing_pages' => [],
+            'invalid_files' => [],
+            'message' => 'Aucune demande d’achat associée au document.',
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Charger les devis et leurs fichiers
+    |--------------------------------------------------------------------------
+    */
+
+    $quote = PurchaseSupplierQuote::query()
+        ->where(
+            'purchase_request_id',
+            $purchaseRequest->id
+        )
+         ->where('is_selected', true)
+        ->with('files')
+        ->first();
+
+    if (!$quote) {
+        return [
+            'document_id' => $document->id,
+            'document_uuid' => $documentUuid,
+            'user_id' => $userId,
+            'quotes_count' => 0,
+            'files_count' => 0,
+            'total_pages' => 0,
+            'positioned_pages' => 0,
+            'missing_pages_count' => 0,
+            'missing_pages' => [],
+            'invalid_files' => [],
+            'all_pages_positioned' => false,
+            'message' => 'Aucun devis fournisseur associé à la demande d’achat.',
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Rassembler les fichiers des devis
+    |--------------------------------------------------------------------------
+    */
+
+   /*
+ * Récupérer uniquement les fichiers du devis fournisseur retenu.
+ *
+ * Le devis peut contenir plusieurs fichiers :
+ * - le devis fournisseur ;
+ * - le dossier technique ;
+ * - éventuellement d'autres pièces justificatives.
+ *
+ * Tous ces fichiers doivent être vérifiés individuellement.
+ */
+$quoteFiles = $quote->files
+    ->map(function ($file) use ($quote) {
+        return [
+            'quote' => $quote,
+            'file' => $file,
+        ];
+    })
+    ->values();
+
+    if ($quoteFiles->isEmpty()) {
+        return [
+            'document_id' => $document->id,
+            'document_uuid' => $documentUuid,
+            'user_id' => $userId,
+            'files_count' => 0,
+            'total_pages' => 0,
+            'positioned_pages' => 0,
+            'missing_pages_count' => 0,
+            'missing_pages' => [],
+            'invalid_files' => [],
+            'all_pages_positioned' => false,
+            'message' => 'Aucun fichier trouvé dans les devis fournisseurs.',
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Récupérer les positions de signature existantes
+    |--------------------------------------------------------------------------
+    */
+
+    $fileIds = $quoteFiles
+        ->pluck('file.id')
+        ->filter()
+        ->unique()
+        ->values();
+
+    $positions = DocumentSignaturePosition::query()
+        ->where('document_id', $document->id)
+        ->where('user_id', $userId)
+        ->where('signature_type', 'SUPPLIER_QUOTE')
+        ->whereIn('file_id', $fileIds)
+        ->get([
+            'file_id',
+            'page_number',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Indexer les pages déjà positionnées
+    |--------------------------------------------------------------------------
+    */
+
+    $positionedPages = [];
+
+    foreach ($positions as $position) {
+        $key = $position->file_id . ':' . $position->page_number;
+
+        $positionedPages[$key] = true;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. Vérifier toutes les pages de tous les fichiers
+    |--------------------------------------------------------------------------
+    */
+
+    $totalFiles = 0;
+    $totalPages = 0;
+    $positionedPagesCount = 0;
+
+    $missingPages = [];
+    $invalidFiles = [];
+
+    foreach ($quoteFiles as $quoteFile) {
+        $quote = $quoteFile['quote'];
+        $file = $quoteFile['file'];
+
+        $totalFiles++;
+
+        $pageCount = (int) $file->page_count;
+
+        /*
+         * Un fichier sans nombre de pages exploitable ne peut
+         * pas être considéré comme entièrement positionné.
+         */
+        if ($pageCount <= 0) {
+            $invalidFiles[] = [
+                'quote_id' => $quote->id,
+                'file_id' => $file->id,
+                'file_name' => $file->name
+                    ?? $file->original_name
+                    ?? null,
+                'page_count' => $pageCount,
+                'reason' => 'Le nombre de pages du fichier est invalide.',
+            ];
+
+            continue;
+        }
+
+        for ($pageNumber = 1; $pageNumber <= $pageCount; $pageNumber++) {
+            $totalPages++;
+
+            $key = $file->id . ':' . $pageNumber;
+
+            if (isset($positionedPages[$key])) {
+                $positionedPagesCount++;
+                continue;
+            }
+
+            $missingPages[] = [
+                'quote_id' => $quote->id,
+                'file_id' => $file->id,
+                'file_name' => $file->name
+                    ?? $file->original_name
+                    ?? null,
+                'page_number' => $pageNumber,
+                'reason' => 'Position de signature manquante.',
+            ];
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. Déterminer le statut global
+    |--------------------------------------------------------------------------
+    */
+
+    $allPagesPositioned =
+        $totalPages > 0
+        && empty($missingPages)
+        && empty($invalidFiles);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 9. Retourner le résultat
+    |--------------------------------------------------------------------------
+    */
+
+    return [
+        'document_id' => $document->id,
+        'document_uuid' => $documentUuid,
+        'user_id' => $userId,
+
+        'all_pages_positioned' => $allPagesPositioned,
+
+        'files_count' => $totalFiles,
+
+        'signature_positions_count' => $positions->count(),
+
+        'total_pages' => $totalPages,
+        'positioned_pages' => $positionedPagesCount,
+
+        'missing_pages_count' => count($missingPages),
+        'missing_pages' => $missingPages,
+
+        'invalid_files' => $invalidFiles,
+    ];
+}
 }

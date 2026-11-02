@@ -23,36 +23,30 @@ class PurchaseDocumentEnrichmentHandler implements DocumentEnrichmentHandlerInte
     }
 
 
-    public function enrich(Document $document, array $base): array
+   
+
+public function enrich(Document $document, array $base): array
 {
+    $purchaseRequest = $document->purchase_request;
 
+    if ($purchaseRequest) {
 
+        // Charger les articles de la demande d'achat
+        $purchaseRequest->purchase_request_items =
+            PurchaseRequestItem::wherePurchaseRequestId($purchaseRequest->id)->get();
 
-    // throw new Exception(json_encode($document->actor_id), 1);
-
-
-    $purchase_request_items = PurchaseRequestItem::wherePurchaseRequestId($document->purchase_request->id)->get();
-
-    $document->purchase_request->purchase_request_items = $purchase_request_items;
-
-    // $this->departmentClient->getDepartmentById($departmentId);
-    // $userClient = new UserServiceClient();
-
-
+        // Charger le bon de commande associé
+        $purchaseRequest->load([
+    'request_order.items',
+    'request_order.supplierQuote',
+]);
+    }
 
     $actor_details = $this->departmentClient->resolveDepartment(
-        // $document->actor_type,
         $document->actor_id
     );
 
-    // throw new Exception(json_encode($actor_details), 1);
-
-
     $document->destination_service_details = $actor_details;
-
-    
-
-    
 
     return $document->toArray();
 }

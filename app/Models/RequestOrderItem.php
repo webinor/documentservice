@@ -27,8 +27,8 @@ class RequestOrderItem extends Model
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:3',
-        'unit_price' => 'decimal:2',
+        'quantity' => 'integer',
+        'unit_price' => 'integer',
         'discount_amount' => 'decimal:2',
         'tax_rate' => 'decimal:4',
         'tax_amount' => 'decimal:2',

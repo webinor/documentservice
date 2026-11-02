@@ -2,210 +2,193 @@
 
 namespace Database\Seeders;
 
-
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\PaymentTerm;
-use App\Models\PaymentTermInstallment;
 
 class PaymentTermSeeder extends Seeder
 {
     /**
-     * Crée les conditions de paiement de test et leurs échéances.
+     * Modèles de conditions de paiement.
      *
-     * Le seeder peut être exécuté plusieurs fois sans créer de doublons.
+     * Chaque modèle contient ses propres échéances.
      *
      * @return void
      */
     public function run()
     {
-        DB::transaction(function () {
-
-            $paymentTerms = [
-                [
-                    'code' => 'CASH',
-                    'name' => 'Paiement comptant',
-                    'description' => 'Paiement intégral à la commande.',
-                    'payment_mode' => 'IMMEDIATE',
-                    'due_days' => 0,
-                    'is_default' => true,
-                    'is_active' => true,
-                    'installments' => [
-                        [
-                            'sequence' => 1,
-                            'label' => 'Paiement intégral à la commande',
-                            'trigger_type' => 'ORDER_DATE',
-                            'days_after_trigger' => 0,
-                            'percentage' => 100,
-                        ],
-                    ],
-                ],
-
-                [
-                    'code' => 'NET_15',
-                    'name' => 'Paiement à 15 jours',
-                    'description' => 'Paiement intégral 15 jours après réception de la facture.',
-                    'payment_mode' => 'NET_DAYS',
-                    'due_days' => 15,
-                    'is_default' => false,
-                    'is_active' => true,
-                    'installments' => [
-                        [
-                            'sequence' => 1,
-                            'label' => 'Règlement à 15 jours',
-                            'trigger_type' => 'INVOICE_RECEIVED',
-                            'days_after_trigger' => 15,
-                            'percentage' => 100,
-                        ],
-                    ],
-                ],
-
-                [
-                    'code' => 'NET_30',
-                    'name' => 'Paiement à 30 jours',
-                    'description' => 'Paiement intégral 30 jours après réception de la facture.',
-                    'payment_mode' => 'NET_DAYS',
-                    'due_days' => 30,
-                    'is_default' => false,
-                    'is_active' => true,
-                    'installments' => [
-                        [
-                            'sequence' => 1,
-                            'label' => 'Règlement à 30 jours',
-                            'trigger_type' => 'INVOICE_RECEIVED',
-                            'days_after_trigger' => 30,
-                            'percentage' => 100,
-                        ],
-                    ],
-                ],
-
-                [
-                    'code' => 'HALF_HALF',
-                    'name' => '50 % à la commande, 50 % à la livraison',
-                    'description' => 'Un acompte à la commande et le solde à la livraison.',
-                    'payment_mode' => 'INSTALLMENTS',
-                    'due_days' => null,
-                    'is_default' => false,
-                    'is_active' => true,
-                    'installments' => [
-                        [
-                            'sequence' => 1,
-                            'label' => 'Acompte à la commande',
-                            'trigger_type' => 'ORDER_DATE',
-                            'days_after_trigger' => 0,
-                            'percentage' => 50,
-                        ],
-                        [
-                            'sequence' => 2,
-                            'label' => 'Solde à la livraison',
-                            'trigger_type' => 'DELIVERY',
-                            'days_after_trigger' => 0,
-                            'percentage' => 50,
-                        ],
-                    ],
-                ],
-
-                [
-                    'code' => 'THREE_STEPS',
-                    'name' => 'Paiement en trois tranches',
-                    'description' => '30 % à la commande, 40 % à la livraison et 30 % après réception conforme.',
-                    'payment_mode' => 'INSTALLMENTS',
-                    'due_days' => null,
-                    'is_default' => false,
-                    'is_active' => true,
-                    'installments' => [
-                        [
-                            'sequence' => 1,
-                            'label' => 'Acompte à la commande',
-                            'trigger_type' => 'ORDER_DATE',
-                            'days_after_trigger' => 0,
-                            'percentage' => 30,
-                        ],
-                        [
-                            'sequence' => 2,
-                            'label' => 'Versement à la livraison',
-                            'trigger_type' => 'DELIVERY',
-                            'days_after_trigger' => 0,
-                            'percentage' => 40,
-                        ],
-                        [
-                            'sequence' => 3,
-                            'label' => 'Solde après réception conforme',
-                            'trigger_type' => 'ACCEPTANCE',
-                            'days_after_trigger' => 0,
-                            'percentage' => 30,
-                        ],
-                    ],
-                ],
-
-                [
-                    'code' => 'NET_45',
-                    'name' => 'Paiement à 45 jours',
-                    'description' => 'Paiement intégral 45 jours après réception de la facture.',
-                    'payment_mode' => 'NET_DAYS',
-                    'due_days' => 45,
-                    'is_default' => false,
-                    'is_active' => true,
-                    'installments' => [
-                        [
-                            'sequence' => 1,
-                            'label' => 'Règlement à 45 jours',
-                            'trigger_type' => 'INVOICE_RECEIVED',
-                            'days_after_trigger' => 45,
-                            'percentage' => 100,
-                        ],
-                    ],
-                ],
-            ];
-
-            /*
-             * Réinitialise le statut par défaut pour les données de test.
-             * Une seule condition sera définie comme condition par défaut.
-             */
-            PaymentTerm::query()->update([
-                'is_default' => false,
-            ]);
-
-            foreach ($paymentTerms as $termData) {
-
-                $installments = $termData['installments'];
-
-                unset($termData['installments']);
-
-                /*
-                 * Crée la condition ou actualise celle qui existe déjà.
-                 */
-                $paymentTerm = PaymentTerm::updateOrCreate(
+        $templates = [
+            [
+                'code' => 'PAYMENT_30_70',
+                'name' => '30 % à la commande - 70 % à la réception',
+                'description' => 'Avance de 30 % à la commande et solde de 70 % à la réception.',
+                'payment_mode' => 'PERCENTAGE',
+                'installments' => [
                     [
-                        'code' => $termData['code'],
+                        'sequence' => 1,
+                        'label' => 'Avance à la commande',
+                        'trigger_type' => 'ORDER_SIGNATURE',
+                        'days_after_trigger' => 0,
+                        'percentage' => 30,
                     ],
-                    $termData
-                );
+                    [
+                        'sequence' => 2,
+                        'label' => 'Solde à la réception',
+                        'trigger_type' => 'RECEPTION',
+                        'days_after_trigger' => 0,
+                        'percentage' => 70,
+                    ],
+                ],
+            ],
+
+            [
+                'code' => 'PAYMENT_50_50',
+                'name' => '50 % à la commande - 50 % à la livraison',
+                'description' => 'Paiement en deux tranches égales.',
+                'payment_mode' => 'PERCENTAGE',
+                'installments' => [
+                    [
+                        'sequence' => 1,
+                        'label' => 'Première tranche',
+                        'trigger_type' => 'ORDER_SIGNATURE',
+                        'days_after_trigger' => 0,
+                        'percentage' => 50,
+                    ],
+                    [
+                        'sequence' => 2,
+                        'label' => 'Solde à la livraison',
+                        'trigger_type' => 'DELIVERY',
+                        'days_after_trigger' => 0,
+                        'percentage' => 50,
+                    ],
+                ],
+            ],
+
+            [
+                'code' => 'PAYMENT_40_40_20',
+                'name' => '40 % - 40 % - 20 %',
+                'description' => 'Paiement en trois étapes : commande, livraison et réception.',
+                'payment_mode' => 'PERCENTAGE',
+                'installments' => [
+                    [
+                        'sequence' => 1,
+                        'label' => 'Avance à la commande',
+                        'trigger_type' => 'ORDER_SIGNATURE',
+                        'days_after_trigger' => 0,
+                        'percentage' => 40,
+                    ],
+                    [
+                        'sequence' => 2,
+                        'label' => 'Paiement à la livraison',
+                        'trigger_type' => 'DELIVERY',
+                        'days_after_trigger' => 0,
+                        'percentage' => 40,
+                    ],
+                    [
+                        'sequence' => 3,
+                        'label' => 'Solde après réception',
+                        'trigger_type' => 'RECEPTION',
+                        'days_after_trigger' => 0,
+                        'percentage' => 20,
+                    ],
+                ],
+            ],
+
+            [
+                'code' => 'PAYMENT_100_RECEPTION',
+                'name' => '100 % à la réception',
+                'description' => 'Paiement intégral après réception des biens ou services.',
+                'payment_mode' => 'PERCENTAGE',
+                'installments' => [
+                    [
+                        'sequence' => 1,
+                        'label' => 'Paiement intégral à la réception',
+                        'trigger_type' => 'RECEPTION',
+                        'days_after_trigger' => 0,
+                        'percentage' => 100,
+                    ],
+                ],
+            ],
+        ];
+
+        DB::transaction(function () use ($templates) {
+
+            foreach ($templates as $template) {
 
                 /*
-                 * Actualise les échéances définies dans le seeder.
+                 * Recherche du modèle existant.
                  */
-                foreach ($installments as $installmentData) {
+                $paymentTerm = DB::table('payment_terms')
+                    ->where('code', $template['code'])
+                    ->first();
 
-                    PaymentTermInstallment::updateOrCreate(
-                        [
-                            'payment_term_id' => $paymentTerm->id,
-                            'sequence' => $installmentData['sequence'],
-                        ],
-                        $installmentData
-                    );
+                /*
+                 * Données du modèle.
+                 */
+                $paymentTermData = [
+                    'code' => $template['code'],
+                    'name' => $template['name'],
+                    'description' => $template['description'],
+                    'payment_mode' => $template['payment_mode'],
+                    'is_template' => true,
+                    'is_active' => true,
+                    'updated_at' => now(),
+                ];
+
+                /*
+                 * Mise à jour ou création du modèle.
+                 */
+                if ($paymentTerm) {
+
+                    DB::table('payment_terms')
+                        ->where('id', $paymentTerm->id)
+                        ->update($paymentTermData);
+
+                    $paymentTermId = $paymentTerm->id;
+
+                } else {
+
+                    $paymentTermId = DB::table('payment_terms')
+                        ->insertGetId(array_merge(
+                            $paymentTermData,
+                            [
+                                'created_at' => now(),
+                            ]
+                        ));
                 }
 
                 /*
-                 * Supprime les anciennes échéances qui ne figurent plus
-                 * dans la configuration du seeder.
+                 * Synchronisation des échéances.
                  */
-                $sequences = array_column($installments, 'sequence');
+                foreach ($template['installments'] as $installment) {
 
-                PaymentTermInstallment::where(
-                    'payment_term_id',
-                    $paymentTerm->id
-                )
+                    DB::table('payment_term_installments')
+                        ->updateOrInsert(
+                            [
+                                'payment_term_id' => $paymentTermId,
+                                'sequence' => $installment['sequence'],
+                            ],
+                            [
+                                'label' => $installment['label'],
+                                'trigger_type' => $installment['trigger_type'],
+                                'days_after_trigger' => $installment['days_after_trigger'],
+                                'percentage' => $installment['percentage'],
+                                'updated_at' => now(),
+                                'created_at' => now(),
+                            ]
+                        );
+                }
+
+                /*
+                 * Suppression des anciennes échéances qui ne figurent
+                 * plus dans la configuration du modèle.
+                 */
+                $sequences = array_column(
+                    $template['installments'],
+                    'sequence'
+                );
+
+                DB::table('payment_term_installments')
+                    ->where('payment_term_id', $paymentTermId)
                     ->whereNotIn('sequence', $sequences)
                     ->delete();
             }

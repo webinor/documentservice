@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 class PurchaseSupplierQuote extends Model
 {
     use HasFactory;
@@ -28,13 +31,19 @@ class PurchaseSupplierQuote extends Model
         'selection_reason',
         'quote_date',
         'delivery_days',
-        'client_id'
+        'client_id',
+        'payment_term_id',
+        'has_custom_payment_terms',
+        
     ];
 
     protected $casts = [
         'amount' => 'integer',
         'is_selected' => 'boolean',
+        'has_custom_payment_terms' => 'boolean',
     ];
+
+  
 
     /**
      * Demande d'achat associée au devis.
@@ -50,5 +59,37 @@ class PurchaseSupplierQuote extends Model
    public function files(): MorphMany
 {
     return $this->morphMany(File::class, 'model');
+}
+
+/**
+ * Condition de paiement issue du catalogue.
+ */
+public function paymentTerm(): BelongsTo
+{
+    return $this->belongsTo(
+        PaymentTerm::class,
+        'payment_term_id'
+    );
+}
+
+/**
+ * Get the request_order associated with the PurchaseSupplierQuote
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasOne
+ */
+public function request_order(): HasOne
+{
+    return $this->hasOne(RequestOrder::class,'supplier_quote_id');
+}
+
+/**
+ * Échéances réellement négociées pour ce devis.
+ */
+public function paymentInstallments(): HasMany
+{
+    return $this->hasMany(
+        PurchaseSupplierQuotePaymentInstallment::class,
+        'purchase_supplier_quote_id'
+    )->orderBy('sequence');
 }
 }

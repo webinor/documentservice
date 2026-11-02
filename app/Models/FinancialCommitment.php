@@ -62,4 +62,12 @@ class FinancialCommitment extends Model
             'financial_commitment_id'
         );
     }
+
+    public function installments(): HasMany
+    {
+        return $this->hasMany(
+            FinancialCommitmentInstallment::class,
+            'financial_commitment_id'
+        )->orderBy('sequence');
+    }
 }

@@ -206,6 +206,63 @@ if (!empty($quoteIds)) {
             );
         }
 
+        /*
+ * Bon de commande associé au devis sélectionné.
+ */
+$requestOrderSummary = null;
+
+if ($selectedQuote) {
+    $requestOrder = DB::table('request_orders')
+        ->where('supplier_quote_id', $selectedQuote->id)
+        ->orderByDesc('id')
+        ->first();
+
+    if ($requestOrder) {
+
+        /*
+         * Récupération des articles du bon de commande.
+         */
+        $requestOrderItems = DB::table('request_order_items')
+            ->where('request_order_id', $requestOrder->id)
+            ->orderBy('id')
+            ->get();
+
+        /*
+         * Calcul du montant total du bon de commande.
+         * Aucune colonne total n'est nécessaire en base.
+         */
+        $requestOrderTotal = 0;
+
+        foreach ($requestOrderItems as $item) {
+            $quantity = (float) ($item->quantity ?? 0);
+            $unitPrice = (float) ($item->unit_price ?? 0);
+
+            $lineTotal = $quantity * $unitPrice;
+
+            $requestOrderTotal += $lineTotal;
+
+            // Montant calculé pour chaque article, uniquement dans la réponse.
+            $item->line_total = round($lineTotal, 2);
+        }
+
+        $requestOrderSummary = [
+            'id' => (int) $requestOrder->id,
+
+            // Informations du bon de commande
+            'request_order' => (array) $requestOrder,
+
+            // Articles
+            'items' => $requestOrderItems,
+
+            // Nombre d'articles
+            'items_count' => $requestOrderItems->count(),
+
+            // Montant total calculé
+            'total' => round($requestOrderTotal, 2),
+        ];
+    }
+}
+
 
 
         /*
@@ -432,6 +489,11 @@ $selectedQuoteFiles = $selectedQuote
                     ? $this->evaluateQuoteCompleteness($selectedQuote , $selectedQuoteFiles)
                     : null,
             ],
+
+            /*
+ * Bon de commande associé au devis sélectionné.
+ */
+'request_order' => $requestOrderSummary,
 
             /*
              * Conformité de l'ensemble des devis.
@@ -765,6 +827,8 @@ private function evaluateQuoteCompleteness(
             ],
 
             'selected_quote' => null,
+
+            'request_order' => null,
 
             'quote_quality' => [
                 'total_quotes' => 0,

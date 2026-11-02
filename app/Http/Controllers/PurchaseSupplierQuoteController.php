@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePurchaseSupplierQuoteRequest;
 use App\Http\Requests\UpdatePurchaseSupplierQuoteRequest;
 use App\Models\Misc\File;
+use App\Models\PaymentTerm;
 use App\Models\PurchaseSupplierQuote;
 use App\Services\Supplier\SupplierServiceClient;
 use Illuminate\Http\JsonResponse;
@@ -32,52 +33,337 @@ public function __construct(
 ) {
     $this->supplierServiceClient = $supplierServiceClient;
 }
-    /**
-     * Liste les devis d'une demande d'achat.
-     *
-     * GET /purchase-requests/{purchaseRequestId}/quotes
-     *
-     * @param int $purchaseRequestId
-     * @return JsonResponse
-     */
-    public function index($purchaseRequestId): JsonResponse
-    {
+   
+/**
+ * Liste les devis d'une demande d'achat.
+ *
+ * GET /purchase-requests/{purchaseRequestId}/quotes
+ *
+ * Chaque devis est enrichi avec :
+ * - les informations du fournisseur ;
+ * - les fichiers associés ;
+ * - les URL de consultation et de téléchargement ;
+ * - les URL des fichiers signés, si disponibles.
+ *
+ * @param int $purchaseRequestId
+ * @return JsonResponse
+ */
+public function index($purchaseRequestId): JsonResponse
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Configuration de l'URL de base
+    |--------------------------------------------------------------------------
+    |
+    | Utiliser la configuration Laravel plutôt que de coder l'URL en dur.
+    | Adapter la clé à la configuration réellement utilisée dans le projet.
+    |
+    */
+    $baseUrl = rtrim(config('app.url'), '/');
 
-  
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Récupérer les devis et leurs fichiers
+    |--------------------------------------------------------------------------
+    */
+    $quotes = PurchaseSupplierQuote::query()
+        ->where('purchase_request_id', $purchaseRequestId)
+         ->with([
+        'request_order.items',
+        'files',
+        'paymentTerm',
+        'paymentInstallments',
+        ])
+        ->orderBy('created_at')
+        ->get();
 
-        $quotes = PurchaseSupplierQuote::query()
-            ->where('purchase_request_id', $purchaseRequestId)
-            ->with('files')
-            ->orderBy('created_at')
-            ->get();
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Collecter les identifiants des fournisseurs
+    |--------------------------------------------------------------------------
+    */
+    $supplierIds = $quotes
+        ->pluck('supplier_id')
+        ->filter()
+        ->unique()
+        ->values()
+        ->all();
 
-        // 1. Collecter les identifiants des fournisseurs.
-$supplierIds = $quotes
-    ->pluck('supplier_id')
-    ->filter()
-    ->unique()
-    ->values()
-    ->all();
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Récupérer les fournisseurs en un seul appel groupé
+    |--------------------------------------------------------------------------
+    */
+    $suppliersById = empty($supplierIds)
+        ? []
+        : $this->supplierServiceClient->getSuppliersByIds($supplierIds);
 
-// 2. Récupérer tous les fournisseurs en un seul appel HTTP.
-$suppliersById = $this->supplierServiceClient
-    ->getSuppliersByIds($supplierIds);
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Enrichir les devis et leurs fichiers
+    |--------------------------------------------------------------------------
+    */
+    $quotes = $quotes->map(function ($quote) use ($suppliersById, $baseUrl) {
+        $supplierId = (int) $quote->supplier_id;
 
-// 3. Enrichir chaque devis.
-$quotes = $quotes->map(function ($quote) use ($suppliersById) {
-    $supplierId = (int) $quote->supplier_id;
+        $quote->supplier = $suppliersById[$supplierId] ?? null;
 
-    $quote->supplier = $suppliersById[$supplierId] ?? null;
+        /*
+         * Enrichir chaque fichier associé au devis.
+         */
+        $quote->files = $quote->files->map(function ($file) use ($baseUrl) {
+            /*
+             * URL du fichier original.
+             */
+            $file->view_url =
+                "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/view";
 
-    return $quote;
-});
+            $file->download_url =
+                "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/download";
+
+            /*
+             * URL du fichier signé, si une version signée existe.
+             */
+            $file->signed_view_url = null;
+            $file->signed_download_url = null;
+
+            if (!empty($file->signed_path)) {
+                $file->signed_view_url =
+                    "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/view";
+
+                $file->signed_download_url =
+                    "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/download";
+            }
+
+            return $file;
+        });
+
+        return $quote;
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Retourner les devis enrichis
+    |--------------------------------------------------------------------------
+    */
+    return response()->json([
+        'success' => true,
+        'message' => 'Liste des devis récupérée avec succès.',
+        'data' => $quotes,
+    ], Response::HTTP_OK);
+}
+
+/**
+ * Associe un modèle de conditions de paiement à un devis fournisseur
+ * et copie ses échéances dans les échéances propres au devis.
+ *
+ * POST /purchase-requests/{purchaseRequestId}/quotes/{quoteId}/payment-term
+ *
+ * @param Request $request
+ * @param int $purchaseRequestId
+ * @param int $quoteId
+ * @return JsonResponse
+ */
+public function assignPaymentTerm(
+    Request $request,
+    $purchaseRequestId,
+    $quoteId
+): JsonResponse {
+    $validated = $request->validate([
+        'payment_term_template_id' => [
+            'required',
+            'integer',
+            'exists:payment_terms,id',
+        ],
+    ]);
+
+    try {
+        $quote = DB::transaction(function () use (
+            $purchaseRequestId,
+            $quoteId,
+            $validated
+        ) {
+            // Vérifier que le devis appartient bien à la demande d'achat.
+            $quote = PurchaseSupplierQuote::query()
+                ->where('purchase_request_id', $purchaseRequestId)
+                ->where('id', $quoteId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Récupérer le modèle et ses échéances.
+            $paymentTerm = PaymentTerm::query()
+                ->with('installments')
+                ->where('id', $validated['payment_term_template_id'])
+                ->where('is_template', true)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$paymentTerm) {
+                throw ValidationException::withMessages([
+                    'payment_term_template_id' => [
+                        'Le modèle de paiement sélectionné est introuvable ou inactif.',
+                    ],
+                ]);
+            }
+
+            // Un modèle sans échéance ne peut pas être appliqué.
+            if ($paymentTerm->installments->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'payment_term_template_id' => [
+                        'Ce modèle de paiement ne contient aucune échéance.',
+                    ],
+                ]);
+            }
+
+            // Associer le modèle au devis.
+            $quote->update([
+                'payment_term_id' => $paymentTerm->id,
+                'has_custom_payment_terms' => false,
+            ]);
+
+            // Supprimer les anciennes échéances du devis.
+            $quote->paymentInstallments()->delete();
+
+            // Copier les échéances du modèle vers le devis.
+            $installments = $paymentTerm->installments
+                ->map(function ($installment) {
+                    return [
+                        'sequence' => $installment->sequence,
+                        'label' => $installment->label,
+                        'trigger_type' => $installment->trigger_type,
+                        'days_after_trigger' => $installment->days_after_trigger,
+                        'percentage' => $installment->percentage,
+                    ];
+                })
+                ->toArray();
+
+            $quote->paymentInstallments()->createMany($installments);
+
+            return $quote;
+        });
 
         return response()->json([
             'success' => true,
-            'message' => 'Liste des devis récupérée avec succès.',
-            'data' => $quotes,
+            'message' => 'Modèle de paiement associé au devis avec succès.',
+            'data' => $quote->fresh()->load([
+                'paymentTerm',
+                'paymentInstallments',
+            ]),
         ], Response::HTTP_OK);
+
+    } catch (ValidationException $exception) {
+        throw $exception;
+
+    } catch (Throwable $exception) {
+        report($exception);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur est survenue lors de l’association du modèle de paiement.',
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
+}
+
+/**
+ * Met à jour les échéances de paiement propres à un devis fournisseur.
+ *
+ * PUT /purchase-requests/{purchaseRequestId}/quotes/{quoteId}/payment-installments
+ *
+ * @param Request $request
+ * @param int $purchaseRequestId
+ * @param int $quoteId
+ * @return JsonResponse
+ */
+public function updatePaymentInstallments(
+    Request $request,
+    $purchaseRequestId,
+    $quoteId
+): JsonResponse {
+    $validated = $request->validate([
+        // 'installments' => 'required|array|min:1',
+        'installments' => 'present|array',
+
+        'installments.*.sequence' => 'required|integer|min:1',
+        'installments.*.label' => 'required|string|max:255',
+        'installments.*.trigger_type' => 'required|string|max:100',
+        'installments.*.days_after_trigger' => 'nullable|integer|min:0',
+        'installments.*.percentage' => 'required|numeric|min:0|max:100',
+    ]);
+
+    try {
+        $quote = DB::transaction(function () use (
+            $purchaseRequestId,
+            $quoteId,
+            $validated
+        ) {
+            $quote = PurchaseSupplierQuote::query()
+                ->where('purchase_request_id', $purchaseRequestId)
+                ->where('id', $quoteId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Vérifier que la répartition représente bien 100 %.
+            // $totalPercentage = collect($validated['installments'])
+            //     ->sum('percentage');
+
+            // if (abs($totalPercentage - 100) > 0.01) {
+            //     throw ValidationException::withMessages([
+            //         'installments' => [
+            //             'La somme des pourcentages des échéances doit être égale à 100 %.'
+            //         ],
+            //     ]);
+            // }
+
+            // Remplacer les anciennes échéances par les nouvelles.
+            $quote->paymentInstallments()->delete();
+
+            $installments = collect($validated['installments'])
+                ->map(function ($installment) {
+                    return [
+                        'sequence' => $installment['sequence'],
+                        'label' => $installment['label'],
+                        'trigger_type' => $installment['trigger_type'],
+                        'days_after_trigger' =>
+                            isset($installment['days_after_trigger'])
+                                ? $installment['days_after_trigger']
+                                : 0,
+                        'percentage' => $installment['percentage'],
+                    ];
+                })
+                ->toArray();
+
+            $quote->paymentInstallments()->createMany($installments);
+
+            // Les échéances ne correspondent plus nécessairement
+            // exactement au modèle initial.
+            $quote->update([
+                'has_custom_payment_terms' => true,
+            ]);
+
+            return $quote;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Les échéances de paiement ont été mises à jour.',
+            'data' => $quote->fresh()->load([
+                'paymentTerm',
+                'paymentInstallments',
+            ]),
+        ], Response::HTTP_OK);
+
+    } catch (ValidationException $exception) {
+        throw $exception;
+
+    } catch (Throwable $exception) {
+        report($exception);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur est survenue lors de la mise à jour des échéances.',
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
 
     /**
      * Affiche un devis appartenant à une demande d'achat.

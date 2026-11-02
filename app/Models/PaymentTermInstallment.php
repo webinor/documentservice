@@ -35,4 +35,6 @@ class PaymentTermInstallment extends Model
             'payment_term_id'
         );
     }
+
+    
 }

@@ -302,4 +302,50 @@ public function store(
             'data' => $result,
         ]);
     }
+
+
+  /**
+ * Vérifie les positions de signature des devis fournisseurs.
+ */
+public function supplierQuoteStatus(
+    Request $request,
+    string $documentUuid
+) {
+    /*
+    |--------------------------------------------------------------------------
+    | Récupérer l'utilisateur authentifié
+    |--------------------------------------------------------------------------
+    */
+
+    $currentUser = $request->get('user');
+
+    if (
+        !$currentUser ||
+        !isset($currentUser['id'])
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Utilisateur authentifié introuvable.',
+        ], 401);
+    }
+
+    $userId = (int) $currentUser['id'];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vérifier les positions des devis
+    |--------------------------------------------------------------------------
+    */
+
+    $result = $this->service
+        ->checkAllSupplierQuotePagesPositioned(
+            $documentUuid,
+            $userId
+        );
+
+    return response()->json([
+        'success' => true,
+        'data' => $result,
+    ]);
+}
 }

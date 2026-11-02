@@ -57,4 +57,21 @@ class PaymentTerm extends Model
     {
         return $query->where('is_active', true);
     }
+
+     /**
+     * Scope : modèles réutilisables et actifs.
+     */
+    public function scopeTemplates($query)
+    {
+        return $query->where('is_template', true)
+            ->where('is_active', true);
+    }
+
+    /**
+     * Scope : conditions personnalisées.
+     */
+    public function scopeCustom($query)
+    {
+        return $query->where('is_template', false);
+    }
 }

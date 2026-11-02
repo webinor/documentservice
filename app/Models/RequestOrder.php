@@ -13,7 +13,7 @@ class RequestOrder extends Model
     use HasFactory;
 
     protected $fillable = [
-        'document_id',
+        'supplier_quote_id',
         'purchase_request_id',
         'order_number',
         'supplier_id',
@@ -49,6 +49,8 @@ class RequestOrder extends Model
         'discount_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+         'has_custom_payment_terms_snapshot' => 'boolean',
+    'payment_installments_snapshot' => 'array',
     ];
 
     /**
@@ -107,22 +109,21 @@ public function paymentSchedules(): HasMany
 }
 
 
-<?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-class RequestOrder extends Model
+public function paymentInstallments()
 {
-    protected $fillable = [
-        'document_id',
-        'purchase_request_id',
-        'financial_commitment_id',
-    ];
+    return $this->hasMany(RequestOrderPaymentSchedule::class);
+}
 
-    public function financialCommitment(): BelongsTo
+public function supplierQuote()
+{
+    return $this->belongsTo(
+        PurchaseSupplierQuote::class,
+        'supplier_quote_id'
+    );
+}
+
+
+  public function financialCommitment(): BelongsTo
     {
         return $this->belongsTo(
             FinancialCommitment::class,
@@ -130,12 +131,7 @@ class RequestOrder extends Model
         );
     }
 
-    public function purchaseRequest(): BelongsTo
-    {
-        return $this->belongsTo(
-            PurchaseRequest::class,
-            'purchase_request_id'
-        );
-    }
-}
+   
+
+
 }

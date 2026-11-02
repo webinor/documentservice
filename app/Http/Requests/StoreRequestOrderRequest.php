@@ -13,7 +13,7 @@ class StoreRequestOrderRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,33 @@ class StoreRequestOrderRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'purchase_request_id' => [
+                'required',
+                'integer',
+                'exists:purchase_requests,id',
+            ],
+
+            'supplier_quote_id' => [
+                'required',
+                'integer',
+                'exists:purchase_supplier_quotes,id',
+            ],
+        ];
+    }
+
+    /**
+     * Custom validation messages.
+     *
+     * @return array
+     */
+    public function messages()
+    {
+        return [
+            'purchase_request_id.required' => 'La demande d\'achat est obligatoire.',
+            'purchase_request_id.exists' => 'La demande d\'achat sélectionnée est introuvable.',
+
+            'supplier_quote_id.required' => 'Le devis fournisseur est obligatoire.',
+            'supplier_quote_id.exists' => 'Le devis fournisseur sélectionné est introuvable.',
         ];
     }
 }

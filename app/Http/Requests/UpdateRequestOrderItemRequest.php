@@ -13,7 +13,7 @@ class UpdateRequestOrderItemRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,9 @@ class UpdateRequestOrderItemRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'designation' => 'sometimes|nullable|string|max:255',
+            'quantity' => 'sometimes|required|numeric|min:0',
+            'unit_price' => 'sometimes|required|numeric|min:0',
         ];
     }
 }

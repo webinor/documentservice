@@ -82,9 +82,9 @@ class CreateFinancialCommitmentsTable extends Migration
 
     public function down()
     {
-        Schema::table('financial_commitments', function (Blueprint $table) {
-            $table->dropForeign(['document_id']);
-        });
+        // Schema::table('financial_commitments', function (Blueprint $table) {
+        //     $table->dropForeign(['document_id']);
+        // });
 
         Schema::dropIfExists('financial_commitments');
     }

@@ -172,10 +172,15 @@ if ($settlement) {
         |--------------------------------------------------------------------------
         */
 
-        $document->signature_positions =
-            $document->signature_positions
-                ->values()
-                ->toArray();
+        // $document->signature_positions =
+        //     $document->signature_positions
+        //         ->values()
+        //         ->toArray();
+        $signaturePositions = $document->signature_positions;
+
+$document->signature_positions = $signaturePositions instanceof \Illuminate\Support\Collection
+    ? $signaturePositions->values()->toArray()
+    : array_values((array) $signaturePositions);
 
 
         /*

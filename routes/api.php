@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AttachmentTypeCategoryController;
 use App\Http\Controllers\AttachmentTypeController;
 use App\Http\Controllers\BeneficiaryEligibilityController;
+use App\Http\Controllers\StoredFileController;
 use App\Http\Controllers\DepartmentDocumentTypeController;
 use App\Http\Controllers\DocumentCapabilitiesController;
 use App\Http\Controllers\DocumentController;
@@ -30,15 +31,20 @@ use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
 use App\Http\Controllers\PaymentTermController;
+use App\Http\Controllers\PaymentTriggerController;
 use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\PurchaseRequestApprovalReadinessController;
 use App\Http\Controllers\PurchaseRequestController;
 use App\Http\Controllers\PurchaseRequestItemController;
 use App\Http\Controllers\PurchaseRequestStatusController;
 use App\Http\Controllers\PurchaseSupplierQuoteController;
+use App\Http\Controllers\PurchaseSupplierQuotePaymentTermController;
 use App\Http\Controllers\RegularizationItemController;
 use App\Http\Controllers\RegularizationReceiptController;
+use App\Http\Controllers\RequestOrderController;
+use App\Http\Controllers\RequestOrderItemController;
 use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\SupplierQuoteFileController;
 use App\Http\Controllers\SupportingDocumentSignatureController;
 use App\Http\Controllers\TestThumbnailController;
 use App\Http\Controllers\WorkCalendarController;
@@ -71,16 +77,65 @@ Route::post('/settlements/mark-paid', [SettlementController::class, 'markAsPaid'
  Route::get('/attachments/{id}/download', [AttachmentController::class, 'download'])
     ->name('attachments.download');
 
-        Route::get(
-    '/regularization-items/{path}/view',
-    [RegularizationItemController::class, 'view']
-)->where('path', '.*')->name('regularization-items.view');;
+//         Route::get(
+//     '/regularization-items/{path}/view',
+//     [RegularizationItemController::class, 'view']
+// )->where('path', '.*')->name('regularization-items.view');;
 
+
+// Route::get(
+//     '/regularization-items/{path}/download',
+//     [RegularizationItemController::class, 'download']
+// )->where('path', '.*')->name('regularization-items.download');
+
+
+
+// Route::get(
+//     '/supplier-quote-files/{path}/view',
+//     [SupplierQuoteFileController::class, 'view']
+// )->where('path', '.*')
+//  ->name('supplier-quote-files.view');
+
+// Route::get(
+//     '/supplier-quote-files/{path}/download',
+//     [SupplierQuoteFileController::class, 'download']
+// )->where('path', '.*')
+//  ->name('supplier-quote-files.download');
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Fichiers des régularisations
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/regularization-items/{path}/view',
+    [StoredFileController::class, 'view']
+)->where('path', '.*')->name('regularization-items.view');
 
 Route::get(
     '/regularization-items/{path}/download',
-    [RegularizationItemController::class, 'download']
+    [StoredFileController::class, 'download']
 )->where('path', '.*')->name('regularization-items.download');
+
+
+/*
+|--------------------------------------------------------------------------
+| Fichiers des devis fournisseurs
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/supplier-quote-files/{path}/view',
+    [StoredFileController::class, 'view']
+)->where('path', '.*')->name('supplier-quote-files.view');
+
+Route::get(
+    '/supplier-quote-files/{path}/download',
+    [StoredFileController::class, 'download']
+)->where('path', '.*')->name('supplier-quote-files.download');
 
 
 Route::post(
@@ -287,6 +342,22 @@ Route::post(
     [DocumentSignaturePositionController::class, 'status']
 );
 
+Route::post(
+    '/{documentUuid}/supplier-quote-signature-position-status',
+    [
+        DocumentSignaturePositionController::class,
+        'supplierQuoteStatus',
+    ]
+);
+
+Route::post(
+    '/{documentUuid}/supplier-quote-signature-position-status',
+    [
+        DocumentSignaturePositionController::class,
+        'supplierQuoteStatus',
+    ]
+);
+
 
 Route::post(
     '{documentUuid}/regularization/supporting-documents/apply-signatures',
@@ -407,6 +478,40 @@ Route::patch(
 );
 
 
+Route::prefix('purchase-requests/{purchaseRequestId}/purchase-orders')
+    ->group(function () {
+        Route::get('/', [RequestOrderController::class, 'index']);
+        Route::post('/', [RequestOrderController::class, 'store']);
+        Route::get('/{purchaseOrderId}', [RequestOrderController::class, 'show']);
+        Route::put('/{purchaseOrderId}', [RequestOrderController::class, 'update']);
+    });
+
+Route::get(
+    '/purchase-orders/{requestOrder}/items',
+    [RequestOrderItemController::class, 'index']
+);
+
+Route::get(
+    '/purchase-orders/by-quote/{supplierQuoteId}',
+    [RequestOrderController::class, 'showBySupplierQuote']
+);
+
+Route::post(
+    '/purchase-orders/{requestOrder}/items',
+    [RequestOrderItemController::class, 'store']
+);
+
+Route::patch(
+    '/purchase-orders/{requestOrder}/items/{item}',
+    [RequestOrderItemController::class, 'update']
+);
+
+Route::delete(
+    '/purchase-orders/{requestOrder}/items/{item}',
+    [RequestOrderItemController::class, 'destroy']
+);
+
+
  /*
 |--------------------------------------------------------------------------
 | Pièces jointes des devis fournisseurs
@@ -416,6 +521,8 @@ Route::patch(
 Route::prefix('purchase-requests/{purchaseRequestId}/quotes/{quoteId}/files')
     ->group(function () {
 
+
+   
         // Ajouter une ou plusieurs pièces jointes à un devis.
         Route::post(
             '/',
@@ -453,6 +560,7 @@ Route::prefix('purchase-requests/{purchaseRequestId}/quotes/{quoteId}/files')
 
 Route::prefix('{document}/purchase-request')
     ->group(function () {
+
 
 
    
@@ -522,24 +630,11 @@ Route::post(
 )->whereNumber('document')
  ->name('documents.regularization-receipts.confirm-physical-transmission');
 
-
           Route::delete("/{document}/regularization-expenses/{item}", [
             RegularizationItemController::class,
             "deleteItem",
         ]);
 
-//       Route::get(
-//     '/regularization-items/{path}/view',
-//     [RegularizationItemController::class, 'view']
-// )->where('path', '.*');
-
-
-// Route::get(
-//     '/regularization-items/{path}/download',
-//     [RegularizationItemController::class, 'download']
-// )->where('path', '.*');
-
-      
 
         Route::patch("/{document}/mission", [
             MissionController::class,
@@ -556,6 +651,112 @@ Route::post(
     '/{documentId}/purchase-request-approval-readiness',
     [PurchaseRequestApprovalReadinessController::class, 'show']
 )->whereNumber('documentId');
+
+
+/*
+|--------------------------------------------------------------------------
+| Catalogue des conditions de paiement
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('payment-terms')->group(function () {
+
+    Route::get('/', [
+        PaymentTermController::class,
+        'index',
+    ]);
+
+    Route::get('/{id}', [
+        PaymentTermController::class,
+        'show',
+    ]);
+
+    Route::post('/', [
+        PaymentTermController::class,
+        'store',
+    ]);
+
+    Route::put('/{id}', [
+        PaymentTermController::class,
+        'update',
+    ]);
+
+    Route::patch('/{id}/status', [
+        PaymentTermController::class,
+        'toggle',
+    ]);
+});
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Catalogue des triggers
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('payment-triggers')->group(function () {
+
+    Route::get('/', [
+        PaymentTriggerController::class,
+        'index',
+    ]);
+
+    Route::get('/{id}', [
+        PaymentTriggerController::class,
+        'show',
+    ]);
+
+    Route::post('/', [
+        PaymentTriggerController::class,
+        'store',
+    ]);
+
+    Route::put('/{id}', [
+        PaymentTriggerController::class,
+        'update',
+    ]);
+
+    Route::patch('/{id}/status', [
+        PaymentTriggerController::class,
+        'toggle',
+    ]);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Conditions de paiement des devis fournisseurs
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('purchase-supplier-quotes/{quoteId}/payment-terms')
+    ->group(function () {
+
+        // Consulter les conditions du devis.
+        Route::get(
+            '/',
+            [PurchaseSupplierQuotePaymentTermController::class, 'show']
+        );
+
+        // Utiliser une condition du catalogue.
+        Route::post(
+            '/catalog',
+            [PurchaseSupplierQuotePaymentTermController::class, 'useCatalog']
+        );
+
+        // Définir des conditions personnalisées.
+        Route::post(
+            '/custom',
+            [PurchaseSupplierQuotePaymentTermController::class, 'saveCustom']
+        );
+
+        // Supprimer les conditions du devis.
+        Route::delete(
+            '/',
+            [PurchaseSupplierQuotePaymentTermController::class, 'destroy']
+        );
+    });
        
 
 /*
@@ -566,6 +767,17 @@ Route::post(
 
 Route::prefix('purchase-requests/{purchaseRequestId}/quotes')
     ->group(function () {
+
+     Route::post(
+    '/{quoteId}/payment-term',
+    [PurchaseSupplierQuoteController::class, 'assignPaymentTerm']
+);
+
+ Route::put(
+            '/{quoteId}/payment-installments',
+            [PurchaseSupplierQuoteController::class, 'updatePaymentInstallments']
+        );
+
 
         // Récupérer tous les devis d'une demande d'achat.
         Route::get(
