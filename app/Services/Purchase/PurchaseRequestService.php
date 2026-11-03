@@ -25,7 +25,7 @@ class PurchaseRequestService
                 $validated['category'] ?? null,
 
             'type' =>
-                $validated['type'] ?? null,
+                $validated['type'] ?? "INTERNAL",
 
             
 
