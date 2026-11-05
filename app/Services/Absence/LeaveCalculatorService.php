@@ -8,6 +8,7 @@ use App\Models\LeaveType;
 use App\Models\WorkCalendar;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -119,6 +120,9 @@ class LeaveCalculatorService
 
         $balance = $balanceResponse->json();
 
+        // throw new Exception(json_encode($balance));
+        // throw new Exception(json_encode($balance['remaining_days']));
+
         $availableBalance =
             (float) (
                 $balance['remaining_days'] ?? 0 //
@@ -134,6 +138,11 @@ class LeaveCalculatorService
 
         $result['summary']['remaining_balance'] =
             $availableBalance - $deductDays;
+
+        $result['summary']['balance_before'] = isset($balance['balance_before']) ? $balance['balance_before'] : null;
+        $result['summary']['balance_after'] =  isset($balance['balance_after']) ? $balance['balance_after'] : null;
+
+
 
         return $result;
     }
