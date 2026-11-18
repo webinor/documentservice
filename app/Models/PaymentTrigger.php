@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PaymentTrigger extends Model
 {
@@ -21,6 +22,26 @@ class PaymentTrigger extends Model
         'is_active' => 'boolean',
         'sequence' => 'integer',
     ];
+
+    public function paymentModes()
+{
+    return $this->hasMany(
+        PaymentTriggerMode::class,
+        'payment_trigger_id'
+    );
+}
+
+/**
+ * Échéances associées à ce trigger.
+ */
+public function paymentSchedules(): HasMany
+{
+    return $this->hasMany(
+        RequestOrderPaymentSchedule::class,
+        'trigger_type',
+        'code'
+    );
+}
 
     /**
      * Retourne uniquement les déclencheurs actifs.

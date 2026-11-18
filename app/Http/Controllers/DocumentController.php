@@ -1477,6 +1477,20 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
 
                 // return $validated;
 
+                $destinationServiceId = $validated['destination_service_id'] ?? null;
+$clientId = $validated['client_id'] ?? null;
+
+$actorType = !empty($destinationServiceId)
+    ? 'DEPARTMENT'
+    : (!empty($clientId) ? 'CLIENT' : 'EMPLOYEE');
+
+$actorId = $validated['actor']
+    ?? $validated['actor_collaborator']
+    ?? $validated['beneficiaire']
+    ?? $destinationServiceId
+    ?? $clientId
+    ?? 0;
+
                 $reference = $this->generateUniqueReference(6); // ex: longueur 6
                 // return
                 // Créer le document
@@ -1500,9 +1514,11 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                     "updated_at" => now(),
                     "reference" => $reference,
                     // "actor_type" => $validated["actor_type"] ?? "EMPLOYEE",
-                    "actor_type" => $documentType->code == "PURCHASE_REQUEST" ? "DEPARTMENT" : "EMPLOYEE",
-                    "actor_id" =>  $validated["actor"] ?? $validated["actor_collaborator"] ??  $validated["beneficiaire"] ?? $validated['destination_service_id'] ?? 0,
-                    // autres champs génériques...
+                    // "actor_type" => ( $validated['destination_service_id'] && $validated['destination_service_id'] != "" ) ? "DEPARTMENT" 
+                    // :( ( $validated['client_id'] && $validated['client_id'] != "" ) ? "CLIENT" : "EMPLOYEE"),
+                    // "actor_id" =>  $validated["actor"] ?? $validated["actor_collaborator"] ??  $validated["beneficiaire"] ?? $validated['destination_service_id'] ??$validated['client_id'] ?? 0,
+                     'actor_type' => $actorType,
+    'actor_id' => $actorId,
                 ]);
 
                 $documentType = $document->document_type()->first(); // Objet avec class_name, relation_name et type
@@ -1581,8 +1597,8 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                             return response()->json(
                                 [
                                     "message" =>
-                                        "Échec de l’initialisation du workflow. Document supprimé.",
-                                    "backend-message" => $instanceResponse->body(),
+                                        "Échec de l’init. doc del.",
+                                    "msg" => $instanceResponse->body(),
                                 ],
                                 500
                             );
@@ -3029,6 +3045,7 @@ public function batchEnrich(
             $user
             );
 
+        // throw new Exception(json_encode($capabilities), 1);
         
 
         $context = $documentContextService->resolve(

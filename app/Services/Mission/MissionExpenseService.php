@@ -3,10 +3,17 @@
 namespace App\Services\Mission;
 
 use App\Models\Mission;
+use Exception;
 use Illuminate\Support\Facades\DB;
 
 class MissionExpenseService
 {
+
+protected MissionExpenseCalculatorService $missionExpenseCalculatorService;
+
+public function __construct(MissionExpenseCalculatorService $missionExpenseCalculatorService) {
+    $this->missionExpenseCalculatorService = $missionExpenseCalculatorService;
+}
     public function calculate(Mission $mission): array
     {
         $mission->load(
@@ -76,7 +83,7 @@ class MissionExpenseService
          * ===============================
          */
         $plannedResult = collect(
-            app(MissionExpenseCalculatorService::class)
+            $this->missionExpenseCalculatorService
                 ->calculate(
                     $plannedStart,
                     $plannedEnd,
@@ -145,6 +152,9 @@ class MissionExpenseService
 
 
             if ($expense->type === 'PREVISIONNELLE') {
+
+            // throw new Exception(json_encode($plannedResult), 1);
+            
 
                 $planned =
                 $plannedResult[$categoryId]['quantity']

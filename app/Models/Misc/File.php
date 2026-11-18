@@ -13,6 +13,7 @@ class File extends Model
 
 
     protected $fillable = [
+        'name',
         'path',
         'size',
         'type',

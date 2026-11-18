@@ -104,6 +104,8 @@ class DocumentEnrichmentManager
         $handlerClass =
             $type->enrichment_handler_class;
 
+            //  throw new \Exception($handlerClass);
+
         if (!$handlerClass) {
             throw new \Exception(
                 "Aucun handler d'enrichissement configuré " .
@@ -138,6 +140,8 @@ class DocumentEnrichmentManager
                     $document->id
                 );
 
+        
+
         $document->transactions =
             $transactions;
 
@@ -161,6 +165,9 @@ class DocumentEnrichmentManager
          * Handler spécifique au type de document.
          */
         $handler = app($handlerClass);
+
+            //  throw new \Exception(json_encode($transactions));
+
 
         return $handler->enrich(
             $document,

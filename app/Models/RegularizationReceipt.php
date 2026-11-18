@@ -12,6 +12,7 @@ class RegularizationReceipt extends Model
 
 protected $fillable = [
         'regularization_sheet_id',
+        'name',
         'reference',
         'receipt_date',
         'description',
@@ -62,4 +63,5 @@ public function hasReceiptFile(): bool
 {
     return $this->file()->exists();
 }
+
 }

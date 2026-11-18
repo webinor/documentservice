@@ -43,6 +43,8 @@ class DocumentService
         $document = $this->documentEnrichmentManager->enrich($document);
 
     
+            //  throw new \Exception(json_encode($document));
+
 
         return $document;
 

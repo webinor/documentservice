@@ -22,11 +22,13 @@ class UpdateRequestOrderItemRequest extends FormRequest
      * @return array
      */
     public function rules()
-    {
-        return [
-            'designation' => 'sometimes|nullable|string|max:255',
-            'quantity' => 'sometimes|required|numeric|min:0',
-            'unit_price' => 'sometimes|required|numeric|min:0',
-        ];
-    }
+{
+    return [
+        'designation' => 'sometimes|nullable|string|max:255',
+        'quantity' => 'sometimes|required|numeric|min:0',
+        'unit_price' => 'sometimes|required|numeric|min:0',
+        'received_quantity' => 'sometimes|required|numeric|min:0',
+        'actual_unit_price' => 'sometimes|required|numeric|min:0',
+    ];
+}
 }

@@ -6,10 +6,395 @@ use App\Models\DocumentSignaturePosition;
 use App\Models\Misc\Document;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseSupplierQuote;
+use App\Services\Signature\ReceiptSourceResolverRegistry;
 use Illuminate\Support\Facades\Log;
 
 class SignaturePositionRequirementService
 {
+    protected ReceiptSourceResolverRegistry $receiptResolverRegistry;
+
+public function __construct(
+    ReceiptSourceResolverRegistry $receiptResolverRegistry
+) {
+    $this->receiptResolverRegistry = $receiptResolverRegistry;
+}
+
+
+    /**
+ * Vérifie que l'utilisateur a positionné sa signature
+ * sur chaque page de chaque justificatif d'un document.
+ *
+ * Le type de document n'est pas géré ici.
+ * La récupération des justificatifs est déléguée
+ * au ReceiptSourceResolverRegistry.
+ */
+public function checkAllReceiptPagesPositioned(
+    string $documentUuid,
+    int $userId
+): array {
+
+    Log::info(
+        '[SIGNATURE_POSITION] ===== START RECEIPT CHECK =====',
+        [
+            'document_uuid' => $documentUuid,
+            'user_id' => $userId,
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Document
+    |--------------------------------------------------------------------------
+    */
+
+    $document = Document::query()
+        ->where('uuid', $documentUuid)
+        ->first();
+
+    if (!$document) {
+        return $this->buildReceiptPositionResult(
+            null,
+            $documentUuid,
+            $userId,
+            0,
+            0,
+            0,
+            0,
+            [],
+            [],
+            'Document introuvable.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Récupération des justificatifs
+    |--------------------------------------------------------------------------
+    |
+    | Le registre sélectionne automatiquement le résolveur
+    | correspondant au type de document.
+    |
+    */
+
+    $receiptSources = $this->receiptResolverRegistry
+        ->resolve($document);
+
+    $receiptsCount = $receiptSources->count();
+
+    if ($receiptSources->isEmpty()) {
+
+        Log::info(
+            '[SIGNATURE_POSITION] No receipts found',
+            [
+                'document_uuid' => $documentUuid,
+                'document_id' => $document->id,
+                'user_id' => $userId,
+            ]
+        );
+
+        return $this->buildReceiptPositionResult(
+            $document,
+            $documentUuid,
+            $userId,
+            0,
+            0,
+            0,
+            0,
+            [],
+            [],
+            'Aucun justificatif associé au document.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Identifier les fichiers
+    |--------------------------------------------------------------------------
+    */
+
+    $receiptFiles = $receiptSources
+        ->filter(function ($item) {
+            return isset($item['file']);
+        })
+        ->values();
+
+    $invalidFiles = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Justificatifs sans fichier
+    |--------------------------------------------------------------------------
+    */
+
+    foreach ($receiptSources as $item) {
+
+        if (!isset($item['file'])) {
+
+            $receipt = $item['source'];
+
+            $invalidFiles[] = [
+                'receipt_id' => $receipt->id ?? null,
+                'file_id' => null,
+                'file_name' => null,
+                'page_count' => 0,
+                'reason' => 'Aucun fichier associé au justificatif.',
+            ];
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. IDs des fichiers
+    |--------------------------------------------------------------------------
+    */
+
+    $fileIds = $receiptFiles
+        ->pluck('file.id')
+        ->filter()
+        ->unique()
+        ->values();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Positions existantes
+    |--------------------------------------------------------------------------
+    */
+
+    $positions = DocumentSignaturePosition::query()
+        ->where('document_id', $document->id)
+        ->where('user_id', $userId)
+        ->where('signature_type', 'RECEIPT')
+        ->whereIn('file_id', $fileIds)
+        ->get([
+            'file_id',
+            'page_number',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. Index des pages positionnées
+    |--------------------------------------------------------------------------
+    */
+
+    $positionedPages = [];
+
+    foreach ($positions as $position) {
+
+        $key = $position->file_id
+            . ':'
+            . $position->page_number;
+
+        $positionedPages[$key] = true;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. Vérification page par page
+    |--------------------------------------------------------------------------
+    */
+
+    $totalFiles = 0;
+    $totalPages = 0;
+    $positionedPagesCount = 0;
+
+    $missingPages = [];
+
+    foreach ($receiptFiles as $receiptFile) {
+
+        $receipt = $receiptFile['source'];
+        $file = $receiptFile['file'];
+
+        $totalFiles++;
+
+        $pageCount = (int) $file->page_count;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fichier invalide
+        |--------------------------------------------------------------------------
+        */
+
+        if ($pageCount <= 0) {
+
+            $invalidFiles[] = [
+                'receipt_id' => $receipt->id ?? null,
+                'file_id' => $file->id,
+                'file_name' => $file->name
+                    ?? $file->original_name
+                    ?? null,
+                'page_count' => $pageCount,
+                'reason' => 'Le nombre de pages du fichier est invalide.',
+            ];
+
+            continue;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vérification des pages
+        |--------------------------------------------------------------------------
+        */
+
+        for (
+            $pageNumber = 1;
+            $pageNumber <= $pageCount;
+            $pageNumber++
+        ) {
+
+            $totalPages++;
+
+            $key = $file->id . ':' . $pageNumber;
+
+            if (isset($positionedPages[$key])) {
+
+                $positionedPagesCount++;
+
+                continue;
+            }
+
+            $missingPages[] = [
+                'receipt_id' => $receipt->id ?? null,
+                'file_id' => $file->id,
+                'file_name' => $file->name
+                    ?? $file->original_name
+                    ?? null,
+                'page_number' => $pageNumber,
+                'reason' => 'Position de signature manquante.',
+            ];
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 9. Résultat
+    |--------------------------------------------------------------------------
+    */
+
+    $allPagesPositioned =
+        $totalPages > 0
+        && empty($missingPages)
+        && empty($invalidFiles);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 10. Logs
+    |--------------------------------------------------------------------------
+    */
+
+    Log::info(
+        '[SIGNATURE_POSITION] ===== RECEIPT CHECK RESULT =====',
+        [
+            'document_uuid' => $documentUuid,
+            'document_id' => $document->id,
+            'user_id' => $userId,
+
+            'receipts_count' => $receiptsCount,
+            'files_count' => $totalFiles,
+
+            'signature_positions_count' => $positions->count(),
+
+            'total_pages' => $totalPages,
+            'positioned_pages' => $positionedPagesCount,
+
+            'missing_pages_count' => count($missingPages),
+            'invalid_files_count' => count($invalidFiles),
+
+            'all_pages_positioned' => $allPagesPositioned,
+        ]
+    );
+
+    if (!empty($missingPages)) {
+
+        Log::warning(
+            '[SIGNATURE_POSITION] Missing receipt signature positions',
+            [
+                'document_uuid' => $documentUuid,
+                'user_id' => $userId,
+                'missing_pages' => $missingPages,
+            ]
+        );
+    }
+
+    if (!empty($invalidFiles)) {
+
+        Log::warning(
+            '[SIGNATURE_POSITION] Invalid receipt files',
+            [
+                'document_uuid' => $documentUuid,
+                'user_id' => $userId,
+                'invalid_files' => $invalidFiles,
+            ]
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 11. Retour
+    |--------------------------------------------------------------------------
+    */
+
+    return $this->buildReceiptPositionResult(
+        $document,
+        $documentUuid,
+        $userId,
+        $receiptsCount,
+        $totalFiles,
+        $totalPages,
+        $positionedPagesCount,
+        $missingPages,
+        $invalidFiles
+    );
+}
+
+/**
+ * Construire le résultat de vérification des justificatifs.
+ */
+private function buildReceiptPositionResult(
+    ?Document $document,
+    string $documentUuid,
+    int $userId,
+    int $receiptsCount,
+    int $filesCount,
+    int $totalPages,
+    int $positionedPagesCount,
+    array $missingPages,
+    array $invalidFiles,
+    ?string $message = null
+): array {
+
+    $allPagesPositioned =
+        $totalPages > 0
+        && empty($missingPages)
+        && empty($invalidFiles);
+
+    $result = [
+        'document_id' => $document ? $document->id : null,
+        'document_uuid' => $documentUuid,
+        'user_id' => $userId,
+
+        'doc_type' => 'receipt',
+
+        'all_pages_positioned' => $allPagesPositioned,
+
+        'receipts_count' => $receiptsCount,
+        'files_count' => $filesCount,
+
+        'total_pages' => $totalPages,
+        'positioned_pages' => $positionedPagesCount,
+
+        'missing_pages_count' => count($missingPages),
+
+        'missing_pages' => $missingPages,
+        'invalid_files' => $invalidFiles,
+    ];
+
+    if ($message !== null) {
+        $result['message'] = $message;
+    }
+
+    return $result;
+}
+
     /**
      * Vérifie que l'utilisateur a positionné sa signature
      * sur chaque page de chaque justificatif d'une fiche
@@ -36,7 +421,7 @@ class SignaturePositionRequirementService
      * signature_type = RECEIPT
      * page_number
      */
-    public function checkAllReceiptPagesPositioned(
+    public function OldcheckAllReceiptPagesPositioned(
         string $documentUuid,
         int $userId
     ): array {
@@ -67,7 +452,9 @@ class SignaturePositionRequirementService
             ->with([
                 'regularization_sheet.receipts.file',
             ])
-            ->first();
+            ->first()
+            // ->toArray()
+            ;
 
 
         /*
@@ -91,6 +478,7 @@ class SignaturePositionRequirementService
                 'document_uuid' => $documentUuid,
                 'user_id' => $userId,
 
+                'doc_type' => 'receipt',
                 'all_pages_positioned' => false,
 
                 'receipts_count' => 0,
@@ -134,6 +522,7 @@ class SignaturePositionRequirementService
                 'document_uuid' => $documentUuid,
                 'user_id' => $userId,
 
+                'doc_type' => 'receipt',
                 'all_pages_positioned' => false,
 
                 'receipts_count' => 0,
@@ -178,6 +567,7 @@ class SignaturePositionRequirementService
                 'document_uuid' => $documentUuid,
                 'user_id' => $userId,
 
+                'doc_type' => 'receipt',
                 'all_pages_positioned' => false,
 
                 'receipts_count' => 0,
@@ -250,6 +640,7 @@ class SignaturePositionRequirementService
                 'document_uuid' => $documentUuid,
                 'user_id' => $userId,
 
+                'doc_type' => 'receipt',
                 'all_pages_positioned' => false,
 
                 'receipts_count' => $receipts->count(),
@@ -522,7 +913,8 @@ class SignaturePositionRequirementService
                 'invalid_files_count' =>
                     count($invalidFiles),
 
-                'all_pages_positioned' =>
+                'doc_type' => 'receipt',
+                    'all_pages_positioned' =>
                     $allPagesPositioned,
             ]
         );
@@ -597,7 +989,8 @@ class SignaturePositionRequirementService
                 'user_id' =>
                     $userId,
 
-                'all_pages_positioned' =>
+                'doc_type' => 'receipt',
+                    'all_pages_positioned' =>
                     $allPagesPositioned,
             ]
         );
@@ -620,7 +1013,8 @@ class SignaturePositionRequirementService
             'user_id' =>
                 $userId,
 
-            'all_pages_positioned' =>
+            'doc_type' => 'receipt',
+                'all_pages_positioned' =>
                 $allPagesPositioned,
 
             'receipts_count' =>
@@ -692,6 +1086,7 @@ public function checkAllSupplierQuotePagesPositioned(
             'document_id' => null,
             'document_uuid' => $documentUuid,
             'user_id' => $userId,
+            'doc_type' => 'quote',
             'all_pages_positioned' => false,
             'quotes_count' => 0,
             'files_count' => 0,
@@ -724,6 +1119,7 @@ public function checkAllSupplierQuotePagesPositioned(
             'document_id' => $document->id,
             'document_uuid' => $documentUuid,
             'user_id' => $userId,
+            'doc_type' => 'quote',
             'all_pages_positioned' => false,
             'quotes_count' => 0,
             'files_count' => 0,
@@ -763,6 +1159,7 @@ public function checkAllSupplierQuotePagesPositioned(
             'missing_pages_count' => 0,
             'missing_pages' => [],
             'invalid_files' => [],
+            'doc_type' => 'quote',
             'all_pages_positioned' => false,
             'message' => 'Aucun devis fournisseur associé à la demande d’achat.',
         ];
@@ -804,6 +1201,7 @@ $quoteFiles = $quote->files
             'missing_pages_count' => 0,
             'missing_pages' => [],
             'invalid_files' => [],
+            'doc_type' => 'quote',
             'all_pages_positioned' => false,
             'message' => 'Aucun fichier trouvé dans les devis fournisseurs.',
         ];
@@ -928,6 +1326,7 @@ $quoteFiles = $quote->files
         'document_uuid' => $documentUuid,
         'user_id' => $userId,
 
+        'doc_type' => 'quote',
         'all_pages_positioned' => $allPagesPositioned,
 
         'files_count' => $totalFiles,

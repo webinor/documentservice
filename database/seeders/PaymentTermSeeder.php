@@ -26,7 +26,7 @@ class PaymentTermSeeder extends Seeder
                     [
                         'sequence' => 1,
                         'label' => 'Avance à la commande',
-                        'trigger_type' => 'ORDER_SIGNATURE',
+                        'trigger_type' => 'ORDER_SIGNATURE_PARTIAL',
                         'days_after_trigger' => 0,
                         'percentage' => 30,
                     ],
@@ -49,7 +49,7 @@ class PaymentTermSeeder extends Seeder
                     [
                         'sequence' => 1,
                         'label' => 'Première tranche',
-                        'trigger_type' => 'ORDER_SIGNATURE',
+                        'trigger_type' => 'ORDER_SIGNATURE_PARTIAL',
                         'days_after_trigger' => 0,
                         'percentage' => 50,
                     ],
@@ -72,7 +72,7 @@ class PaymentTermSeeder extends Seeder
                     [
                         'sequence' => 1,
                         'label' => 'Avance à la commande',
-                        'trigger_type' => 'ORDER_SIGNATURE',
+                        'trigger_type' => 'ORDER_SIGNATURE_PARTIAL',
                         'days_after_trigger' => 0,
                         'percentage' => 40,
                     ],
@@ -103,6 +103,22 @@ class PaymentTermSeeder extends Seeder
                         'sequence' => 1,
                         'label' => 'Paiement intégral à la réception',
                         'trigger_type' => 'RECEPTION',
+                        'days_after_trigger' => 0,
+                        'percentage' => 100,
+                    ],
+                ],
+            ],
+
+            [
+                'code' => 'PAYMENT_100_ORDER',
+                'name' => '100 % à la commande',
+                'description' => 'Paiement intégral à l’approbation ou à la signature du bon de commande.',
+                'payment_mode' => 'PERCENTAGE',
+                'installments' => [
+                    [
+                        'sequence' => 1,
+                        'label' => 'Paiement intégral à la commande',
+                        'trigger_type' => 'ORDER_SIGNATURE_FULL',
                         'days_after_trigger' => 0,
                         'percentage' => 100,
                     ],

@@ -7,6 +7,8 @@ use App\Http\Requests\UpdatePurchaseSupplierQuoteRequest;
 use App\Models\Misc\File;
 use App\Models\PaymentTerm;
 use App\Models\PurchaseSupplierQuote;
+use App\Services\Common\PdfPageCounter;
+use App\Services\Supplier\PurchaseSupplierQuoteEnrichmentService;
 use App\Services\Supplier\SupplierServiceClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,13 +27,22 @@ class PurchaseSupplierQuoteController extends Controller
  */
 private $supplierServiceClient;
 
+protected PdfPageCounter $pdfPageCounter;
+private $quoteEnrichmentService;
+
+
 /**
  * @param SupplierServiceClient $supplierServiceClient
  */
 public function __construct(
-    SupplierServiceClient $supplierServiceClient
+    SupplierServiceClient $supplierServiceClient, PdfPageCounter $pdfPageCounter,
+        PurchaseSupplierQuoteEnrichmentService $quoteEnrichmentService
 ) {
     $this->supplierServiceClient = $supplierServiceClient;
+    $this->pdfPageCounter = $pdfPageCounter;
+    $this->quoteEnrichmentService = $quoteEnrichmentService;
+    
+
 }
    
 /**
@@ -94,52 +105,26 @@ public function index($purchaseRequestId): JsonResponse
     | 3. Récupérer les fournisseurs en un seul appel groupé
     |--------------------------------------------------------------------------
     */
-    $suppliersById = empty($supplierIds)
-        ? []
-        : $this->supplierServiceClient->getSuppliersByIds($supplierIds);
+    // $suppliersById = empty($supplierIds)
+    //     ? []
+    //     : $this->supplierServiceClient->getSuppliersByIds($supplierIds);
 
     /*
     |--------------------------------------------------------------------------
     | 4. Enrichir les devis et leurs fichiers
     |--------------------------------------------------------------------------
     */
-    $quotes = $quotes->map(function ($quote) use ($suppliersById, $baseUrl) {
-        $supplierId = (int) $quote->supplier_id;
+   
+//     $quotes = $quotes->map(function ($quote) use ($suppliersById, $baseUrl) {
 
-        $quote->supplier = $suppliersById[$supplierId] ?? null;
+//     $supplierId = (int) $quote->supplier_id;
 
-        /*
-         * Enrichir chaque fichier associé au devis.
-         */
-        $quote->files = $quote->files->map(function ($file) use ($baseUrl) {
-            /*
-             * URL du fichier original.
-             */
-            $file->view_url =
-                "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/view";
+//     $quote->supplier = $suppliersById[$supplierId] ?? null;
 
-            $file->download_url =
-                "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/download";
+//     return $this->enrichQuoteFiles($quote, $baseUrl);
+// });
 
-            /*
-             * URL du fichier signé, si une version signée existe.
-             */
-            $file->signed_view_url = null;
-            $file->signed_download_url = null;
-
-            if (!empty($file->signed_path)) {
-                $file->signed_view_url =
-                    "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/view";
-
-                $file->signed_download_url =
-                    "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/download";
-            }
-
-            return $file;
-        });
-
-        return $quote;
-    });
+    $quotes = $this->quoteEnrichmentService->enrichMany($quotes);
 
     /*
     |--------------------------------------------------------------------------
@@ -689,9 +674,11 @@ $quote->delete();
 
         try {
             return $quote->files()->create([
+                'name' => $uploadedFile->getClientOriginalName(),
                 'path' => $path,
                 'size' => $uploadedFile->getSize(),
                 'type' => $uploadedFile->getMimeType(),
+                'page_count' => $this->pdfPageCounter->getPageCount($uploadedFile),
             ]);
         } catch (Throwable $exception) {
             // Le fichier ne doit pas rester orphelin si l'insertion échoue.
@@ -759,6 +746,87 @@ $quote->delete();
  * @return JsonResponse
  */
 public function storeFiles(
+    Request $request,
+    $purchaseRequestId,
+    $quoteId
+): JsonResponse {
+
+    $quote = $this->findQuote($purchaseRequestId, $quoteId);
+
+    $validated = $request->validate([
+        'files' => 'required|array|min:1|max:10',
+        'files.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:20480',
+    ]);
+
+    $storedFiles = [];
+
+    try {
+
+        /*
+         * 1. Enregistrer les nouveaux fichiers.
+         */
+        foreach ($validated['files'] as $uploadedFile) {
+            $storedFiles[] = $this->attachFile($quote, $uploadedFile);
+        }
+
+        /*
+         * 2. Recharger le devis avec l'ensemble de ses fichiers.
+         */
+        $quote = $quote->fresh()->load('files');
+
+        /*
+         * 3. Enrichir tous les fichiers avec leurs URLs.
+         */
+        $baseUrl = rtrim(config('app.url'), '/');
+
+        $quote = $this->enrichQuoteFiles($quote, $baseUrl);
+
+        /*
+         * 4. Retourner le devis enrichi.
+         */
+        return response()->json([
+            'success' => true,
+            'message' => 'Pièce(s) jointe(s) enregistrée(s) avec succès.',
+            'data' => $quote,
+        ], Response::HTTP_CREATED);
+
+    } catch (Throwable $exception) {
+
+        report($exception);
+
+        /*
+         * Nettoyer les fichiers créés pendant cette requête
+         * si l'ajout d'une pièce jointe échoue.
+         */
+        foreach ($storedFiles as $file) {
+
+            if (!empty($file->path)) {
+                Storage::disk('public')->delete($file->path);
+            }
+
+            $file->delete();
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Impossible d’enregistrer les pièces jointes.',
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
+
+    /**
+ * Ajoute une ou plusieurs pièces jointes à un devis fournisseur.
+ *
+ * POST /purchase-requests/{purchaseRequestId}/quotes/{quoteId}/files
+ *
+ * Le champ attendu est files[].
+ *
+ * @param Request $request
+ * @param int|string $purchaseRequestId
+ * @param int|string $quoteId
+ * @return JsonResponse
+ */
+public function OldstoreFiles(
     Request $request,
     $purchaseRequestId,
     $quoteId
@@ -905,6 +973,100 @@ public function downloadFile(
         $file->path,
         basename($file->path)
     );
+}
+
+/**
+ * Enrichit les fichiers d'un devis avec leurs URLs de consultation
+ * et de téléchargement.
+ *
+ * @param PurchaseSupplierQuote $quote
+ * @param string $baseUrl
+ * @return PurchaseSupplierQuote
+ */
+private function OldenrichQuoteFiles(
+    PurchaseSupplierQuote $quote,
+    string $baseUrl
+): PurchaseSupplierQuote {
+    $quote->files = $quote->files->map(function ($file) use ($baseUrl) {
+
+        /*
+         * URLs du fichier original.
+         */
+        $file->view_url =
+            "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/view";
+
+        $file->download_url =
+            "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/download";
+
+        /*
+         * URLs du fichier signé.
+         */
+        $file->signed_view_url = null;
+        $file->signed_download_url = null;
+
+        if (!empty($file->signed_path)) {
+            $file->signed_view_url =
+                "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/view";
+
+            $file->signed_download_url =
+                "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/download";
+        }
+
+        return $file;
+    });
+
+    return $quote;
+}
+
+/**
+ * Enrichit les fichiers d'un devis avec leurs URLs
+ * et leur état de positionnement des signatures.
+ *
+ * @param PurchaseSupplierQuote $quote
+ * @param string $baseUrl
+ * @return PurchaseSupplierQuote
+ */
+private function enrichQuoteFiles(
+    PurchaseSupplierQuote $quote,
+    string $baseUrl
+): PurchaseSupplierQuote {
+
+    $quote->files = $quote->files->map(function ($file) use ($baseUrl) {
+
+        /*
+         * URLs du fichier original.
+         */
+        $file->view_url =
+            "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/view";
+
+        $file->download_url =
+            "{$baseUrl}/api/documents/supplier-quote-files/{$file->path}/download";
+
+        /*
+         * URLs du fichier signé.
+         */
+        $file->signed_view_url = null;
+        $file->signed_download_url = null;
+
+        if (!empty($file->signed_path)) {
+            $file->signed_view_url =
+                "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/view";
+
+            $file->signed_download_url =
+                "{$baseUrl}/api/documents/supplier-quote-files/{$file->signed_path}/download";
+        }
+
+        /*
+         * Vérifier si des positions de signature
+         * sont enregistrées pour ce fichier.
+         */
+        $file->has_signature_position =
+            $file->signaturePositions()->exists();
+
+        return $file;
+    });
+
+    return $quote;
 }
 
 /**

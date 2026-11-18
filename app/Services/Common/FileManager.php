@@ -10,6 +10,14 @@ use Smalot\PdfParser\Parser;
 
 class FileManager
 {
+
+
+protected PdfPageCounter $pdfPageCounter;
+
+public function __construct(PdfPageCounter $pdfPageCounter)
+{
+    $this->pdfPageCounter = $pdfPageCounter;
+}
     /**
      * Ajouter un fichier à un modèle.
      */
@@ -25,10 +33,11 @@ class FileManager
         );
 
         return $model->files()->create([
+            'name' => $file->getClientOriginalName(),
             'path' => $path,
             'size' => $file->getSize(),
             'type' => $type,
-            'page_count' => $this->getPageCount($file),
+            'page_count' => $this->pdfPageCounter->getPageCount($file),
         ]);
     }
 
@@ -103,7 +112,7 @@ class FileManager
      * Retourne null si le fichier n'est pas un PDF
      * ou si le nombre de pages ne peut pas être déterminé.
      */
-    protected function getPageCount(
+    protected function OldgetPageCount(
         UploadedFile $file
     ): ?int {
 

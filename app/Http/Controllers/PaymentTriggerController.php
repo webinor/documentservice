@@ -22,6 +22,7 @@ class PaymentTriggerController extends Controller
                 'code',
                 'label',
                 'description',
+                'is_initial_payment',
                 'sequence',
             ]);
 

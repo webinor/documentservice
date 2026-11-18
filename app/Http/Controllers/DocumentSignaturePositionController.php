@@ -6,6 +6,9 @@ use App\Models\DocumentSignature;
 use App\Models\DocumentSignaturePosition;
 use App\Models\Misc\Document;
 use App\Models\Misc\File;
+use App\Models\PurchaseReceipt;
+use App\Models\PurchaseSupplierQuote;
+use App\Services\Signature\ReceiptSourceResolverRegistry;
 use App\Services\Signature\SignaturePositionRequirementService;
 use App\Services\Signature\SignaturePositionService;
 use App\Services\UserServiceClient;
@@ -18,14 +21,20 @@ class DocumentSignaturePositionController extends Controller
     protected SignaturePositionRequirementService $service;
     protected SignaturePositionService $positionService;
 
+    // protected ReceiptSourceResolverRegistry $receiptResolverRegistry;
+
     public function __construct(
     UserServiceClient $userService,
     SignaturePositionRequirementService $service,
     SignaturePositionService $positionService
+
+    // ReceiptSourceResolverRegistry $receiptResolverRegistry
 ) {
     $this->userService = $userService;
     $this->service = $service;
     $this->positionService = $positionService;
+
+    // $this->receiptResolverRegistry = $receiptResolverRegistry;
 }
 
     
@@ -77,11 +86,166 @@ class DocumentSignaturePositionController extends Controller
     ]);
 }
 
+/**
+ * Récupérer les positions de signature des fichiers
+ * d'un devis fournisseur.
+ */
+public function supplierQuoteIndex(
+    Request $request,
+    string $documentUuid
+) {
+    $document = Document::where('uuid', $documentUuid)->firstOrFail();
+
+    $purchaseRequest = $document->purchase_request;
+
+    if (!$purchaseRequest) {
+        return response()->json([
+            'success' => true,
+            'data' => [],
+        ]);
+    }
+
+    $supplierQuotes = PurchaseSupplierQuote::where(
+        'purchase_request_id',
+        $purchaseRequest->id
+    )->with('files')->get();
+
+    $positions = collect();
+
+    foreach ($supplierQuotes as $supplierQuote) {
+        foreach ($supplierQuote->files as $file) {
+            $filePositions = $this->positionService->getEnrichedFilePositions(
+                $documentUuid,
+                $file->id,
+                "SUPPLIER_QUOTE"
+            );
+
+            $positions = $positions->merge($filePositions);
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $positions->values(),
+    ]);
+}
+
+/**
+ * Enregistrer une position de signature sur un fichier
+ * appartenant à un devis fournisseur.
+ */
+public function OldsupplierQuoteStore(
+    Request $request,
+    string $documentUuid
+) {
+    $validated = $request->validate([
+        'file_id' => 'required|integer',
+        'signature_type' => 'required|string',
+        'page_number' => 'required|integer|min:1',
+        'x' => 'required|numeric',
+        'y' => 'required|numeric',
+        'width' => 'required|numeric',
+        'height' => 'required|numeric',
+    ]);
+
+    $document = Document::where('uuid', $documentUuid)->firstOrFail();
+
+    $purchaseRequest = $document->purchase_request;
+
+    abort_unless($purchaseRequest, 404, 'Demande d’achat introuvable.');
+
+    return
+    // Le fichier doit appartenir à un devis de cette demande d'achat.
+    $file = File::where('id', $validated['file_id'])
+        ->where('model_type', PurchaseReceipt::class)
+        // ->whereIn(
+        //     'model_id',
+        //     PurchaseSupplierQuote::where(
+        //         'purchase_request_id',
+        //         $purchaseRequest->id
+        //     )->select('id')
+        // )
+        ->firstOrFail();
+
+    // La suite reprend la logique existante :
+    // récupération de l'utilisateur, vérification du nombre de pages,
+    // updateOrCreate et enrichissement de la position.
+}
+
+/**
+ * Enregistrer une position de signature sur un fichier
+ * appartenant à un devis fournisseur.
+ */
+public function supplierQuoteStore(
+    Request $request,
+    string $documentUuid
+) {
+    $validated = $request->validate([
+        'file_id' => [
+            'required',
+            'integer',
+        ],
+    ]);
+
+    $document = Document::query()
+        ->where('uuid', $documentUuid)
+        ->firstOrFail();
+
+    $purchaseRequest = $document->purchase_request;
+
+    abort_unless(
+        $purchaseRequest,
+        404,
+        'Demande d’achat introuvable.'
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vérifier le rattachement du fichier
+    |--------------------------------------------------------------------------
+    */
+
+    $file = File::query()
+        ->where('id', $validated['file_id'])
+        // ->where('model_type', PurchaseReceipt::class)
+        // ->whereIn(
+        //     'model_id',
+        //     PurchaseSupplierQuote::query()
+        //         ->where(
+        //             'purchase_request_id',
+        //             $purchaseRequest->id
+        //         )
+        //         ->select('id')
+        // )
+        ->firstOrFail();
+
+    return $this->saveSignaturePosition(
+        $request,
+        $documentUuid,
+        $file->id
+    );
+}
+
+/**
+ * Enregistrer une position de signature sur un fichier.
+ */
+public function store(
+    Request $request,
+    string $documentUuid,
+    int $fileId
+) {
+    return $this->saveSignaturePosition(
+        $request,
+        $documentUuid,
+        $fileId
+    );
+}
+
 
   /**
  * Enregistrer une position de signature.
  */
-public function store(
+public function Oldstore(
     Request $request,
     string $documentUuid,
     int $fileId
@@ -282,6 +446,171 @@ public function store(
         'data' =>
             $position,
 
+    ], 201);
+}
+
+/**
+ * Enregistrer ou mettre à jour une position de signature.
+ *
+ * Cette méthode est commune aux :
+ * - justificatifs ;
+ * - devis fournisseurs ;
+ * - autres fichiers nécessitant une position de signature.
+ */
+private function saveSignaturePosition(
+    Request $request,
+    string $documentUuid,
+    int $fileId
+) {
+    /*
+    |--------------------------------------------------------------------------
+    | Utilisateur signataire
+    |--------------------------------------------------------------------------
+    */
+
+    $currentUser = $request->get('user');
+
+    if (
+        !$currentUser ||
+        !isset($currentUser['id'])
+    ) {
+        return response()->json([
+            'message' => 'Utilisateur authentifié introuvable.',
+        ], 401);
+    }
+
+    $userId = (int) $currentUser['id'];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validation
+    |--------------------------------------------------------------------------
+    */
+
+    $validated = $request->validate([
+
+        'signature_type' => [
+            'required',
+            'string',
+            'max:100',
+        ],
+
+        'page_number' => [
+            'required',
+            'integer',
+            'min:1',
+        ],
+
+        'x' => [
+            'required',
+            'numeric',
+        ],
+
+        'y' => [
+            'required',
+            'numeric',
+        ],
+
+        'width' => [
+            'required',
+            'numeric',
+            'min:1',
+        ],
+
+        'height' => [
+            'required',
+            'numeric',
+            'min:1',
+        ],
+
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Document
+    |--------------------------------------------------------------------------
+    */
+
+    $document = Document::query()
+        ->where('uuid', $documentUuid)
+        ->firstOrFail();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fichier
+    |--------------------------------------------------------------------------
+    */
+
+    $file = File::query()
+        ->findOrFail($fileId);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vérifier le numéro de page
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $file->page_count !== null &&
+        $validated['page_number'] > $file->page_count
+    ) {
+        return response()->json([
+            'message' =>
+                'Le numéro de page indiqué dépasse le nombre de pages du fichier.',
+
+            'page_number' =>
+                $validated['page_number'],
+
+            'page_count' =>
+                $file->page_count,
+
+        ], 422);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enregistrer / mettre à jour
+    |--------------------------------------------------------------------------
+    */
+
+    $position = DocumentSignaturePosition::updateOrCreate(
+
+        [
+            'document_id' => $document->id,
+            'file_id' => $file->id,
+            'user_id' => $userId,
+            'signature_type' => $validated['signature_type'],
+            'page_number' => $validated['page_number'],
+        ],
+
+        [
+            'x' => $validated['x'],
+            'y' => $validated['y'],
+            'width' => $validated['width'],
+            'height' => $validated['height'],
+        ]
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enrichissement
+    |--------------------------------------------------------------------------
+    */
+
+    $position = $this->positionService->enrichPositions(
+        collect([$position]),
+        $document->id
+    )->first();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Réponse
+    |--------------------------------------------------------------------------
+    */
+
+    return response()->json([
+        'message' => 'Position de signature enregistrée.',
+        'data' => $position,
     ], 201);
 }
 

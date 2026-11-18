@@ -8,6 +8,7 @@ use App\Services\Document\Contracts\DocumentContextResolver;
 use App\Services\Document\Resolvers\DefaultCapabilitiesResolver;
 use App\Services\Document\Resolvers\DefaultContextResolver;
 use App\Services\Document\Resolvers\MissionCapabilitiesResolver;
+use App\Services\Document\Resolvers\MissionContextResolver;
 use App\Services\Document\Resolvers\RegularizationCapabilitiesResolver;
 use App\Services\Document\Resolvers\RegularizationSheetContextResolver;
 use App\Services\Document\Resolvers\TaxiPaperContextResolver;
@@ -24,7 +25,9 @@ class DocumentContextResolverFactory
 
             case "mission":
 
-            throw new \Exception("Aucun DocumentContextResolverFactory pour $type", 1);
+                return app(MissionContextResolver::class);
+
+            // throw new \Exception("Aucun DocumentContextResolverFactory pour $type", 1);
 
             case "fiche-a-regulariser":
 

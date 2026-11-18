@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateRequestOrderPaymentScheduleRequest extends FormRequest
 {
@@ -13,7 +14,7 @@ class UpdateRequestOrderPaymentScheduleRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +25,18 @@ class UpdateRequestOrderPaymentScheduleRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'paid_amount' => 'sometimes|required|numeric|min:0',
+            'status' => [
+                'sometimes',
+                'required',
+                Rule::in([
+                    'PLANNED',
+                    'DUE',
+                    'PARTIALLY_PAID',
+                    'PAID',
+                    'CANCELLED',
+                ])
+            ]
         ];
     }
 }

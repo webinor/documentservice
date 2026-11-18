@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class RequestOrder extends Model
 {
@@ -30,6 +31,8 @@ class RequestOrder extends Model
         'notes',
         'created_by',
         'updated_by',
+        'payment_mode',
+        'payment_agent_employee_id',
 
         'financial_commitment_id',
 
@@ -108,10 +111,31 @@ public function paymentSchedules(): HasMany
     )->orderBy('sequence');
 }
 
-
-public function paymentInstallments()
+/**
+ * Échéancier correspondant au paiement initial (avance).
+ *
+ * Le trigger associé doit avoir is_initial_payment = true.
+ */
+public function initialPaymentSchedule(): HasOne
 {
-    return $this->hasMany(RequestOrderPaymentSchedule::class);
+    return $this->hasOne(
+        RequestOrderPaymentSchedule::class,
+        'request_order_id'
+    )->whereHas('paymentTrigger', function ($query) {
+        $query->where('is_initial_payment', true);
+    });
+}
+
+
+/**
+ * Réceptions physiques du bon de commande.
+ */
+public function receipts(): HasMany
+{
+    return $this->hasMany(
+        PurchaseReceipt::class,
+        'request_order_id'
+    );
 }
 
 public function supplierQuote()

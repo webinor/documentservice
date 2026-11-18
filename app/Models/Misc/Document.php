@@ -19,6 +19,7 @@ use App\Services\DocumentStatusResolver;
 use App\Services\DocumentStatusUIMapper;
 use App\Support\DocumentContext;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -89,8 +90,10 @@ class Document extends Model
 
         $status = (new DocumentStatusResolver())->resolve($types);
 
+        // throw new Exception(json_encode($types), 1);
 
-        $ui = (new DocumentStatusUIMapper())->map($status);
+
+        // $ui = (new DocumentStatusUIMapper())->map($status);
 
         return $child->getSettlementAmount($status);
     }

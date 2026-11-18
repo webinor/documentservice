@@ -17,7 +17,28 @@ class RequestOrderItemController extends Controller
      * @param RequestOrder $requestOrder
      * @return JsonResponse
      */
-    public function index(RequestOrder $requestOrder)
+
+    /**
+ * Liste les articles d'un bon de commande
+ * ainsi que ses échéances de paiement.
+ *
+ * @param RequestOrder $requestOrder
+ * @return JsonResponse
+ */
+public function index(RequestOrder $requestOrder)
+{
+    $requestOrder->load(['initialPaymentSchedule', 'paymentSchedules']);
+
+    $items = $requestOrder->items()->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $items,
+        'request_order' => $requestOrder,
+    ]);
+}
+
+    public function Oldindex(RequestOrder $requestOrder)
     {
         $items = $requestOrder->items()->get();
 
@@ -81,6 +102,75 @@ class RequestOrderItemController extends Controller
     }
 
     /**
+ * Met à jour un article du bon de commande.
+ *
+ * @param UpdateRequestOrderItemRequest $request
+ * @param RequestOrder $requestOrder
+ * @param RequestOrderItem $item
+ * @return JsonResponse
+ */
+public function update(
+    UpdateRequestOrderItemRequest $request,
+    RequestOrder $requestOrder,
+    RequestOrderItem $item
+) {
+    $validated = $request->validated();
+
+    DB::transaction(function () use (
+        $item,
+        $validated,
+        $requestOrder
+    ) {
+        $quantity = array_key_exists('quantity', $validated)
+            ? (float) $validated['quantity']
+            : (float) $item->quantity;
+
+        $unitPrice = array_key_exists('unit_price', $validated)
+            ? (float) $validated['unit_price']
+            : (float) $item->unit_price;
+
+        $receivedQuantity = array_key_exists('received_quantity', $validated)
+            ? (float) $validated['received_quantity']
+            : (float) $item->received_quantity;
+
+        $actualUnitPrice = array_key_exists('actual_unit_price', $validated)
+            ? (float) $validated['actual_unit_price']
+            : (float) $item->actual_unit_price;
+
+        $item->fill($validated);
+
+        $item->quantity = $quantity;
+        $item->unit_price = $unitPrice;
+        $item->received_quantity = $receivedQuantity;
+        $item->actual_unit_price = $actualUnitPrice;
+
+        // Montant total de l'article commandé.
+        $item->total_amount = $quantity * $unitPrice;
+
+        // Montant total réellement réceptionné.
+        $item->total_received_amount = $receivedQuantity * $actualUnitPrice;
+
+        $item->save();
+
+        if (
+            array_key_exists('quantity', $validated) ||
+            array_key_exists('unit_price', $validated)
+        ) {
+            // Recalcul du montant total du bon de commande.
+            $requestOrder->total_amount = $requestOrder->items()
+                ->sum('total_amount');
+
+            $requestOrder->save();
+        }
+    });
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Article modifié avec succès.',
+        'data' => $item->fresh(),
+    ]);
+}
+    /**
      * Met à jour un article du bon de commande.
      *
      * @param UpdateRequestOrderItemRequest $request
@@ -88,7 +178,7 @@ class RequestOrderItemController extends Controller
      * @param RequestOrderItem $requestOrderItem
      * @return JsonResponse
      */
-    public function update(
+    public function Oldupdate(
         UpdateRequestOrderItemRequest $request,
         RequestOrder $requestOrder,
         RequestOrderItem $item

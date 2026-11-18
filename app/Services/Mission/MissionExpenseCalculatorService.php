@@ -3,6 +3,7 @@
 namespace App\Services\Mission;
 
 use Carbon\Carbon;
+use Exception;
 
 class MissionExpenseCalculatorService
 {
@@ -12,6 +13,9 @@ class MissionExpenseCalculatorService
         $return = Carbon::parse($return);
 
         $result = [];
+
+            // throw new Exception(json_encode($rules), 1);
+
 
         $currentDay = $departure->copy()->startOfDay();
 
@@ -39,6 +43,9 @@ class MissionExpenseCalculatorService
 
             $currentDay->addDay();
         }
+
+            // throw new Exception(json_encode($result), 1);
+
 
         return collect($result)
     ->map(function ($quantity, $categoryId) {

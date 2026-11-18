@@ -6,13 +6,19 @@ use App\Models\Misc\Document;
 
 interface DocumentTypeHandlerInterface
 {
+    /**
+     * Crée les données spécifiques au type de document.
+     */
     public function create(
         Document $document,
         array $data
-    );
+    ): void;
 
-     public function update(
+    /**
+     * Met à jour les données spécifiques au type de document.
+     */
+    public function update(
         Document $document,
         array $data
-    );
+    ): void;
 }

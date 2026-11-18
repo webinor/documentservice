@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRequestOrderPaymentScheduleRequest;
 use App\Http\Requests\UpdateRequestOrderPaymentScheduleRequest;
+use App\Models\RequestOrder;
 use App\Models\RequestOrderPaymentSchedule;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class RequestOrderPaymentScheduleController extends Controller
 {
@@ -13,9 +17,21 @@ class RequestOrderPaymentScheduleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    /**
+     * Récupère les échéances de paiement d'un bon de commande.
+     */
+    public function index(RequestOrder $requestOrder): JsonResponse
     {
-        //
+        $requestOrder->load([
+            'initialPaymentSchedule',
+            'paymentSchedules',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $requestOrder,
+            'request_order' => $requestOrder,
+        ]);
     }
 
     /**
@@ -70,7 +86,41 @@ class RequestOrderPaymentScheduleController extends Controller
      */
     public function update(UpdateRequestOrderPaymentScheduleRequest $request, RequestOrderPaymentSchedule $requestOrderPaymentSchedule)
     {
-        //
+       
+        $validated = $request->validated();
+
+        $schedule = DB::transaction(function () use ($requestOrderPaymentSchedule, $validated) {
+
+            $schedule = $requestOrderPaymentSchedule
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (array_key_exists('paid_amount', $validated)) {
+                if ((float) $validated['paid_amount'] > (float) $schedule->amount) {
+                    abort(422, 'Le montant payé ne peut pas dépasser le montant de l’échéance.');
+                }
+
+                $schedule->paid_amount = $validated['paid_amount'];
+
+                $schedule->status = $validated['paid_amount'] == $requestOrderPaymentSchedule->amount ? "PAID" : "PARTIALLY_PAID" ;
+
+            }
+
+            if (array_key_exists('status', $validated)) {
+                $schedule->status = $validated['status'];
+            }
+
+            $schedule->save();
+
+            return $schedule->fresh();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Échéance de paiement mise à jour avec succès.',
+            'data' => $schedule,
+        ]);
+    
     }
 
     /**

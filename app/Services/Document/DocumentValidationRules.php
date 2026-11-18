@@ -132,6 +132,71 @@ class DocumentValidationRules
 
                 'attachments' => 'nullable',
             ],
+
+            /*
+ * MISSION
+ */
+'mission' => [
+    'destination' => 'required|string',
+    
+    'scope' => [
+        'required',
+        Rule::in([
+            'LOCAL',
+            'NATIONAL',
+            'INTERNATIONAL',
+        ]),
+    ],
+
+    'beneficiaire' => 'required|numeric',
+
+    'autre_beneficiaire' => 'nullable|numeric',
+
+    'actor_type' => [
+        'required',
+        Rule::in([
+            'me',
+            'other',
+        ]),
+    ],
+
+    'actor_collaborator' => 'nullable|numeric',
+
+    /*
+     * Dépenses prévisionnelles
+     */
+    'expenses' => 'required|array|min:1',
+
+    'expenses.*.expense_category_id' => 'required|exists:expense_categories,id',
+
+    'expenses.*.amount' => 'required|numeric|min:0',
+
+    'expenses.*.comment' => 'nullable|string',
+
+    'expenses.*.type' => [
+        'required',
+        Rule::in([
+            'PREVISIONNELLE',
+        ]),
+    ],
+
+    'expenses.*.planned_quantity' => 'nullable|numeric|min:1',
+
+    /*
+     * Dates et heures prévisionnelles
+     */
+    'departure_date_base_planned' => 'required|date',
+    'departure_time_base_planned' => 'required|date_format:H:i',
+
+    'arrival_date_site_planned' => 'required|date',
+    'arrival_time_site_planned' => 'required|date_format:H:i',
+
+    'departure_date_site_planned' => 'required|date',
+    'departure_time_site_planned' => 'required|date_format:H:i',
+
+    'arrival_date_base_planned' => 'required|date',
+    'arrival_time_base_planned' => 'required|date_format:H:i',
+],
         ];
 
         return array_merge(

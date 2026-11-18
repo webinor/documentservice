@@ -1019,10 +1019,15 @@ $receipt = RegularizationReceipt::whereCode($receiptCode)->first();
          */
         if ($request->hasFile('receipt')) {
 
+            $uploadedFile =  $request->file('receipt');
+
+            $receipt->name = $uploadedFile->getClientOriginalName();
+            $receipt->save();
+
             $fileManager->replace(
                 $receipt,
                 'RECEIPT',
-                $request->file('receipt')
+                $uploadedFile
             );
 
         }
@@ -1128,3 +1133,4 @@ $receipt = RegularizationReceipt::whereCode($receiptCode)->first();
     ]);
 }
 }
+

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class RequestOrderItem extends Model
 {
@@ -56,4 +57,23 @@ class RequestOrderItem extends Model
             'purchase_request_item_id'
         );
     }
+
+    /**
+ * Réceptions auxquelles cette ligne du bon de commande est associée.
+ */
+public function receipts(): BelongsToMany
+{
+    return $this->belongsToMany(
+        PurchaseReceipt::class,
+        'purchase_receipt_request_order_item',
+        'request_order_item_id',
+        'purchase_receipt_id'
+    )
+        ->withPivot([
+            // 'received_quantity',
+            // 'received_unit_price',
+            'allocated_amount',
+        ])
+        ->withTimestamps();
+}
 }

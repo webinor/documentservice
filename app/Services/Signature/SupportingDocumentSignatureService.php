@@ -42,7 +42,8 @@ class SupportingDocumentSignatureService
      * justificatives d'un document.
      */
     public function apply(
-        string $documentUuid
+        string $documentUuid,
+        string $signatureType = "RECEIPT"
         // float $scale = 1.0
     ): array {
 
@@ -60,7 +61,7 @@ class SupportingDocumentSignatureService
         $files =
             $this->positionService
                 ->getFilesWithPositions(
-                    $documentUuid
+                    $documentUuid,$signatureType
                 );
 
         if ($files->isEmpty()) {

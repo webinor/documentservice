@@ -50,7 +50,35 @@ class SignaturePositionService
      * Récupérer les positions enrichies
      * d'un fichier.
      */
-    public function getEnrichedFilePositions(
+
+    /**
+ * Récupérer les positions enrichies d'un fichier
+ * pour un type de signature donné.
+ */
+public function getEnrichedFilePositions(
+    string $documentUuid,
+    int $fileId,
+    string $signatureType = "RECEIPT"
+): Collection {
+
+    $document = Document::query()
+        ->where('uuid', $documentUuid)
+        ->firstOrFail();
+
+    $positions = DocumentSignaturePosition::query()
+        ->where('document_id', $document->id)
+        ->where('file_id', $fileId)
+        ->where('signature_type', $signatureType)
+        ->orderBy('page_number')
+        ->get();
+
+    return $this->enrichPositions(
+        $positions,
+        $document->id
+    );
+}
+
+    public function OldgetEnrichedFilePositions(
         string $documentUuid,
         int $fileId
     ): Collection {
@@ -86,7 +114,65 @@ class SignaturePositionService
      *     ...
      * ]
      */
+
     public function getFilesWithPositions(
+    string $documentUuid,
+    string $signatureType = "RECEIPT"
+): Collection {
+
+    $document = Document::query()
+        ->where('uuid', $documentUuid)
+        ->firstOrFail();
+
+    $positions = DocumentSignaturePosition::query()
+        ->where('document_id', $document->id)
+        ->where('signature_type', $signatureType)
+        ->orderBy('file_id')
+        ->orderBy('page_number')
+        ->get();
+
+    if ($positions->isEmpty()) {
+        return collect();
+    }
+
+    $positions = $this->enrichPositions(
+        $positions,
+        $document->id
+    );
+
+    return $positions
+        ->groupBy('file_id')
+        ->map(function (Collection $filePositions, $fileId) {
+
+            if (is_null($fileId)) {
+                return null;
+            }
+
+            $file = File::query()->find($fileId);
+
+            if (!$file) {
+                DocumentSignaturePosition::query()
+                    ->whereIn(
+                        'id',
+                        $filePositions->pluck('id')->toArray()
+                    )
+                    ->delete();
+
+                return null;
+            }
+
+            return [
+                'file_id' => (int) $fileId,
+                'file' => $file,
+                'positions' => $filePositions->values(),
+            ];
+        })
+        ->filter()
+        ->values();
+}
+
+
+    public function OldgetFilesWithPositions(
         string $documentUuid
     ): Collection {
 

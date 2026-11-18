@@ -39,6 +39,7 @@ class DocumentPaymentController extends Controller
 
             // throw new \Exception(json_encode($request->all()));
 
+           
 
             DB::beginTransaction();
             // Valider les données reçues
@@ -53,9 +54,18 @@ class DocumentPaymentController extends Controller
 
             $paid_amount = floatval($request->input("paid_amount"));
             $isFullPay = (bool) $request->input("is_full_pay", false);
-            $transaction_code =  $request->input("transaction_code");
+            $transaction_code =  $request->input("transaction_code" , null);
             $transaction_type_code =  $request->input("transaction_type_code");
 
+            //  if (!$transaction_code) {
+               
+            // return response()->json([
+            //     "success" => true,
+            //     "message" => "Paiement enregistré avec succès.",
+            //     "document" => $document,
+            // ]);
+            
+            // }
             
 
             // throw new Exception(json_encode($document->id));

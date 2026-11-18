@@ -28,11 +28,12 @@ class SupportingDocumentSignatureController
 
         try {
 
-        // $scale = $request->get('scale' , 1.0);
+        $signatureType = $request->get('signatureType' , "RECEIPT");
 
             $result =
                 $this->service->apply(
                     $documentUuid,
+                    $signatureType
                     // (floatval($scale))
                 );
 

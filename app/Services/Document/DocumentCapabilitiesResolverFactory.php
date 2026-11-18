@@ -18,7 +18,8 @@ class DocumentCapabilitiesResolverFactory
         switch ($document['document_type']['slug']) {
 
             case "mission":
-                // return app(MissionCapabilitiesResolver::class);
+
+                return app(MissionCapabilitiesResolver::class);
 
             case "fiche-a-regulariser":
                 return app(RegularizationCapabilitiesResolver::class);
