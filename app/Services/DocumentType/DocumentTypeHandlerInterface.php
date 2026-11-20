@@ -12,7 +12,7 @@ interface DocumentTypeHandlerInterface
     public function create(
         Document $document,
         array $data
-    ): void;
+    );
 
     /**
      * Met à jour les données spécifiques au type de document.
@@ -20,5 +20,5 @@ interface DocumentTypeHandlerInterface
     public function update(
         Document $document,
         array $data
-    ): void;
+    );
 }
