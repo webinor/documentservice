@@ -27,16 +27,16 @@ class MissionSignerVisibilityPolicy implements SignerVisibilityPolicy
             return true;
         }
 
-        if (
-            in_array(Str::lower($participant["user"]["role"]), [
-                "responsable logistique",
-                "directeur operations",
-                "directeur general",
-                "tresorier",
-            ])
-        ) {
-            return true;
-        }
+        // if (
+        //     in_array(Str::lower($participant["user"]["role"]), [
+        //         "responsable logistique",
+        //         "directeur operations",
+        //         "directeur general",
+        //         "tresorier",
+        //     ])
+        // ) {
+        //     return true;
+        // }
 
         return false;
     }

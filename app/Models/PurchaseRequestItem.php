@@ -20,7 +20,13 @@ class PurchaseRequestItem extends Model
 
         'specification',
         'purchase_request_id',
-        'notice'
+        'notice',
+
+        'is_ok'
         
     ];
+
+    protected $casts = [
+    'is_ok' => 'boolean',
+];
 }

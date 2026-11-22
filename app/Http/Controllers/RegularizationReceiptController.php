@@ -737,7 +737,7 @@ if (!$workflowResponse->successful()) {
     ]);
 }
 
-    public function OldgetRegularizationReceipts($documentIdentifier)
+    public function OldgetRegularizpationReceipts($documentIdentifier)
 {
    
 $document = $this->documentService->getDoc($documentIdentifier);

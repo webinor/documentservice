@@ -15,6 +15,9 @@ class StoredFileController extends Controller
      */
     public function view($path)
     {
+
+    // throw new \Exception("Error Processing Request", 1);
+    
         abort_unless(
             Storage::disk('public')->exists($path),
             404,

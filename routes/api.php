@@ -29,6 +29,7 @@ use App\Http\Controllers\MissionDocumentController;
 use App\Http\Controllers\MissionExpenseController;
 use App\Http\Controllers\MissionFinancialReportController;
 use App\Http\Controllers\MissionFinancialSummaryController;
+use App\Http\Controllers\MissionReceiptController;
 use App\Http\Controllers\PaymentTermController;
 use App\Http\Controllers\PaymentTriggerController;
 use App\Http\Controllers\PublicHolidayController;
@@ -142,6 +143,18 @@ Route::get(
     '/purchase-receipts/{path}/download',
     [StoredFileController::class, 'download']
 )->where('path', '.*')->name('purchase-receipts.download');
+
+
+
+Route::get(
+    '/mission-receipts/{path}/view',
+    [StoredFileController::class, 'view']
+)->where('path', '.*')->name('mission-receipts.view');
+
+Route::get(
+    '/mission-receipts/{path}/download',
+    [StoredFileController::class, 'download']
+)->where('path', '.*')->name('mission-receipts.download');
 
 
 
@@ -529,6 +542,29 @@ Route::prefix('/{documentUuid}/supplier-quote-signature-positions')
         PurchaseReceiptController::class,
         'updatePhysicalReceiptStatus',
     ]);
+
+
+    Route::get(
+    '/{document}/mission-receipts',
+    [MissionReceiptController::class, 'index']
+);
+
+Route::post(
+    '/{document}/mission-receipts',
+    [MissionReceiptController::class, 'store']
+);
+
+Route::put(
+    '/{document}/mission-receipts/{receiptCode}/items',
+    [MissionReceiptController::class, 'syncItems']
+);
+
+Route::delete(
+    '/{document}/mission-receipts/{receiptCode}',
+    [MissionReceiptController::class, 'destroy']
+);
+
+
           
         //   post("/{document}/regularization-expenses", [
         //     RegularizationItemController::class,

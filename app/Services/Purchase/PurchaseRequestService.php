@@ -28,7 +28,6 @@ class PurchaseRequestService
                 $validated['type'] ?? "INTERNAL",
 
             
-
             'priority' =>
                 $validated['priority'] ?? 'MEDIUM',
 
@@ -49,6 +48,13 @@ class PurchaseRequestService
                     $item['quantite'] ?? 1,
 
                   'requested_amount' =>
+                    $item['montant'] ?? null,
+
+                
+                         'approved_quantity' =>
+                    $item['quantite'] ?? 1,
+
+                  'approved_amount' =>
                     $item['montant'] ?? null,
 
                 'specification' =>

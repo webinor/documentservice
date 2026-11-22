@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class MissionExpense extends Model
 {
@@ -41,6 +42,21 @@ class MissionExpense extends Model
     {
         return $this->belongsTo(Mission::class);
     }
+
+    /**
+ * Justificatifs associés à cette dépense.
+ */
+public function receipts(): BelongsToMany
+{
+    return $this->belongsToMany(
+        MissionReceipt::class,
+        'mission_expense_receipt',
+        'mission_expense_id',
+        'mission_receipt_id'
+    )
+    ->withPivot('allocated_amount')
+    ->withTimestamps();
+}
 
     /**
      * Get the expense_category that owns the MissionExpense

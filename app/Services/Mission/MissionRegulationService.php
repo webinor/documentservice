@@ -73,6 +73,7 @@ class MissionRegulationService
         $supplements = $regulations->where('adjustment_type', 'SUPPLEMENT');
 
         $totalRefund = $refunds->sum('amount');
+        
         $totalSupplement = $supplements->sum('amount');
 
         /**
@@ -82,7 +83,7 @@ class MissionRegulationService
          * refund => réduit la dette
          * supplement => augmente la dette
          */
-        $netImpact = $totalRefund - $totalSupplement;
+        $netImpact = $totalSupplement - $totalRefund ;
 
         return [
             'mission_id' => $mission->id,

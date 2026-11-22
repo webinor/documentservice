@@ -119,9 +119,8 @@ $totalReel = (float) $sheet->items->sum(function ($item) {
 
 $initialPaymentCompleted = $totalAdvance > 0;
 
-// $hasFinancialMovement = !$initialPaymentCompleted || ( $totalRefund > 0 || $totalSupplement > 0);
 
-$hasFinancialMovement =$initialPaymentCompleted && $finalBalance != 0 ; //!$initialPaymentCompleted || ( $totalRefund > 0 || $totalSupplement > 0);
+$hasFinancialMovement =$initialPaymentCompleted && $finalBalance != 0 ; 
 
 $financialMovementCompleted = $hasFinancialMovement ? $finalBalance == 0 : true;
 

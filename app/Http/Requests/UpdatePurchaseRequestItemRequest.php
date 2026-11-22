@@ -46,6 +46,10 @@ class UpdatePurchaseRequestItemRequest extends FormRequest
             'expected_date' => 'sometimes|nullable|date',
 
             'notice' => 'sometimes|nullable|string',
+
+
+        // Validation explicite de l'article
+        'is_ok' => 'sometimes|required|boolean',
         ];
     }
 
@@ -88,6 +92,9 @@ class UpdatePurchaseRequestItemRequest extends FormRequest
 
             'expected_date.date' =>
                 'La date prévue est invalide.',
+
+                'is_ok.boolean' =>
+    'Le statut de validation de l’article doit être vrai ou faux.',
         ];
     }
 }

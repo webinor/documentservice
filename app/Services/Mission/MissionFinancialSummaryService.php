@@ -39,43 +39,6 @@ class MissionFinancialSummaryService
 }
 
 
-        /**
-         * Vérification type mission
-         */
-        if ($document->document_type->slug == "fiche-a-regulariser") {
-                      
-        return app(RegularizationFinancialSummaryService::class)->build($document);
-        // throw new Exception("Document is a regularization.");
-
-        }
-
-        if ($document->document_type->slug == "papier-taxi") {
-                      
-        return app(TaxiFinancialSummaryService::class)->build($document);
-        // throw new Exception("Document is a regularization.");
-
-        }
-
-        if ($document->document_type->slug == "note-de-frais") {
-                      
-        return app(NoteFinancialSummaryService::class)->build($document);
-        // throw new Exception("Document is a regularization.");
-
-        }
-
-          if ($document->document_type->slug == "achat") {
-                      
-            //   throw new Exception("Document is a purchase.");
-
-        return $this->purchase_financial_summary_service->build($document->id);
-        
-
-        }
-
-        if ($document->document_type->slug !== "mission") {
-            throw new Exception("Document is not a mission.");
-        }
-
 
         /**
          * Relation métier mission
@@ -120,7 +83,15 @@ class MissionFinancialSummaryService
 
 
         $regulation = app(MissionRegulationService::class)->calculate($mission);
+
+
+           $totalRefund = $regulation['refunds']['total'];
+        $totalSupplement = $regulation['supplements']['total'];// $supplements->sum('amount');
+
+
         $totalRegulation = $regulation['total'];
+
+        $net_impact = $regulation['net_impact'];
 
         // throw new Exception(json_encode( $regulation['net_impact']), 1);
         
@@ -136,17 +107,25 @@ class MissionFinancialSummaryService
          * négatif :
          * agent doit rembourser société
          */
-        $finalBalance = $totalReel + $totalAllowances - $totalAdvance   + $regulation['net_impact']; ;
 
-        //         $totalOut =
-        //     $totalReel
-        //     + max(0, $totalAllowances);
+            if ($net_impact > 0) {
+            
+            $finalBalance = $totalReel - ($totalAdvance + $totalRegulation) ;
 
-        // $totalIn =
-        //     $totalAdvance
-        //     + max(0, -$totalAllowances);
+        } else {
+            
+            $finalBalance = $totalReel - ($totalAdvance - $totalRegulation) ;
 
-        // $finalBalance = $totalOut - $totalIn;
+        }
+
+       $initialPaymentCompleted = $totalAdvance > 0;
+
+
+$hasFinancialMovement =$initialPaymentCompleted && $finalBalance != 0 ; 
+
+$financialMovementCompleted = $hasFinancialMovement ? $finalBalance == 0 : true;
+
+$regularizationCompleted = !$hasFinancialMovement || ( $initialPaymentCompleted && $finalBalance == 0 );
 
         /**
          * ============================
@@ -163,6 +142,15 @@ class MissionFinancialSummaryService
             "total_regulation" => $totalRegulation,
             "final_balance" => $finalBalance,
             "settlement_status" => $settlementStatus,
+
+
+              'has_refund' => $totalRefund > 0,
+    'has_supplement' => $totalSupplement > 0,
+    'has_financial_movement' => $hasFinancialMovement,
+    "initial_payment_completed" => $initialPaymentCompleted,
+    "financial_movement_completed" => $financialMovementCompleted,
+    // "settlement_status" => $this->resolveStatus($finalBalance),
+    "regularization_completed" => $regularizationCompleted,
         ];
     }
 

@@ -82,6 +82,14 @@ class Mission extends Model implements PayableDocumentInterface
         return $this->hasMany(MissionExpense::class);
     }
 
+    public function receipts()
+{
+    return $this->hasMany(
+        MissionReceipt::class,
+        'mission_id'
+    );
+}
+
     public function getDurationDaysAttribute()
     {
         if (!$this->start_date || !$this->end_date) {

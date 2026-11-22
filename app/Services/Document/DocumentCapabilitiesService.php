@@ -255,7 +255,7 @@ $capabilities['can_cancel_operation'] = $canCancelOperation;
 
     // Vérifier les permissions de validation ou de signature.
     $requiredPermissions = array_values(array_intersect(
-        ['validate', 'sign' , 'checkout'],
+        ['validate', 'sign' , 'checkout','add_justificatif'],
         $workflowContext['permissions_required'] ?? []
     ));
 

@@ -1349,6 +1349,25 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
         DocumentDataManager $documentDataManager,
         BeneficiaryEligibilityService $eligibilityService
     ) {
+
+
+//     Log::info('DOCUMENT SERVICE - Réception document', [
+//     'method' => request()->method(),
+//     'content_type' => request()->header('Content-Type'),
+
+//     'input' => request()->except(['attachments']),
+
+//     'files' => collect(request()->allFiles())->map(function ($file) {
+//         return [
+//             'name' => $file->getClientOriginalName(),
+//             'mime' => $file->getMimeType(),
+//             'size' => $file->getSize(),
+//             'valid' => $file->isValid(),
+//             'error' => $file->getError(),
+//         ];
+//     })->toArray(),
+// ]);
+
         try {
             DB::beginTransaction();
 
@@ -1402,6 +1421,17 @@ Un nouveau courrier a été déposé dans votre espace documentaire\n. Objet: {$
                         "autre"
                     );
                 }
+
+                      // Gestion des pièces jointes
+if ($request->hasFile('attachments')) {
+    $this->handleUploadedFile(
+        $request,
+        $document,
+        $user_connected,
+        'attachments',
+        'autre'
+    );
+}
 
                 $current_folder = Folder::find($validated["destination"]);
 
@@ -1525,6 +1555,7 @@ $actorId = $validated['actor']
 
                 // return(get_class($documentDataManager));
 
+                // return
                 $documentDataManager->create($document, $validated);
 
                 // Si on veut gérer des fichiers uploadés
@@ -1538,6 +1569,17 @@ $actorId = $validated['actor']
                         "facture-originale"
                     );
                 }
+
+                      // Gestion des pièces jointes
+if ($request->hasFile('attachments')) {
+    $this->handleUploadedFile(
+        $request,
+        $document,
+        $user_connected,
+        'attachments',
+        'autre'
+    );
+}
 
                 //Si la reference de l'engagement correspond a un document dans le systeme, on associe directement a la facture
                 if (isset($validated["linkedDocument"])) {
@@ -1722,6 +1764,61 @@ $actorId = $validated['actor']
     }
 
     private function handleUploadedFile(
+    $request,
+    Document $document,
+    array $user_connected,
+    $input,
+    $attachment_slug
+) {
+    $file = $request->file($input);
+
+    if (!$file || !$file->isValid()) {
+        throw new \Exception("Le fichier transmis est invalide.");
+    }
+
+    $attachmentType = AttachmentType::whereSlug($attachment_slug)->first();
+
+    if (!$attachmentType) {
+        throw new \Exception(
+            "Type de pièce jointe introuvable : {$attachment_slug}"
+        );
+    }
+
+    $fileName = Str::random(20) . "_" . time() . "." . $file->extension();
+
+    $type = $file->getClientMimeType();
+    $size = $file->getSize();
+
+    $directory = storage_path("app/public/documents_attachments");
+
+    if (!is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
+
+    $file->move($directory, $fileName);
+
+    $attachment = new Attachment();
+    $attachment->document_id = $document->id;
+    $attachment->is_main = true;
+    $attachment->source = "UPLOAD";
+    $attachment->created_by = $user_connected["id"];
+    $attachment->attachment_type_id = $attachmentType->id;
+    $attachment->save();
+
+    $fileModel = new File();
+    $fileModel->name = $file->getClientOriginalName();
+    $fileModel->path = $fileName;
+    $fileModel->type = $type;
+    $fileModel->size = $size;
+
+    $attachment->file()->save($fileModel);
+
+    GeneratePdfThumbnail::dispatch($attachment);
+
+    return $attachment;
+}
+
+    private function OldhandleUploadedFile(
         $request,
         Document $document,
         array $user_connected,
@@ -3197,6 +3294,17 @@ public function batchEnrich(
                         "facture-originale"
                     );
                 }
+
+                // Gestion des pièces jointes
+if ($request->hasFile('attachments')) {
+    $this->handleUploadedFile(
+        $request,
+        $document,
+        $user_connected,
+        'attachments',
+        'autre'
+    );
+}
 
                 //Si la reference de l'engagement correspond a un document dans le systeme, on associe directement a la facture
                 if (isset($validated["linkedDocument"])) {

@@ -3,21 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Misc\Document;
+use App\Services\Financial\DocumentFinancialSummaryService;
 use App\Services\Mission\MissionFinancialSummaryService;
 
 class MissionFinancialSummaryController extends Controller
 {
-    protected MissionFinancialSummaryService $summaryService;
+    protected DocumentFinancialSummaryService $document_financial_summary_service;
 
     public function __construct(
-        MissionFinancialSummaryService $summaryService
+        DocumentFinancialSummaryService $document_financial_summary_service
     ) {
-        $this->summaryService = $summaryService;
+        $this->document_financial_summary_service = $document_financial_summary_service;
     }
 
     public function show( $documentId)
     {
-        $summary = $this->summaryService
+        $summary = $this->document_financial_summary_service
             ->build($documentId);
 
         return response()->json(array_merge(
