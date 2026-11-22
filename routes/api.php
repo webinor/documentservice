@@ -157,6 +157,21 @@ Route::get(
 )->where('path', '.*')->name('mission-receipts.download');
 
 
+/*
+|--------------------------------------------------------------------------
+| Fichiers des pièces jointes des documents
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/document-attachments/{path}/view',
+    [StoredFileController::class, 'view']
+)->where('path', '.*')->name('document-attachments.view');
+
+Route::get(
+    '/document-attachments/{path}/download',
+    [StoredFileController::class, 'download']
+)->where('path', '.*')->name('document-attachments.download');
 
 
 /*

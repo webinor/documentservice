@@ -40,7 +40,13 @@ class DocumentService
             "document_references"
         );
 
+          // Ajout des liens de consultation et de téléchargement
+    // des pièces jointes via l'API Gateway.
+    $this->enrichAttachments($document);
+
         $document = $this->documentEnrichmentManager->enrich($document);
+
+        
 
     
             //  throw new \Exception(json_encode($document));
@@ -49,6 +55,43 @@ class DocumentService
         return $document;
 
     }
+
+
+    /**
+ * Enrichit les pièces jointes avec leurs liens de visualisation
+ * et de téléchargement accessibles depuis l'API Gateway.
+ */
+private function enrichAttachments(Document $document): void
+{
+    // $baseUrl = rtrim(config('services.app_url'), '/');
+    $baseUrl =  config('services.app_url');// rtrim(config('app.url'), '/');
+
+
+    if (!$baseUrl) {
+        return;
+    }
+
+    foreach ($document->attachments as $attachment) {
+
+        $file = $attachment->file;
+
+        if (!$file || !$file->path) {
+            continue;
+        }
+
+        $path = rawurlencode($file->path);
+
+        $attachment->setAttribute(
+            'view_url',
+            "{$baseUrl}/api/documents/document-attachments/{$path}/view"
+        );
+
+        $attachment->setAttribute(
+            'download_url',
+            "{$baseUrl}/api/documents/document-attachments/{$path}/download"
+        );
+    }
+}
 
      public function getDoc($identifier) : Document {
 

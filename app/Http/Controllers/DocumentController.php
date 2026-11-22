@@ -1807,7 +1807,7 @@ if ($request->hasFile('attachments')) {
 
     $fileModel = new File();
     $fileModel->name = $file->getClientOriginalName();
-    $fileModel->path = $fileName;
+    $fileModel->path = "documents_attachments/$fileName";
     $fileModel->type = $type;
     $fileModel->size = $size;
 
