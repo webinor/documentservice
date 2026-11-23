@@ -438,28 +438,53 @@ class BeneficiaryEligibilityService
             );
 
             /*
-             * 5.5. Ignorer une fiche qui ne possède aucun justificatif.
+             * 5.5. Une fiche sans justificatif est immédiatement
+             * comptabilisée comme fiche à régulariser incomplète.
              *
-             * Une fiche sans justificatif physique ne doit pas être
-             * considérée automatiquement comme incomplète.
+             * Dès qu'une fiche possède un workflow PENDING, elle entre
+             * dans le décompte, même si aucun justificatif n'a encore
+             * été ajouté. La remise de justificatifs n'est donc pas
+             * une condition préalable à sa comptabilisation.
              */
             if ($totalReceipts === 0) {
-                Log::debug(
-                    '[BeneficiaryEligibility] Fiche ignorée : aucun justificatif physique.',
+                Log::info(
+                    '[BeneficiaryEligibility] Fiche comptabilisée : aucun justificatif physique ajouté.',
                     [
                         'beneficiary_id' => $beneficiaryId,
                         'document_id' => (int) $document->id,
+                        'document_uuid' => $document->uuid ?? null,
+                        'document_reference' => $document->reference ?? null,
                         'workflow_id' => $workflow['id'] ?? null,
+                        'workflow_status' => $workflow['status'] ?? null,
                         'reason_code' => 'NO_PHYSICAL_RECEIPTS',
                     ]
                 );
 
-                $sheetsWithoutReceipts[] = [
+                $pendingSheets[] = [
                     'document_id' => (int) $document->id,
+                    'document_uuid' => $document->uuid ?? null,
+                    'document_title' => $document->title ?? null,
+                    'document_reference' => $document->reference ?? null,
+
+                    // URL frontend calculée selon le type et les permissions.
+                    'document_url' => $this->documentUrlResolver->resolve(
+                        $document
+                    ),
+
+                    'document_type' => 'REGULARIZATION_SHEET',
                     'workflow_instance_id' => $workflow['id'] ?? null,
-                    'counted' => false,
+                    'workflow_status' =>
+                        $this->workflowStatusResolver->resolve(
+                            self::WORKFLOW_PENDING
+                        ),
+                    'incomplete' => true,
+                    'counted' => true,
+                    'total_receipts' => 0,
+                    'received_receipts' => 0,
+                    'pending_receipts' => 0,
+                    'pending_receipt_details' => [],
                     'reason_code' => 'NO_PHYSICAL_RECEIPTS',
-                    'reason' => 'La fiche ne possède aucun justificatif physique.',
+                    'reason' => 'Aucun justificatif physique n’a encore été ajouté à cette fiche.',
                 ];
 
                 continue;
@@ -640,7 +665,7 @@ class BeneficiaryEligibilityService
         );
 
         if ($blocked) {
-            $reason .= ' La création de nouveaux documents est bloquée jusqu’à la remise des justificatifs physiques en attente.';
+            $reason .= ' La création de nouveaux documents est bloquée jusqu’à la régularisation des fiches en attente.';
         }
 
         return [
