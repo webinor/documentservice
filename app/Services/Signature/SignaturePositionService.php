@@ -131,6 +131,9 @@ public function getEnrichedFilePositions(
         ->orderBy('page_number')
         ->get();
 
+        // throw new Exception(json_encode($positions), 1);
+    
+
     if ($positions->isEmpty()) {
         return collect();
     }

@@ -83,6 +83,7 @@ public function index($purchaseRequestId): JsonResponse
         'request_order.items',
         'files',
         'paymentTerm',
+        'purchaseRequest.document.document_signatures',
         'paymentInstallments',
         ])
         ->orderBy('created_at')

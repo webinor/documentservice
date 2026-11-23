@@ -73,7 +73,7 @@ class MissionRegulationService
         $supplements = $regulations->where('adjustment_type', 'SUPPLEMENT');
 
         $totalRefund = $refunds->sum('amount');
-        
+
         $totalSupplement = $supplements->sum('amount');
 
         /**
@@ -160,5 +160,7 @@ class MissionRegulationService
         'paid_at' => now(),
         'processed_at' => now(),
     ]);
+
+    return $regulation;
 }
 }

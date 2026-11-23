@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Signature\SupportingDocumentSignatureService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -24,10 +25,19 @@ class SupportingDocumentSignatureController
     public function apply(
         Request $request,
         string $documentUuid
-    ): JsonResponse {
+    ): JsonResponse
+     {
 
         try {
 
+    
+        
+        //   return response()->json(
+        //         $request->get('signatureType' , "RECEIPT")
+        //     );
+        // throw new Exception(json_encode($request->get('signatureType' , "RECEIPT")), 1);
+        
+        // return $request->input("signatureType","RECEIPT");
         $signatureType = $request->get('signatureType' , "RECEIPT");
 
             $result =

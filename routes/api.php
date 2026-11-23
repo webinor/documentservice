@@ -45,6 +45,7 @@ use App\Http\Controllers\RegularizationReceiptController;
 use App\Http\Controllers\RequestOrderController;
 use App\Http\Controllers\RequestOrderItemController;
 use App\Http\Controllers\RequestOrderPaymentScheduleController;
+use App\Http\Controllers\RequestOrderStatusController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\StoredFileController;
 use App\Http\Controllers\SupportingDocumentSignatureController;
@@ -649,11 +650,22 @@ Route::prefix('purchase-requests/{purchaseRequestId}/purchase-orders')
         Route::post('/', [RequestOrderController::class, 'store']);
         Route::get('/{purchaseOrderId}', [RequestOrderController::class, 'show']);
         Route::put('/{purchaseOrderId}', [RequestOrderController::class, 'update']);
+
+
+     
+
+
+
     });
 
     Route::get(
     '/request-orders/{requestOrder}/request-order-payment-schedules',
     [RequestOrderPaymentScheduleController::class, 'index']
+);
+
+      Route::post(
+    '/request-orders/{requestOrder}/status/recalculate',
+    [RequestOrderStatusController::class, 'recalculate']
 );
 
     Route::patch(

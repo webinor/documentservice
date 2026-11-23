@@ -4,6 +4,7 @@ namespace App\Models\Misc;
 
 use App\Models\AbsenceRequest;
 use App\Models\DocumentReference;
+use App\Models\DocumentSignature;
 use App\Models\DocumentSignaturePosition;
 use App\Models\DocumentStatus;
 use App\Models\FeeNote;
@@ -278,6 +279,16 @@ class Document extends Model
     public function secondary_attachments(): HasMany
     {
         return $this->hasMany(Attachment::class)->whereIsMain(false);
+    }
+
+    /**
+     * Get all of the document_signatures for the Document
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function document_signatures(): HasMany
+    {
+        return $this->hasMany(DocumentSignature::class);
     }
 
     public function main_attachment(): HasOne

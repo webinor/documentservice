@@ -79,6 +79,27 @@ public function enrich(Document $document, array $base): array
         }
     }
 
+     /*
+        |--------------------------------------------------------------------------
+        | Créateur du document
+        |--------------------------------------------------------------------------
+        |
+        | Le créateur du document est toujours un EMPLOYEE.
+        | Son identifiant est stocké dans creator_employee_id.
+        |
+        */
+
+        $document->creator_details = null;
+
+        if (!empty($document->creator_employee_id)) {
+
+            $document->creator_details =
+                $this->userServiceClient->resolveActor(
+                    'EMPLOYEE',
+                    $document->creator_employee_id
+                );
+        }
+
     // Enrichir le service destinataire.
     $actorDetails = $this->departmentClient->resolveDepartment(
         $document->actor_id

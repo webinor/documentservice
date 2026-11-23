@@ -54,6 +54,8 @@ class SettlementController extends Controller
 
         try {
 
+            $transaction = $this->regulationService->markAsPaid($request->all());
+
             $type = $request->transaction_type_code;
 
             if ($type === 'MISSION_EXPENSE_ADVANCE') {
@@ -72,8 +74,60 @@ class SettlementController extends Controller
                 // return $this->feeNoteService->markAsPaid($request->all());
             }
 
-            return $this->regulationService->markAsPaid($request->all());
+            if ($type == 'PURCHASE_ADVANCE') {
 
+    
+
+            // throw new Exception(json_encode($transaction), 1);
+
+    // if ($transaction->wasRecentlyCreated) {
+
+    $purchaseRequest = $transaction->transactable()->first();
+
+    
+    
+    $requestOrder = $purchaseRequest->request_order()->first();
+    
+    
+    // throw new Exception(json_encode($requestOrder), 1);
+
+        if ($requestOrder) {
+            $initialPaymentSchedule = $requestOrder
+                ->paymentSchedules()
+                ->whereHas('paymentTrigger', function ($query) {
+                    $query->where('is_initial_payment', true);
+                })
+                ->first();
+
+            
+
+            if ($initialPaymentSchedule) {
+                $initialPaymentSchedule->update([
+                    'paid_amount'=>  abs($transaction->amount),
+                    'remaining_amount'=>  abs($transaction->amount - $initialPaymentSchedule->amount),
+                ]);
+
+                $initialPaymentSchedule->refresh();
+
+                $initialPaymentSchedule->update([
+                    'status' => $initialPaymentSchedule->paid_amount
+                        >= $initialPaymentSchedule->amount
+                        ? 'PAID'
+                        : 'PARTIALLY_PAID',
+                ]);
+            }
+        }
+    // }
+
+            // throw new Exception(json_encode($initialPaymentSchedule), 1);
+
+                
+                
+            }
+
+            
+            
+            return $transaction;
 
             throw new Exception("Unsupported document type: " . $type);
 

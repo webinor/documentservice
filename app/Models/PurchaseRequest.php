@@ -84,7 +84,7 @@ public function getSettlementAmount(
     if (!$schedule) {
 
     return 0;
-    
+
         throw new Exception(
             "Aucune échéance de paiement initial trouvée pour ce bon de commande."
         );
@@ -168,22 +168,57 @@ public function getSettlementAmount(
 
     switch ($transactionTypeCode) {
 
-        case 'PURCHASE_ADVANCE':
+      case 'PURCHASE_ADVANCE':
 
-            $this->financialTransactions()->firstOrCreate(
-                [
-                    'transaction_code' => $transactionCode,
-                ],
-                [
-                    'transaction_type_code' => $transactionTypeCode,
-                    'type' => 'ADVANCE',
-                    'adjustment_type' => 'NONE',
-                    'amount' => abs($amount),
-                    'direction' => 'OUT',
-                    'status' => 'PENDING',
-                    'created_by' => request()->get('user')['id'],
-                ]
-            );
+    $transaction = $this->financialTransactions()->firstOrCreate(
+        [
+            'transaction_code' => $transactionCode,
+        ],
+        [
+            'transaction_type_code' => $transactionTypeCode,
+            'type' => 'ADVANCE',
+            'adjustment_type' => 'NONE',
+            'amount' => abs($amount),
+            'direction' => 'OUT',
+            'status' => 'PENDING',
+            'created_by' => request()->get('user')['id'],
+        ]
+    );
+
+    // throw new Exception(json_encode($transaction->wasRecentlyCreated), 1);
+    
+
+    if ($transaction->wasRecentlyCreated) {
+
+        $requestOrder = $this->request_order()->first();
+
+        if ($requestOrder) {
+            $initialPaymentSchedule = $requestOrder
+                ->paymentSchedules()
+                ->whereHas('paymentTrigger', function ($query) {
+                    $query->where('is_initial_payment', true);
+                })
+                ->first();
+
+            if ($initialPaymentSchedule) {
+                $initialPaymentSchedule->update([
+                    'paid_amount'=>
+                    abs($amount)
+                ]);
+
+                $initialPaymentSchedule->refresh();
+
+                $initialPaymentSchedule->update([
+                    'status' => $initialPaymentSchedule->paid_amount
+                        >= $initialPaymentSchedule->amount
+                        ? 'PAID'
+                        : 'PARTIALLY_PAID',
+                ]);
+            }
+        }
+    }
+
+   
 
             break;
 
@@ -205,6 +240,8 @@ public function getSettlementAmount(
                     'created_by' => request()->get('user')['id'],
                 ]
             );
+
+          
 
             break;
     }

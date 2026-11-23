@@ -914,6 +914,8 @@ if ($selectedQuote && $selectedQuote->supplier_id !== null) {
             'items' => [
                 'count' => $items->count(),
 
+                'details' => $items,
+
                 'requested_quantity_total' => $requestedQuantityTotal,
                 'approved_quantity_total' => $approvedQuantityTotal,
                 'quantity' => $effectiveQuantityTotal,

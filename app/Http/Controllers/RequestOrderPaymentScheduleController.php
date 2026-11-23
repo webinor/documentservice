@@ -110,7 +110,7 @@ class RequestOrderPaymentScheduleController extends Controller
                 $schedule->status = $validated['status'];
             }
 
-            $schedule->save();
+            // $schedule->save();
 
             return $schedule->fresh();
         });
