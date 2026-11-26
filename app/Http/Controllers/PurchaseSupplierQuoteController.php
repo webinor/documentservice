@@ -393,6 +393,7 @@ public function store(
             return PurchaseSupplierQuote::create([
                 'purchase_request_id' => $purchaseRequestId,
                 'is_selected' => false,
+                'quote_date' => now(),
                 'status' => 'PENDING',
                 'created_by' =>$request->get("user")["id"],
             ]);
