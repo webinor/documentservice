@@ -17,6 +17,7 @@ class MissionReceiptResolver implements ReceiptSourceResolverInterface
     {
         $mission = $document->mission()
             ->with('mission_expenses.file')
+            ->with('receipts.file')
             ->first();
 
         if (!$mission) {

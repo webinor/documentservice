@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DocumentSignature;
 use App\Models\DocumentSignaturePosition;
 use App\Models\Misc\Document;
 use App\Models\Misc\File;
 use App\Models\PurchaseReceipt;
 use App\Models\PurchaseSupplierQuote;
-use App\Services\Signature\ReceiptSourceResolverRegistry;
 use App\Services\Signature\SignaturePositionRequirementService;
 use App\Services\Signature\SignaturePositionService;
 use App\Services\UserServiceClient;
@@ -21,14 +19,12 @@ class DocumentSignaturePositionController extends Controller
     protected SignaturePositionRequirementService $service;
     protected SignaturePositionService $positionService;
 
-    // protected ReceiptSourceResolverRegistry $receiptResolverRegistry;
 
     public function __construct(
     UserServiceClient $userService,
     SignaturePositionRequirementService $service,
     SignaturePositionService $positionService
 
-    // ReceiptSourceResolverRegistry $receiptResolverRegistry
 ) {
     $this->userService = $userService;
     $this->service = $service;

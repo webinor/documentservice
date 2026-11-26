@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Signature\ReceiptSourceResolverRegistry;
 use App\Models\Payment;
 use App\Observers\PaymentObserver;
+use App\Services\Signature\Resolvers\MissionReceiptResolver;
 use App\Services\Signature\Resolvers\PurchaseReceiptResolver;
 use App\Services\Signature\Resolvers\RegularizationReceiptResolver;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
             return new ReceiptSourceResolverRegistry([
                 $app->make(RegularizationReceiptResolver::class),
                 $app->make(PurchaseReceiptResolver::class),
+                // $app->make(MissionReceiptResolver::class),
             ]);
         }
     );

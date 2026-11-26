@@ -32,6 +32,8 @@ class ReceiptSourceResolverRegistry
             }
         }
 
+        
+
         throw new RuntimeException(
             'Aucun résolveur de justificatifs configuré pour ce document.'
         );
